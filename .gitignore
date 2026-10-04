@@ -22,3 +22,5 @@ Thumbs.db
 *.pem
 *.key
 var/
+var/lab/
+var/lab/audio/
