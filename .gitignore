@@ -1,0 +1,17 @@
+# Environment & secrets
+.env
+*.env
+
+# Work in progress / uncommitted as requested
+geminiwebsearch1.md
+
+# Tool cache & logs
+.playwright-mcp/
+.qodo/
+
+# OS / Python / Node
+__pycache__/
+*.py[cod]
+node_modules/
+.DS_Store
+Thumbs.db

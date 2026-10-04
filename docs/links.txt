@@ -1,0 +1,4 @@
+https://docs.gnani.ai/api/introduction/introduction
+https://docs.gnani.ai/api/introduction/quick-start
+https://huggingface.co/gnani/gnani-evon-v3.3-30B-A3B
+https://docs.gnani.ai/api/STT/speech-to-text

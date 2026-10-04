@@ -1,0 +1,46 @@
+Hi Harshdip Saha,
+
+Thank you for registering for the Great Indian AI Internship Challenge. You are in, and the next step is to start building on Gnani AI's own speech and LLM models.
+
+Here is what to know from here.
+
+Your build resources: You have 5,000 programme credits to use on Gnani AI's APIs.
+API dashboard: create keys, test voices and track usage against your credits
+Documentation and quick start: make your first transcription and call
+Models: Prisma (speech to text), Timbre (text to speech, beta), and Evon (30B parameter reasoning model, available on hugging face)
+Support: ask build questions and get help from the Gnani AI team on Discord or via email
+What you need to do next
+Describe your project in the participant workspace: the problem, the Gnani AI models or APIs you plan to use, who will use what you build, and each member's contribution.
+Build your project and record a demo or video of it working.
+Submit your demo or video, a written project explanation, the Gnani AI model/APIs you used, and links to your LinkedIn or X posts.
+If you registered as a team of two, the 5,000 programme credits go to the primary registrant's account, and all contest communication will be sent to that account. We will keep your teammate's email on record for verification and testing only.
+
+Key dates
+➜ Contest closes: November 10, 2026 (final submissions, no extensions)
+
+➜ Interviews: after close, for shortlisted participants
+
+➜ Internships start: January 1, 2027 (scheduled)
+
+How selection works
+Public demo: you post your working project and a demo video on LinkedIn or X and nominate those posts.
+Verified engagement: Gnani AI verifies engagement on the posts you nominate.
+Shortlisting: Gnani AI reviews submissions and shortlists participants for interview.
+Interviews: every shortlisted person interviews individually, including teammates.
+Written offers: selected interns receive a written offer with stipend and terms.
+A few things to keep in mind
+Stipends of up to ₹1 lakh per month are paid to each intern individually and are not split across a team.
+Offers are individual, so one teammate can receive an offer without the other.
+Your project must use Gnani AI models/APIs.
+Your demo must be public on LinkedIn or X. Please use #GnaniAI & #GreatIndianAIInternshipChallenge in your posts.
+Gnani AI will be selecting the team on the bases of popular engagement on LinkedIn or X
+Only a written offer from Gnani AI after the interview stage confirms an internship.
+Gnani AI reserves the right to modify, suspend, or cancel any part of this contest, including its rules, timelines, and prizes, at its sole discretion and without prior notice.
+Alongside the internship shortlist, there are ten award categories covering regional languages, Hinglish and other code-mixed voice experiences, noisy telephonic audio, real-world impact, best solo or duo project, creativity, entries from Tier 2 and Tier 3 towns, best 60-second demo, and a public-vote Crowd Favourite.
+
+Full programme details: www.gnani.ai/internship
+
+We are glad to have you in this. Good luck, and we look forward to seeing what you build.
+
+Best regards,
+Team Gnani AI

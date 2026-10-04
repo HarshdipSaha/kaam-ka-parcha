@@ -1,0 +1,319 @@
+The Great Indian AI Internship Challenge.
+Build Sovereign AI for India.
+Build on Gnani AI's own models and compete for paid internships.
+
+Up to 100
+paid six-month internships
+Up to ₹1 lakh
+stipend per intern, per month
+Nov 10, 2026
+contest deadline
+Register to Build
+Open to enrolled students in India, aged 18 or older. Build solo or in a team of two.
+
+Awards
+
+Ten awards for standout builds
+Alongside the internship shortlist, ten award categories recognise projects for language, impact, craft and reach. Each award is worth ₹50,000.
+
+01
+Main Character Award
+The best build in a regional or low-resource Indian language.
+
+Indian languages
+02
+Mixed Vibes Award
+The best code-mixed voice experience across Hinglish, Tanglish and Benglish.
+
+Code-mixed speech
+03
+Real Deal Award
+The most useful real-world problem solved, for users such as farmers, kirana stores or rural health workers.
+
+Real-world impact
+04
+Noise Canceller Award
+The build that performs best on messy, noisy, real telephonic audio.
+
+Telephony audio
+05
+Two-Person Army Award
+The best project built by a team of two.
+
+Duos
+06
+Solo Ninja Award
+The best project built by a single participant.
+
+Solo
+07
+Jugaad Genius Award
+The most creative or unexpected use of Gnani AI's models.
+
+Creativity
+08
+Small Town, Big Build Award
+The best entry from a college or city in a Tier 2 or Tier 3 town.
+
+Beyond the metros
+09
+Demo Day Drop Award
+The best 60-second demo video.
+
+60-second video
+10
+Crowd Favourite Award
+Decided by public votes on LinkedIn and X using #GreatIndianAIInternshipChallenge & #GnaniAI.
+
+Public vote
+LinkedIn
+X
+Awards are decided on each category's criteria, irrespective of internship selection. No individual or team can win more than one award.
+
+What you build on
+
+Models trained in India, for Indian speech
+Gnani AI builds its own speech and language models and trains them on real telephonic audio, so they handle noisy calls, code-mixed speech and Indian languages natively. Deployed together on infrastructure the customer controls, they form Artha, the sovereign stack. You get to build on the same models.
+
+Speech to text
+Prisma v2.5
+Trained on 14M+ hours of telephonic audio. Streams in under 200ms across 10+ Indian languages plus Hinglish, Tanglish and Benglish, according to Gnani AI's published benchmarks.
+
+Speech to text API
+Text to speech, Beta
+Timbre v2.5
+Speaks 10+ Indic languages with context-aware prosody, Indian names, numerals and lakh and crore cadence. Streams over WebSocket and SSE.
+
+Text to speech API
+Reasoning, open weight
+Evon v3.3
+A 30B parameter model with about 3.5B active per token, 128K context and 11 Indian languages natively. Apache 2.0 weights are available by request on Hugging Face.
+
+Evon v3.3 release notes
+Eligibility
+
+Who can apply
+The programme is open to students. Check all three conditions before you register.
+
+You must be
+✓
+Currently enrolled in a degree or course at a college or university in India.
+✓
+18 years or older on the day you register.
+✓
+Building solo, or with one teammate who also meets these conditions.
+Solo or a team of two
+Solo
+You register, build and submit on your own.
+
+Team of two
+You register first, then invite one teammate. Teams can't be larger than two.
+
+Your teammate accepts the terms independently and their email is kept on record only for verification and testing, while all contest communication goes to the primary registrant, and each of you is interviewed and considered for an offer individually.
+
+Read before you register
+
+The rules that matter most
+These points shape who gets an offer. The full terms appear on the registration page, and every participant accepts them individually.
+
+1
+Stipends are per person
+The stipend of up to ₹1 lakh a month is paid to each intern individually. It is not split across a team.
+
+2
+Offers are individual
+Teammates are interviewed separately. One member can receive an offer without the other.
+
+3
+Your project uses Gnani AI technology
+Your submission names the Gnani AI models or APIs it uses and each member's contribution.
+
+4
+You demo it in public
+Post your project on LinkedIn or X with the hashtags #GnaniAI and #GreatIndianAIInternshipChallenge, then nominate those posts so Gnani AI can verify their engagement.
+
+5
+The deadline is fixed
+Final submissions close on November 10, 2026. You can edit project details until you submit.
+
+6
+Only written offers count
+An internship is confirmed only by a written offer from Gnani AI after the interview stage.
+
+Gnani AI may modify, suspend or cancel any part of the contest, including rules, timelines and prizes, as set out in the programme terms.
+
+How it works
+
+Register, build, submit
+Everything happens in one participant workspace. Here is what you will fill in at each stage, so you can prepare before you start.
+
+Step 1
+Register
+Full name, email, and Phone
+College name, degree or course, discipline
+Solo or team, and your teammate's email
+Some other details
+Each teammate is demeed to accept the terms of this contest.
+
+Step 2
+Describe your project
+Project title
+The problem you are solving
+Who will use it
+The Gnani AI models or APIs you plan to use
+Each member's contribution
+You can update these details until your final submission.
+
+Step 3
+Submit
+A demo or video of the working project
+A written project explanation
+The Gnani AI Mmdels/APIs you used
+Links to your nominated LinkedIn or X posts
+Track your submission status in the workspace and get a confirmation receipt when it goes in.
+
+Build resources
+
+Everything you need to ship
+Each registration receives 5,000 programme credits. For teams of two, the credits go to the primary registrant's account, details with access instructions will be sent by email after sign up. Start with the quick start in the Gnani AI developer docs, then open the console to create your keys.
+
+API dashboard
+→
+Create keys, test voices and track usage against your credits.
+
+Documentation
+→
+API reference for speech to text, text to speech and streaming.
+
+Quick start
+→
+Make your first transcription and synthesis call from the docs.
+
+Evon v3.3 on Hugging Face
+→
+Open weights under Apache 2.0, available by request.
+
+Model overview
+→
+Prisma, Timbre, Warp and Evon, with their published specs.
+
+Support on Discord
+→
+Ask build questions and get help from the Gnani AI team.
+
+Selection process
+
+From public demo to written offer
+Selection runs in five stages. A working, public project is the entry point, and the interview decides the offer.
+
+01
+Public demo
+Show off your project on LinkedIn or X with a live demo, tagged #GreatIndianAIInternshipChallenge and #GnaniAI.
+
+LinkedIn
+X
+Demo video
+02
+Verified engagement
+Gnani AI verifies community engagement on the posts you nominate.
+
+Nominated posts
+Verified
+03
+Shortlisting
+Gnani AI reviews submissions and shortlists participants for interview.
+
+Submission review
+04
+Interviews
+Every shortlisted person interviews on their own, including team members.
+
+One to one
+Individual
+05
+Written offers
+Selected interns receive a written offer with stipend and terms.
+
+Stipend
+Terms
+Timeline
+
+Key dates
+One month to build, then review and interviews, then six months inside Gnani AI.
+
+Build window
+31 days
+Review and interviews
+after close
+Internship
+6 months
+Contest starts
+Oct 1, 2026
+Registration and the build workspace go live.
+
+Contest close
+Nov 10, 2026
+Last day to make your final submission.
+
+After close
+Interviews
+Shortlisted participants interview individually.
+
+Internships start
+Jan 1, 2027
+Paid six-month internships are scheduled to begin.
+
+FAQs
+
+Questions before you register
+The programme terms on the registration page are the final word. These answers summarise them.
+
+How does the stipend work?
+If we apply as a team, are we selected together?
+Who owns the project I build?
+When and how does the internship run?
+Does it cost anything to take part?
+How is my data handled?
+Can I change my project after registering?
+Where do I get help?
+Are awards linked to the internship shortlist?
+Can a team or individual win more than one award?
+Contest Deadline November 10, 2026
+
+Ship something real on Indian-language AI
+Register, claim your 5,000 credits and start building. Up to 100 paid six-month internships go to the people who ship.
+
+Register to Build
+gyaa·ni
+Intelligence
+that truly listens.
+Jñāna: the Sanskrit root of deep knowing. Not information processed. Understanding, possessed. The one who held it was called Gyaani. The Knowing One.
+We are Gnani (gyaa·ni). We build intelligence that listens - truly, deeply, and without exception - in every language, every environment, for every person on earth.
+RESEARCH
+Whitepaper
+Customer Stories
+Models
+APIs
+Speech to Text
+Text to Speech
+SOLUTIONS
+Lead Qualification
+Customer Support
+Collections
+Others
+INDUSTRIES
+BFSI
+Healthcare
+Automobile
+Real Estate
+Hospitality
+Consumer Durables
+Government
+BPOs
+COMPANY
+About Us
+Careers
+© 2026 Gnani.ai. All rights reserved.
+Privacy
+·
+Terms

@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+    
+  <url>
+    <loc>https://docs.gnani.ai/A01_KB</loc>
+    <lastmod>2026-08-05T11:55:51.856Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/A02_Agent</loc>
+    <lastmod>2026-08-05T11:55:51.857Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/A03_Testing</loc>
+    <lastmod>2026-08-05T11:55:51.857Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/A04_Whitelisting</loc>
+    <lastmod>2025-08-11T13:16:38.282Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/B01_DTMF</loc>
+    <lastmod>2026-10-01T09:25:27.413Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/B02_Advanced_ASR</loc>
+    <lastmod>2025-08-13T11:20:33.971Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/B03_Voicemail</loc>
+    <lastmod>2026-10-01T09:25:27.420Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/B04_Dynamic_Variables</loc>
+    <lastmod>2026-08-05T11:55:50.694Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/C01_Disposition</loc>
+    <lastmod>2026-08-05T11:55:50.692Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/C02_Language_Switch</loc>
+    <lastmod>2025-11-05T07:19:50.848Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/C03_Jinja</loc>
+    <lastmod>2026-08-05T11:55:50.689Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/D01_Twilio_SMS</loc>
+    <lastmod>2026-10-01T09:25:27.410Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/D02_Zoho_CRM</loc>
+    <lastmod>2026-10-01T09:25:27.421Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/D03_MailSend_Email</loc>
+    <lastmod>2026-08-05T11:55:50.692Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/D04_Zoho_Ticket</loc>
+    <lastmod>2026-10-01T09:25:27.409Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/D05_Custom</loc>
+    <lastmod>2026-08-05T11:55:50.689Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/D06_Webex</loc>
+    <lastmod>2026-10-01T09:25:27.414Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/E01_Conversational_Logs</loc>
+    <lastmod>2026-09-08T09:25:24.033Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/E02_Dev_Logs</loc>
+    <lastmod>2026-09-08T09:25:24.033Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/E03_Agent_Analytics</loc>
+    <lastmod>2026-09-08T09:25:24.033Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/E04_Action_Logs</loc>
+    <lastmod>2025-11-05T07:19:52.106Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/F01_Support</loc>
+    <lastmod>2026-08-05T11:55:50.697Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/F02_Org</loc>
+    <lastmod>2026-10-01T09:25:27.407Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/F03_Env</loc>
+    <lastmod>2026-10-01T09:25:27.412Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/M03_Integrations</loc>
+    <lastmod>2026-08-05T11:55:50.696Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/M04_Actions</loc>
+    <lastmod>2026-08-10T09:11:03.812Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/M05_Chains</loc>
+    <lastmod>2026-08-10T09:11:03.819Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/M10_Dynamic_Variables</loc>
+    <lastmod>2026-10-01T09:25:27.411Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/M16x_Import_Number</loc>
+    <lastmod>2026-08-10T09:11:03.818Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/M21_Dashboard</loc>
+    <lastmod>2025-11-05T07:19:52.107Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Add_FAQs</loc>
+    <lastmod>2026-08-12T10:33:50.840Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Create_Agent</loc>
+    <lastmod>2026-08-11T12:19:53.008Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Delete_Agent</loc>
+    <lastmod>2026-08-12T10:33:50.838Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Delete_FAQs</loc>
+    <lastmod>2026-08-12T10:33:50.849Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Error_Reference</loc>
+    <lastmod>2026-08-12T10:33:50.841Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/FAQ_Sample</loc>
+    <lastmod>2026-08-12T10:33:50.841Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Get_Agent</loc>
+    <lastmod>2026-08-12T10:33:50.845Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Get_Chat_SDK_Config</loc>
+    <lastmod>2026-08-12T10:33:50.844Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Get_Conversation_Logs</loc>
+    <lastmod>2026-08-11T12:19:53.004Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Get_Conversation_Stats</loc>
+    <lastmod>2026-08-12T09:50:39.404Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Get_LLM_Models</loc>
+    <lastmod>2026-08-12T09:50:39.403Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Get_Languages</loc>
+    <lastmod>2026-08-11T12:19:52.968Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Get_Regions</loc>
+    <lastmod>2026-08-11T12:19:53.016Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Get_TTS_Config</loc>
+    <lastmod>2026-08-11T12:19:52.967Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Get_Timezones</loc>
+    <lastmod>2026-08-11T12:19:51.340Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Get_Transcriber_Config</loc>
+    <lastmod>2026-08-11T12:19:51.333Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Import_FAQs</loc>
+    <lastmod>2026-08-12T10:33:50.009Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/List_Agents</loc>
+    <lastmod>2026-08-12T09:50:39.402Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/List_FAQs</loc>
+    <lastmod>2026-08-12T10:33:50.007Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Stream_Conversation_Audio</loc>
+    <lastmod>2026-08-12T10:33:50.022Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Trigger_Call</loc>
+    <lastmod>2026-08-11T12:19:51.338Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Update_Agent</loc>
+    <lastmod>2026-08-12T10:33:50.024Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Update_Chat_SDK_Config</loc>
+    <lastmod>2026-08-12T10:33:50.008Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Update_FAQ</loc>
+    <lastmod>2026-08-12T10:33:50.006Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Upload_Chat_SDK_Icon</loc>
+    <lastmod>2026-08-12T10:33:50.006Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/Validate_Prompt</loc>
+    <lastmod>2026-08-11T12:19:51.309Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/Platform/platform-introduction</loc>
+    <lastmod>2026-08-12T09:50:39.402Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STT/batch/cancel-job</loc>
+    <lastmod>2026-07-28T10:25:16.379Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STT/batch/create-job</loc>
+    <lastmod>2026-10-01T09:25:26.252Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STT/batch/get-files</loc>
+    <lastmod>2026-07-28T10:25:16.391Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STT/batch/get-job</loc>
+    <lastmod>2026-10-01T09:25:26.247Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STT/batch/list-jobs</loc>
+    <lastmod>2026-07-28T10:25:16.389Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STT/batch/start-job</loc>
+    <lastmod>2026-07-28T10:25:16.383Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STT/create-batch-test</loc>
+    <lastmod>2026-07-28T10:25:16.385Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STT/speech-to-text</loc>
+    <lastmod>2026-09-29T07:54:04.428Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STT/start-batch-test</loc>
+    <lastmod>2026-07-28T10:25:13.346Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STT/stt-batch</loc>
+    <lastmod>2026-09-29T02:13:18.933Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STT/stt-websocket</loc>
+    <lastmod>2026-09-29T07:48:35.462Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STTBatch/Cancel_Job</loc>
+    <lastmod>2026-07-28T11:07:51.265Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STTBatch/Create_Job</loc>
+    <lastmod>2026-10-01T09:25:26.250Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STTBatch/Get_Job</loc>
+    <lastmod>2026-10-01T09:25:26.254Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STTBatch/Get_Job_Files</loc>
+    <lastmod>2026-09-17T10:10:03.748Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STTBatch/Introduction</loc>
+    <lastmod>2026-10-01T09:25:26.249Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STTBatch/List_Jobs</loc>
+    <lastmod>2026-07-28T10:25:13.312Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STTBatch/Start_Job</loc>
+    <lastmod>2026-07-28T11:07:51.268Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/STTBatch/_api_probe</loc>
+    <lastmod>2026-07-28T10:25:13.345Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/TTS/available-voices</loc>
+    <lastmod>2026-08-05T11:55:46.887Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/TTS/tts-inference</loc>
+    <lastmod>2026-08-05T11:55:46.883Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/TTS/tts-input-formating</loc>
+    <lastmod>2026-08-03T12:48:03.795Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/TTS/tts-sse</loc>
+    <lastmod>2026-08-05T11:55:46.888Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/TTS/tts-websocket</loc>
+    <lastmod>2026-08-05T11:55:46.883Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/VC/vc-inference</loc>
+    <lastmod>2026-08-05T11:55:46.894Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/VC/vc-sse</loc>
+    <lastmod>2026-08-05T11:55:46.884Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/VC/vc-websocket</loc>
+    <lastmod>2026-08-05T11:55:46.882Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/VC/voice-clone-embeddings</loc>
+    <lastmod>2026-08-05T11:55:46.886Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/introduction/introduction</loc>
+    <lastmod>2026-08-10T09:10:59.944Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/introduction/quick-start</loc>
+    <lastmod>2026-08-05T11:55:46.896Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/use-cases/call-analytics</loc>
+    <lastmod>2026-08-05T11:55:46.904Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/use-cases/podcast-transcription</loc>
+    <lastmod>2026-08-05T11:55:46.892Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/api/use-cases/real-time-compliance</loc>
+    <lastmod>2026-08-05T11:55:46.897Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/creating-a-workforce</loc>
+    <lastmod>2026-10-01T09:25:26.248Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/introduction</loc>
+    <lastmod>2026-08-10T09:10:59.954Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/livekit/introduction</loc>
+    <lastmod>2026-08-05T11:55:46.884Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/pipecat/introduction</loc>
+    <lastmod>2026-08-05T11:55:46.890Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/python-sdk/introduction</loc>
+    <lastmod>2026-09-17T09:26:15.688Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/python-sdk/speech-to-text</loc>
+    <lastmod>2026-09-17T09:26:15.686Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.gnani.ai/python-sdk/text-to-speech</loc>
+    <lastmod>2026-09-17T09:26:15.687Z</lastmod>
+  </url>
+</urlset>
