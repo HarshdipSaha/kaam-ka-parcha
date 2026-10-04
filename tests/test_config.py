@@ -54,3 +54,10 @@ def test_settings_load_returns_settings_instance():
     settings = Settings.load()
     assert isinstance(settings, Settings)
 
+
+def test_settings_secrets_not_in_repr():
+    settings = Settings(api_key="super-secret-gnani", extractor_api_key="super-secret-groq")
+    as_str = repr(settings)
+    assert "super-secret-gnani" not in as_str
+    assert "super-secret-groq" not in as_str
+

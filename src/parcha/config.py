@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from os import environ
 from typing import Mapping
 from dotenv import dotenv_values
@@ -6,9 +6,9 @@ from dotenv import dotenv_values
 
 @dataclass(frozen=True)
 class Settings:
-    api_key: str = ""
+    api_key: str = field(default="", repr=False)
     extractor_base_url: str = ""
-    extractor_api_key: str = ""
+    extractor_api_key: str = field(default="", repr=False)
     extractor_model: str = ""
     extractor_provider: str = "external"
     tts_voice: str = "Nalini"
