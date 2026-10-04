@@ -12,6 +12,49 @@ class AudioError(RuntimeError):
     """Raised when an audio operation fails or inputs are invalid."""
 
 
+ALLOWED_UPLOAD_MIMES = {
+    "audio/webm",
+    "audio/ogg",
+    "audio/mp4",
+    "audio/wav",
+    "audio/x-wav",
+}
+
+
+def normalize_upload(blob: bytes, mime: str, sample_rate: int = 16000) -> bytes:
+    """Normalize uploaded audio blob to 16-bit mono WAV at target sample rate."""
+    clean_mime = mime.split(";")[0].strip().lower()
+    if clean_mime not in ALLOWED_UPLOAD_MIMES:
+        raise AudioError(f"unsupported audio mime type: {clean_mime}")
+
+    if not blob or len(blob) > 8 * 1024 * 1024:
+        raise AudioError("recording must be non-empty and under 8MB")
+
+    out_wav = _ffmpeg(
+        blob,
+        [],
+        ["-ar", str(sample_rate), "-ac", "1", "-c:a", "pcm_s16le", "-f", "wav"],
+    )
+
+    try:
+        with wave.open(io.BytesIO(out_wav), "rb") as w:
+            if w.getsampwidth() != 2:
+                raise AudioError(f"Expected 16-bit PCM (2 bytes per sample), got {w.getsampwidth()} bytes")
+            if w.getframerate() != sample_rate:
+                raise AudioError(f"Expected {sample_rate} Hz sample rate, got {w.getframerate()} Hz")
+            frames = w.readframes(w.getnframes())
+    except wave.Error as exc:
+        raise AudioError(f"Failed to read WAV data: {exc}") from exc
+    except EOFError as exc:
+        raise AudioError(f"Truncated WAV data: {exc}") from exc
+
+    duration = len(frames) / (2 * sample_rate)
+    if not (0.3 <= duration <= 60.0):
+        raise AudioError(f"audio duration {duration:.2f}s outside bounds [0.3s, 60s]")
+
+    return out_wav
+
+
 def _ffmpeg(input_bytes: bytes, input_args: list[str], output_args: list[str]) -> bytes:
     """Run an FFmpeg conversion using stdin/stdout pipes."""
     cmd = ["ffmpeg", "-y", "-nostdin", *input_args, "-i", "pipe:0", *output_args, "pipe:1"]

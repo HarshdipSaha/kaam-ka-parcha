@@ -61,7 +61,7 @@ class SessionStore:
                 status="review",
                 card=card,
                 readback_revision=None,
-                logs=current.logs + logs,
+                logs=current.logs + tuple(logs),
             )
             self._items[session_id] = updated
             return updated
