@@ -29,3 +29,26 @@ class CreditPlan:
     def require_under_cap(self, cap: float) -> None:
         if min(cap, self.remaining_credits) < self.total_credits:
             raise BudgetExceeded(f"forecast {self.total_credits:.1f} exceeds cap/remaining credits")
+
+
+def count_exact_amounts(
+    expected: list[int | None], predicted: list[int | None]
+) -> tuple[int, int]:
+    matches = 0
+    total = 0
+    for i, exp in enumerate(expected):
+        if exp is not None:
+            total += 1
+            if i < len(predicted) and exp == predicted[i]:
+                matches += 1
+    return (matches, total)
+
+
+def drop_rate(replies: list[str]) -> tuple[int, int]:
+    dropped = sum(1 for r in replies if r is None or not str(r).strip())
+    return (dropped, len(replies))
+
+
+def hallucinated_word_rate(transcripts: list[str]) -> tuple[int, int]:
+    total_words = sum(len(str(t).split()) for t in transcripts if t)
+    return (total_words, len(transcripts))

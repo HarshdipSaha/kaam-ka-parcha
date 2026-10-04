@@ -143,3 +143,67 @@ $$\text{total\_credits} = \text{grid\_credits} + ((\text{intake\_seconds} + \tex
 | Date | Input Manifest / Hash | Settings | Credits Before / After | Numerator / Denominator | Decision | Fallback |
 |---|---|---|---|---|---|---|
 | *Scheduled Oct 19* | `data/synthcall_manifest.jsonl` | 100 utts × 2 codecs × 4 SNRs + WS flush | TBD / TBD | 0 / 100 recovered | Pending | Customer leg REST turn-based |
+
+---
+
+## 8. Early Gate Runner CLI & Streaming Architecture
+
+The automated gate runner (`scripts/early_gates.py`) enforces strict pre-flight budget boundaries and evaluates speech feasibility before building user interfaces.
+
+### CLI Usage
+
+```powershell
+# Pre-flight forecast (dry-run, exits 0, no network calls made)
+.\.venv\Scripts\python.exe scripts/early_gates.py --mode garage
+
+# Custom manifest dry-run
+.\.venv\Scripts\python.exe scripts/early_gates.py --mode short-replies --manifest var/gates/short_replies_50.jsonl --max-credits 500
+
+# Live execution with paid calls
+.\.venv\Scripts\python.exe scripts/early_gates.py --live --mode garage --manifest var/gates/garage_10.jsonl --transport rest --output var/gates/garage-results.jsonl
+```
+
+### CLI Flag Reference
+
+| Flag | Type | Default | Description |
+|---|---|---|---|
+| `--live` | flag | `False` | Run live paid calls against Gnani APIs. If omitted, prints forecast and exits 0. |
+| `--mode` | string | *required* | Gate mode: `garage`, `tts-roundtrip`, `short-replies`, or `bias-ab`. |
+| `--manifest` | Path | `var/gates/<mode>.jsonl` | Path to JSONL evaluation manifest. |
+| `--max-credits` | float | `2000.0` | Maximum credit budget ceiling. |
+| `--credits-per-second` | float | `0.2` | STT credit burn rate per second of audio. |
+| `--remaining-credits` | float | `5000.0` | Current remaining dashboard balance. |
+| `--tts-credit-reserve` | float | `0.0` | Additional credits reserved for TTS synthesis. |
+| `--transport` | `rest` \| `ws` | `rest` | Speech transport mechanism for transcription. |
+| `--output` | Path | `var/gates/<mode>-results.jsonl` | Destination JSONL path for structured gate results. |
+
+### Budget Failsafes and Error Halting
+
+1. **Pre-call Cap Validation**: Forecasted total credits are verified against $\min(\text{max\_credits}, \text{remaining\_credits})$. If forecast exceeds this cap, execution terminates before any API calls are made.
+2. **Per-Call Allowance Decrement**: Before each utterance is submitted, the runner checks whether remaining allowance $\ge \text{item\_cost}$. If budget is exhausted, the loop halts immediately.
+3. **HTTP 403 / 429 Termination**: On authentication failure (403) or rate limit (429), the runner halts immediately without auto-retry, recording partial results and the halt reason.
+
+### WebSocket Telephony Client (`src/parcha/gnani_ws.py`)
+
+- **Protocol**: `wss://api.vachana.ai/stt/v3/stream`
+- **Audio Framing**: Mono 8 kHz signed-16-bit PCM chunked into 1024-byte frames (512 samples = 64 ms per frame). Chunks shorter than 1024 bytes are zero-padded to maintain frame timing.
+- **Zero-Pad Silence Flush**: Appends 500 ms of zero-padded silence frames ($\lceil 500 / 64 \rceil = 8$ frames of 1024 bytes) after audio transmission to ensure the remote VAD and decoder flush terminal short utterances ("हाँ", "नहीं").
+- **Telephony VAD Headers**:
+  - `lang_code`: `hi-IN`
+  - `x-sample-rate`: `8000`
+  - `x-vad-threshold`: `0.7`
+  - `x-min-speech-ms`: `200`
+  - `x-min-silence-ms`: `500`
+  - `x-min-segment-ms`: `100`
+
+### Explicit Metric Scoring Helpers (`src/parcha/credits.py`)
+
+- **Exact Amount Recovery** (`count_exact_amounts`):
+  Evaluates integer rupee/paise matching between expected and predicted amounts.
+  $$\text{Pass Rate} = \frac{\text{Matches}}{\text{Total Expected}} \ge 70\% \text{ (Garage)} \text{ or } 90\% \text{ (TTS Roundtrip)}$$
+- **Telephony Drop Rate** (`drop_rate`):
+  Identifies empty or non-speech transcripts on short confirmation utterances.
+  $$\text{Drop Rate} = \frac{\text{Empty or Whitespace Replies}}{\text{Total Utterances}} \le 10\%$$
+- **Engine Noise Hallucination Rate** (`hallucinated_word_rate`):
+  Measures phantom words generated during pure ambient noise segments (e.g., idling scooter).
+  $$\text{Hallucination Rate} = \frac{\text{Total Words Emitted}}{\text{Total Noise Clips}} \le 1.0 \text{ word/clip}$$
