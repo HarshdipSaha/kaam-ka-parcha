@@ -207,3 +207,57 @@ The automated gate runner (`scripts/early_gates.py`) enforces strict pre-flight 
 - **Engine Noise Hallucination Rate** (`hallucinated_word_rate`):
   Measures phantom words generated during pure ambient noise segments (e.g., idling scooter).
   $$\text{Hallucination Rate} = \frac{\text{Total Words Emitted}}{\text{Total Noise Clips}} \le 1.0 \text{ word/clip}$$
+
+---
+
+## 9. Lab Report & Guarded Public Delta Export (Task 17)
+
+The lab report module (`src/parcha/lab/report.py`) provides structured aggregation of private laboratory sweeps and generates guarded public relative performance deltas under strict compliance with the zero-leak policy and platform EULA.
+
+### Fail-Closed Permission Guard & Policy
+Public distribution of speech evaluation data or absolute competitive benchmarks without explicit written permission violates platform policies. To prevent unauthorized benchmark leakage:
+- **Written Consent Mandate**: `public_delta()` strictly enforces that `organizer_consent=True` and a non-empty `consent_ref` string (e.g., `organizer-reply-2026-10-10`) are provided. If either condition is unmet, execution terminates immediately and fails closed:
+  ```python
+  if not organizer_consent or not consent_ref or not consent_ref.strip():
+      raise PermissionError("Public delta export requires written organizer consent and reference")
+  ```
+- **Competitor Benchmark Rejection**: The export engine strictly forbids and rejects any competitor mentions ("Whisper", "Google", "AWS", "Azure", "OpenAI") or comparative cross-engine claims in input rows, metadata, or output markdown. Detection raises an immediate `ValueError`.
+- **Absolute Metrics Ban**: Absolute Character Error Rate (CER) and Word Error Rate (WER) metrics are forbidden in public outputs to prevent external competitive benchmarking. Only relative own-system recovery deltas are permissible.
+
+### Paired Delta Evaluation Methodology
+To eliminate confounding variability across speech samples and ambient noise acoustic conditions, public exports pair results strictly by:
+$$\text{Tuple} = (\text{clip\_id}, \text{codec}, \text{snr}, \text{loss}, \text{seed})$$
+
+1. **Condition Pairing**: Pairs baseline utterances (`variant == "bias_off"`) directly with domain-adapted utterances (`variant == "bias_1_0"`).
+2. **Delta Quantification**: Evaluates exact part-name recovery delta ($\Delta \text{Part Matches}$) and exact numeric amount recovery delta ($\Delta \text{Amount Matches}$):
+   $$\Delta \text{Recovery} = \text{Recovery}_{\text{bias\_1\_0}} - \text{Recovery}_{\text{bias\_off}}$$
+   $$\Delta \% = \frac{\Delta \text{Recovery}}{N_{\text{pairs}}} \times 100\%$$
+3. **Mandatory Audit Labels**:
+   - `"measured by us"` (explicit internal attribution)
+   - `"N={len(pairs)}"` (auditable sample size)
+   - Date string (e.g., `2026-10-19`)
+   - Complete operational settings (codec, SNR, model, score).
+
+### Private Lab Evaluation Summary
+Internal reports produced by `private_summary()` compute full diagnostic aggregates grouped by `(codec, snr, loss)`:
+- Total clips evaluated ($N$)
+- Mean Character Error Rate (CER) and total character counts
+- Exact numeric amount matches and percentage ($\%$)
+- Latency distribution statistics: mean, median ($p_{50}$), and 90th percentile ($p_{90}$) in milliseconds
+- Estimated credit expenditure per condition and overall
+- Non-speech / engine idle hallucination rates (hallucinated words per clip) when non-speech clips are present.
+
+### CLI Reference
+
+```powershell
+# Generate private markdown summary report (default output: var/lab/private/report.md)
+.\.venv\Scripts\python.exe -m parcha.lab.report --results-file var/lab/line_noise_results.jsonl
+
+# Generate guarded public delta export (requires explicit consent flag and reference)
+.\.venv\Scripts\python.exe -m parcha.lab.report `
+    --results-file var/lab/line_noise_results.jsonl `
+    --public-output var/lab/public/delta_export.md `
+    --organizer-consent-recorded `
+    --consent-ref "organizer-reply-2026-10-10" `
+    --date "2026-10-19"
+```
