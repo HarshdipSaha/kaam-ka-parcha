@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaam ka Parcha — Workshop Estimate</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #f59e0b;
+      --primary-hover: #d97706;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #10b981;
+      --accent: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 1.5rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background-color: rgba(245, 158, 11, 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-status {
+      background-color: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .badge-review {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .badge-confirmed {
+      background-color: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    button {
+      padding: 0.65rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 0.5rem;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s, opacity 0.2s;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    #record {
+      background-color: var(--primary);
+      color: #000;
+    }
+
+    #record:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+    }
+
+    #stop {
+      background-color: var(--danger);
+      color: #fff;
+    }
+
+    #stop:hover:not(:disabled) {
+      background-color: var(--danger-hover);
+    }
+
+    #start-readback {
+      background-color: var(--accent);
+      color: #000;
+    }
+
+    #start-readback:hover:not(:disabled) {
+      background-color: #0284c7;
+      color: #fff;
+    }
+
+    .reask-btn {
+      background-color: rgba(245, 158, 11, 0.2);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      padding: 0.35rem 0.75rem;
+      font-size: 0.85rem;
+      border-radius: 0.375rem;
+    }
+
+    .reask-btn:hover:not(:disabled) {
+      background-color: var(--primary);
+      color: #000;
+    }
+
+    #customer-link {
+      display: inline-block;
+      padding: 0.65rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 0.5rem;
+      background-color: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+      border: 1px solid var(--success);
+      text-decoration: none;
+      transition: background-color 0.2s;
+    }
+
+    #customer-link:hover {
+      background-color: var(--success);
+      color: #000;
+    }
+
+    output#message {
+      display: block;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      min-height: 2.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .panel {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+
+    .items-table th, .items-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .items-table th {
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .amount-cell {
+      text-align: right;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .total-row td {
+      font-weight: 700;
+      font-size: 1.15rem;
+      border-top: 2px solid var(--border);
+      border-bottom: none;
+      color: var(--primary);
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .meta-item {
+      font-size: 0.9rem;
+    }
+
+    .meta-label {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .review-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .review-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .transcript-box {
+      font-family: monospace;
+      font-size: 0.85rem;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.75rem;
+      border-radius: 0.375rem;
+      border: 1px solid var(--border);
+      margin-top: 0.5rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kaam ka Parcha — Workshop Estimate</h1>
+    <span class="badge">Synthetic demo data</span>
+  </header>
+
+  <main>
+    <div class="controls">
+      <button id="record">Record estimate</button>
+      <button id="stop" disabled>Stop</button>
+      <button id="start-readback" disabled>Read estimate to customer</button>
+      <a id="customer-link" style="display:none;" target="_blank">Open Customer Link</a>
+    </div>
+
+    <output id="message">Ready. Click "Record estimate" to dictate repair items, amounts, and delivery date.</output>
+
+    <section id="review-section" class="panel" style="display:none;">
+      <div class="panel-title">
+        <span>Fields Needing Review</span>
+        <span id="review-count" class="badge badge-review">0 pending</span>
+      </div>
+      <div id="review-fields"></div>
+    </section>
+
+    <section id="card" class="panel">
+      <div class="empty-state">No estimate recorded yet. Press "Record estimate" above.</div>
+    </section>
+
+    <section id="transcript" class="panel" style="display:none;">
+      <div class="panel-title">Transcript Logs</div>
+      <div id="transcript-content"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
