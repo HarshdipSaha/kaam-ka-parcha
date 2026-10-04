@@ -14,6 +14,7 @@ from .audio import AudioError, normalize_upload
 from .extract import ExtractionError, Extractor
 from .gnani import PrismaClient, TimbreClient, GnaniError
 from .schema import review_fields
+from .artefact import render_pdf, whatsapp_text
 
 ROOT = Path(__file__).parent
 
@@ -277,6 +278,42 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             raise HTTPException(503, str(exc))
         except GnaniError as exc:
             raise HTTPException(502, str(exc))
+
+    @app.get("/sessions/{session_id}/parcha.pdf")
+    @app.get("/sessions/{session_id}/pdf")
+    def get_parcha_pdf(session_id: str):
+        try:
+            session = services.store.get(session_id)
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+        try:
+            pdf_bytes = render_pdf(session)
+        except Conflict as exc:
+            raise HTTPException(409, str(exc))
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="parcha-{session_id}-rev{session.revision}.pdf"'
+            },
+        )
+
+    @app.get("/sessions/{session_id}/whatsapp.txt")
+    @app.get("/sessions/{session_id}/whatsapp")
+    def get_whatsapp_text(session_id: str):
+        try:
+            session = services.store.get(session_id)
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+        try:
+            text = whatsapp_text(session)
+        except Conflict as exc:
+            raise HTTPException(409, str(exc))
+        return Response(
+            content=text,
+            media_type="text/plain; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="parcha-{session_id}.txt"'},
+        )
 
     return app
 
