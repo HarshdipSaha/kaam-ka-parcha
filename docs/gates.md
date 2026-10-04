@@ -17,6 +17,7 @@ All live evaluations follow the zero-leak policy: raw recordings, private metric
 | *Pending* | `var/gates/oct10_telephony.jsonl` | Oct 10 WS Telephony: AMR 4.75 + 5 dB (50 clips) | Pending | Dropped replies / 50 | Pending | Prompt "haan theek hai" / walk-up |
 | *Pending* | `var/gates/oct15_bias.jsonl` | Oct 15 Verbatim Bias A/B: 30 parts (1.0 & 1.5) | Pending | Bias gain / 30 | Pending | Drop bias from pipeline |
 | *Pending* | `data/synthcall_manifest.jsonl` | Oct 19 Line Noise Sweep: 100 × 2 × 4 grid + WS flush | Pending | Turn recovery / 100 | Pending | Customer leg REST turn-based |
+| *Pending* | `var/gates/haan_ws.jsonl` | Oct 19 WS Telephony Flush: 500 ms zero tail (50 clips) | Pending | Affirmative recovered / 50 (≥95%) | Pending | Customer leg REST turn-based |
 
 ---
 
@@ -260,4 +261,57 @@ Internal reports produced by `private_summary()` compute full diagnostic aggrega
     --organizer-consent-recorded `
     --consent-ref "organizer-reply-2026-10-10" `
     --date "2026-10-19"
+```
+
+---
+
+## 10. 8 kHz WebSocket Telephony Flush Experiment (Task 18)
+
+The 8 kHz WebSocket flush probe (`scripts/ws_flush_probe.py`) isolates and measures the streaming telephony transport (`wss://api.vachana.ai/stt/v3/stream`) for short conversational acknowledgments and affirmative confirmations ("हाँ", "ठीक है", "हाँ ठीक है").
+
+### Zero-Padding Silence Tail Strategy (500 ms / 8 Frames)
+The remote telephony streaming endpoint relies on dynamic Voice Activity Detection (VAD) configured with:
+- `x-sample-rate`: `8000`
+- `x-vad-threshold`: `0.7`
+- `x-min-speech-ms`: `200`
+- `x-min-silence-ms`: `500`
+- `x-min-segment-ms`: `100`
+
+Short affirmative replies often span only 300–700 ms. If the streaming client terminates audio transmission or abruptly closes the WebSocket connection immediately after the last speech frame, the remote VAD decoder buffer fails to detect the speech-to-silence transition, cutting off the terminal syllable or discarding the utterance entirely.
+
+To trigger reliable end-of-utterance segmentation:
+1. Audio PCM is packetized into fixed **1024-byte frames** (512 samples = 64 ms per frame at 8 kHz mono signed-16-bit). Any partial final frame is zero-padded to 1024 bytes.
+2. A trailing zero-pad silence buffer is synthesized:
+   $$\text{Silence Frames} = \left\lceil \frac{500 \text{ ms}}{64 \text{ ms/frame}} \right\rceil = 8 \text{ frames} \quad (8 \times 1024 \text{ bytes} = 8192 \text{ bytes} \implies 512 \text{ ms})$$
+3. Frames are streamed at 64 ms paced intervals (`await asyncio.sleep(0.064)`) while a concurrent background receiver task awaits intermediate events and the terminal `transcript` event with bounded timeout ($t \le 10$ s).
+4. Socket teardown captures events and close codes cleanly, strictly redacting authentication credentials from execution logs.
+
+### Transport Architectural Decision: REST Primary vs. WS Research Probe
+- **REST as Primary Product Transport**: Kaam Ka Parcha uses REST (`PrismaClient.transcribe` with `format=transcribe` / `format=verbatim`) as its primary transport for the customer review and garage intake flows. In simulated browser sessions and progressive web apps, stateless HTTP multipart requests provide superior resilience against socket drops, proxy disconnects, carrier NAT timeouts, and browser tab background suspension.
+- **WebSocket Telephony Preset as Research Probe**: The streaming WebSocket protocol is evaluated as an isolated research probe specifically to benchmark end-of-turn latency and affirmative recovery for direct PSTN/telephony trunking (e.g., SIP/FreeSWITCH/Twilio bridges).
+
+### Gate Criteria & Pass Threshold
+- **Evaluated Metric**: Explicit recovery numerator and denominator:
+  $$\text{Recovery Rate} = \frac{N_{\text{recovered}}}{N_{\text{total}}} \ge 95\% \quad (\ge 0.95)$$
+- **Terminal Affirmative Criteria**:
+  An utterance passes recovery if the transcript captures the expected affirmative token (e.g., "हाँ", "haan", "ठीक है", "theek hai") without premature VAD truncation. Transcripts yielding empty strings, whitespace, or truncated noise count as failed (dropped) replies.
+- **Go/No-Go Decision**:
+  - **GO ($\ge 95\%$)**: Zero-pad flush verified stable; telephony streaming eligible for SIP integration.
+  - **NO-GO ($< 95\%$)**: WebSocket zero-pad flush fails reliability threshold; customer conversational leg remains strictly routed through the REST turn-based endpoint.
+
+### CLI Usage & Budget Guard
+```powershell
+# Pre-flight forecast and manifest validation (dry run, exits 0, zero network calls)
+.\.venv\Scripts\python.exe scripts/ws_flush_probe.py --manifest var/gates/haan_ws.jsonl
+
+# Parameterized silence tail probe across multiple durations
+.\.venv\Scripts\python.exe scripts/ws_flush_probe.py --silence-ms 250,500,750 --max-credits 500
+
+# Live paid evaluation against Gnani WebSocket endpoint
+.\.venv\Scripts\python.exe scripts/ws_flush_probe.py `
+    --live `
+    --manifest var/gates/haan_ws.jsonl `
+    --silence-ms 500 `
+    --max-credits 2000 `
+    --output var/gates/ws_flush_results.jsonl
 ```
