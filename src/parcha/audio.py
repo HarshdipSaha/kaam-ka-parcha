@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import math
+import random
 import subprocess
 import wave
 
@@ -180,3 +181,33 @@ def mix_at_snr(speech_wav: bytes, noise_wav: bytes, target_db: float | None) -> 
 
     mixed_pcm = np.rint(mixed).astype("<i2")
     return _write_pcm(mixed_pcm), measured_snr
+
+
+def erase_frames(wav_bytes: bytes, loss_percent: float, seed: int = 0) -> tuple[bytes, float]:
+    """Simulate packet/frame erasure on 8000 Hz 16-bit mono WAV audio."""
+    samples = _read_pcm(wav_bytes).copy()
+    if loss_percent <= 0.0:
+        return wav_bytes, 0.0
+    if len(samples) < 160:
+        return wav_bytes, 0.0
+
+    total_frames = len(samples) // 160
+    if total_frames == 0:
+        return wav_bytes, 0.0
+
+    if loss_percent >= 100.0:
+        num_erased = total_frames
+    else:
+        num_erased = min(total_frames, int(round(total_frames * (loss_percent / 100.0))))
+
+    if num_erased == 0:
+        return wav_bytes, 0.0
+
+    rng = random.Random(seed)
+    indices = set(rng.sample(range(total_frames), num_erased))
+
+    for idx in indices:
+        samples[idx * 160 : (idx + 1) * 160] = 0
+
+    return _write_pcm(samples), num_erased / total_frames
+
