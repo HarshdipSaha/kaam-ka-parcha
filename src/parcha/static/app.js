@@ -135,7 +135,7 @@ function renderSession(data) {
   if (card && reviewFields.length === 0) {
     if (readbackButton) readbackButton.disabled = false;
     if (customerLink) {
-      customerLink.href = `/customer?session_id=${data.id}`;
+      customerLink.href = `/customer/${data.id}`;
       customerLink.style.display = "inline-block";
     }
   } else {
@@ -376,6 +376,294 @@ function handleStartReadback() {
   }
 }
 
+let currentCustomerSession = null;
+let isCustomerRecording = false;
+
+function renderCustomerCard(data) {
+  if (!data) return;
+  const statusBadge = document.getElementById("card-status-badge");
+  const revisionBadge = document.getElementById("card-revision-badge");
+  const itemsTbody = document.getElementById("items-tbody");
+  const deliveryInfo = document.getElementById("delivery-info");
+  const confirmedBanner = document.getElementById("confirmed-banner");
+  const recordBtn = document.getElementById("customer-record");
+  const stopBtn = document.getElementById("customer-stop");
+
+  if (statusBadge) {
+    statusBadge.textContent = data.status;
+    statusBadge.className =
+      "badge " +
+      (data.status === "confirmed"
+        ? "badge-confirmed"
+        : data.status === "awaiting_reply"
+        ? "badge-status"
+        : "badge");
+  }
+
+  if (revisionBadge) {
+    revisionBadge.textContent = `Rev ${data.revision}`;
+  }
+
+  const card = data.card;
+  if (itemsTbody) {
+    if (card && card.items && card.items.length > 0) {
+      let rows = card.items
+        .map(
+          (item) => `
+        <tr>
+          <td><strong>${item.label || '<em style="color:var(--danger)">(Missing label)</em>'}</strong></td>
+          <td><span class="badge" style="font-size:0.7rem;">${item.kind}</span></td>
+          <td class="amount-cell">${formatRupees(item.amount_paise)}</td>
+        </tr>
+      `
+        )
+        .join("");
+
+      rows += `
+        <tr class="total-row">
+          <td colspan="2">Estimated Total</td>
+          <td class="amount-cell" id="total-cell">${
+            data.total_paise !== null && data.total_paise !== undefined
+              ? formatRupees(data.total_paise)
+              : '<em style="color:var(--text-muted)">Incomplete</em>'
+          }</td>
+        </tr>
+      `;
+      itemsTbody.innerHTML = rows;
+    } else {
+      itemsTbody.innerHTML = `
+        <tr><td colspan="3" class="empty-state">No items available</td></tr>
+        <tr class="total-row">
+          <td colspan="2">Estimated Total</td>
+          <td class="amount-cell" id="total-cell">${formatRupees(data.total_paise)}</td>
+        </tr>
+      `;
+    }
+  }
+
+  if (deliveryInfo) {
+    if (card && card.delivery) {
+      deliveryInfo.innerHTML = `${card.delivery.date} (${card.delivery.window}) — <em>"${card.delivery.spoken}"</em>`;
+    } else {
+      deliveryInfo.innerHTML = '<em style="color:var(--text-muted)">Pending delivery details</em>';
+    }
+  }
+
+  if (confirmedBanner) {
+    if (data.status === "confirmed") {
+      confirmedBanner.style.display = "block";
+      if (recordBtn) recordBtn.disabled = true;
+      if (stopBtn) stopBtn.disabled = true;
+    } else {
+      confirmedBanner.style.display = "none";
+    }
+  }
+}
+
+async function initCustomerPage() {
+  const pathParts = window.location.pathname.replace(/\/+$/, "").split("/");
+  let sessionId = pathParts[pathParts.length - 1];
+  if (!sessionId || sessionId === "customer") {
+    const urlParams = new URLSearchParams(window.location.search);
+    sessionId = urlParams.get("session_id");
+  }
+  if (!sessionId) {
+    const statusEl = document.getElementById("customer-status");
+    if (statusEl) statusEl.textContent = "Error: Invalid session URL";
+    return;
+  }
+
+  const player = document.getElementById("readback-player");
+  const recordBtn = document.getElementById("customer-record");
+  const statusEl = document.getElementById("customer-status");
+  const messageEl = document.getElementById("customer-message");
+
+  function enableRecordIfReady() {
+    if (currentCustomerSession && currentCustomerSession.status !== "confirmed") {
+      if (recordBtn && !isCustomerRecording) {
+        recordBtn.disabled = false;
+      }
+    }
+  }
+
+  if (player) {
+    player.addEventListener("canplay", enableRecordIfReady);
+    player.addEventListener("play", enableRecordIfReady);
+    player.addEventListener("ended", enableRecordIfReady);
+  }
+
+  try {
+    const res = await fetch(`/sessions/${sessionId}`);
+    if (!res.ok) {
+      throw new Error(`Failed to load session (HTTP ${res.status})`);
+    }
+    currentCustomerSession = await res.json();
+    renderCustomerCard(currentCustomerSession);
+
+    if (currentCustomerSession.status === "confirmed") {
+      if (statusEl) statusEl.textContent = "Estimate is already confirmed.";
+      if (messageEl) messageEl.textContent = "This estimate has been verified and confirmed.";
+      if (recordBtn) recordBtn.disabled = true;
+      return;
+    }
+
+    if (
+      currentCustomerSession.readback_revision !== null &&
+      currentCustomerSession.readback_revision !== undefined
+    ) {
+      const audioUrl = `/sessions/${sessionId}/readback.wav?revision=${currentCustomerSession.readback_revision}`;
+      if (player && (!player.src || !player.src.endsWith(audioUrl))) {
+        player.src = audioUrl;
+      }
+      if (player && player.readyState >= 2) {
+        enableRecordIfReady();
+      }
+      if (statusEl) statusEl.textContent = "Listen to the estimate read-back above.";
+      if (messageEl) messageEl.textContent = "Click 'Record Reply' to say 'हाँ' or specify a correction.";
+    } else {
+      if (statusEl) statusEl.textContent = "Waiting for estimate read-back from workshop.";
+      if (messageEl) messageEl.textContent = "The workshop is preparing your estimate audio.";
+    }
+  } catch (err) {
+    console.error("Failed to initialize customer page:", err);
+    if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+    return;
+  }
+
+  if (recordBtn) {
+    recordBtn.addEventListener("click", () => handleCustomerRecord(sessionId));
+  }
+}
+
+async function handleCustomerRecord(sessionId) {
+  const player = document.getElementById("readback-player");
+  const recordBtn = document.getElementById("customer-record");
+  const stopBtn = document.getElementById("customer-stop");
+  const statusEl = document.getElementById("customer-status");
+  const messageEl = document.getElementById("customer-message");
+
+  if (!currentCustomerSession) return;
+
+  try {
+    if (player && !player.paused) {
+      player.pause();
+    }
+
+    isCustomerRecording = true;
+    if (statusEl) statusEl.textContent = "Recording reply...";
+    if (messageEl) {
+      messageEl.textContent =
+        "Speak now: say 'हाँ' to confirm, or state your correction. Click Stop when finished.";
+    }
+
+    const blob = await recordOnce(recordBtn, stopBtn);
+    isCustomerRecording = false;
+
+    if (statusEl) statusEl.textContent = "Processing reply audio...";
+    if (messageEl) messageEl.textContent = "Analyzing speech with Gnani...";
+
+    const formData = new FormData();
+    formData.append("expected_revision", currentCustomerSession.revision);
+    formData.append("readback_revision", currentCustomerSession.readback_revision);
+    const ext = blob.type.includes("wav")
+      ? "wav"
+      : blob.type.includes("ogg")
+      ? "ogg"
+      : "webm";
+    formData.append("audio", blob, `reply.${ext}`);
+
+    const res = await fetch(`/sessions/${sessionId}/reply`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || `Server returned HTTP ${res.status}`);
+    }
+
+    const replyData = await res.json();
+    currentCustomerSession = replyData;
+    renderCustomerCard(currentCustomerSession);
+
+    if (replyData.outcome === "confirmed") {
+      if (statusEl) statusEl.textContent = "Estimate Confirmed!";
+      if (messageEl) {
+        messageEl.textContent = replyData.transcript
+          ? `Recognized: "${replyData.transcript}". The estimate has been confirmed.`
+          : "The estimate has been confirmed.";
+      }
+      if (recordBtn) recordBtn.disabled = true;
+      if (stopBtn) stopBtn.disabled = true;
+    } else if (replyData.outcome === "needs_readback") {
+      if (statusEl) statusEl.textContent = "Correction noted. Generating fresh read-back audio...";
+      if (messageEl) {
+        messageEl.textContent = replyData.transcript
+          ? `Correction recognized: "${replyData.transcript}". Updating estimate...`
+          : "Correction applied. Updating estimate...";
+      }
+      if (recordBtn) recordBtn.disabled = true;
+
+      // Request fresh read-back audio via POST /sessions/{id}/readback
+      const rbFormData = new FormData();
+      rbFormData.append("expected_revision", replyData.revision);
+      const rbRes = await fetch(`/sessions/${sessionId}/readback`, {
+        method: "POST",
+        body: rbFormData,
+      });
+
+      if (!rbRes.ok) {
+        const rbErr = await rbRes.json().catch(() => ({ detail: rbRes.statusText }));
+        throw new Error(rbErr.detail || `Read-back generation failed: HTTP ${rbRes.status}`);
+      }
+
+      const rbData = await rbRes.json();
+      currentCustomerSession.revision = rbData.revision;
+      currentCustomerSession.readback_revision = rbData.readback_revision;
+      currentCustomerSession.status = "awaiting_reply";
+
+      if (player) {
+        const newAudioUrl =
+          rbData.audio_url || `/sessions/${sessionId}/readback.wav?revision=${rbData.revision}`;
+        player.src = newAudioUrl;
+        player.load();
+      }
+
+      if (statusEl) statusEl.textContent = "Updated estimate ready.";
+      if (messageEl) {
+        messageEl.textContent =
+          "Please listen to the updated estimate above and reply ('हाँ' to confirm or specify correction).";
+      }
+    } else if (replyData.outcome === "ask_field") {
+      if (statusEl) statusEl.textContent = "Clarification needed";
+      if (messageEl) {
+        messageEl.textContent =
+          replyData.message || 'Which item would you like to correct? Click "Record Reply" to clarify.';
+      }
+      if (recordBtn) recordBtn.disabled = false;
+    } else if (replyData.outcome === "retry") {
+      if (statusEl) statusEl.textContent = "Could not recognize response";
+      if (messageEl) {
+        messageEl.textContent =
+          replyData.message || "Please speak clearly: say 'हाँ' to confirm, or specify what to change.";
+      }
+      if (recordBtn) recordBtn.disabled = false;
+    }
+  } catch (err) {
+    console.error("Customer reply failed:", err);
+    if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+    if (messageEl) {
+      messageEl.textContent = "An error occurred while processing your reply. Please try again.";
+    }
+    if (recordBtn && currentCustomerSession && currentCustomerSession.status !== "confirmed") {
+      recordBtn.disabled = false;
+    }
+  } finally {
+    isCustomerRecording = false;
+    if (stopBtn) stopBtn.disabled = true;
+  }
+}
+
 window.recordOnce = recordOnce;
 window.formatRupees = formatRupees;
 window.getSupportedMimeType = getSupportedMimeType;
@@ -384,6 +672,9 @@ window.renderSession = renderSession;
 window.handleRecordEstimate = handleRecordEstimate;
 window.handleReask = handleReask;
 window.handleStartReadback = handleStartReadback;
+window.renderCustomerCard = renderCustomerCard;
+window.initCustomerPage = initCustomerPage;
+window.handleCustomerRecord = handleCustomerRecord;
 
 document.addEventListener("DOMContentLoaded", () => {
   const recordBtn = document.getElementById("record");
@@ -397,9 +688,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get("session_id")) {
+  if (urlParams.get("session_id") && !window.location.pathname.startsWith("/customer/")) {
     getOrCreateSession().catch((err) => {
       console.warn("Could not resume session:", err);
     });
   }
+
+  if (window.location.pathname.startsWith("/customer/")) {
+    initCustomerPage();
+  }
 });
+

@@ -82,6 +82,24 @@ def create_app(services: AppServices | None = None) -> FastAPI:
     def workshop(request: Request):
         return templates.TemplateResponse(request, "workshop.html", {})
 
+    @app.get("/customer/{session_id}", response_class=HTMLResponse)
+    def customer_view(request: Request, session_id: str):
+        try:
+            session = services.store.get(session_id)
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+        return templates.TemplateResponse(
+            request,
+            "customer.html",
+            {
+                "session": session,
+                "card": session.card,
+                "revision": session.revision,
+                "readback_revision": session.readback_revision,
+                "status": session.status,
+            },
+        )
+
     @app.post("/sessions")
     def create_session():
         return session_payload(services.store.create())
@@ -217,6 +235,48 @@ def create_app(services: AppServices | None = None) -> FastAPI:
 
         content = wav_path.read_bytes()
         return Response(content=content, media_type="audio/wav")
+
+    @app.post("/sessions/{session_id}/reply")
+    async def reply(
+        session_id: str,
+        expected_revision: int = Form(...),
+        readback_revision: int = Form(...),
+        audio: UploadFile = File(...),
+    ):
+        try:
+            blob = await audio.read()
+            if not blob:
+                raise AudioError("empty recording")
+            services.settings.require_gnani()
+            result = services.workflow.reply(
+                session_id,
+                blob,
+                audio.content_type or "",
+                expected_revision=expected_revision,
+                readback_revision=readback_revision,
+            )
+            return {
+                "outcome": result.outcome,
+                "transcript": result.transcript,
+                "message": result.message,
+                "id": result.session.id,
+                "revision": result.session.revision,
+                "readback_revision": result.session.readback_revision,
+                "status": result.session.status,
+                "card": result.session.card.model_dump(mode="json") if result.session.card else None,
+                "total_paise": result.session.card.maybe_total_paise if result.session.card else None,
+                "review_fields": review_fields(result.session.card) if result.session.card else [],
+            }
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+        except Conflict as exc:
+            raise HTTPException(409, str(exc))
+        except (AudioError, ExtractionError) as exc:
+            raise HTTPException(422, str(exc))
+        except ValueError as exc:
+            raise HTTPException(503, str(exc))
+        except GnaniError as exc:
+            raise HTTPException(502, str(exc))
 
     return app
 
