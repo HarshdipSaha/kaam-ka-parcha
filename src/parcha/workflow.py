@@ -1,17 +1,43 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import inspect
 import re
 
-from .audio import normalize_upload
+from .audio import codec_round_trip, mix_at_snr, mulaw_to_wav, normalize_upload
 from .extract import Extractor
-from .gnani import PrismaClient
+from .gnani import PrismaClient, TimbreClient
 from .schema import JobCard, TranscriptLog
-from .session import Session, SessionStore
+from .session import Conflict, Session, SessionStore
 
 REASK_FIELD_PATTERN = re.compile(r"^items\.[a-z]+-[0-9]+\.(label|amount_paise)$")
+
+
+def format_rupees(paise: int) -> str:
+    if paise % 100 == 0:
+        return f"₹{paise // 100}"
+    else:
+        return f"₹{paise / 100:.2f}"
+
+
+def make_readback(card: JobCard) -> str:
+    items_str = ", ".join(
+        f"{item.label}: {format_rupees(item.amount_paise if item.amount_paise is not None else 0)}"
+        for item in card.items
+    )
+    delivery_str = f"डिलीवरी {card.delivery.spoken if card.delivery else ''}"
+    return f"{items_str}. कुल {format_rupees(card.total_paise)}. {delivery_str}. ठीक है? हाँ कहें, या सुधार बताएं।"
+
+
+@dataclass(frozen=True)
+class Readback:
+    text: str
+    audio_wav: bytes
+    manifest: dict
+    revision: int
+    readback_revision: int
 
 
 class Workflow:
@@ -23,6 +49,10 @@ class Workflow:
         normalize_audio: Callable[[bytes, str], bytes] | None = None,
         bias_words: tuple[str, ...] = ("brake", "clutch", "Honda"),
         use_bias: bool = False,
+        timbre: TimbreClient | None = None,
+        codec: str = "g711",
+        target_snr_db: float | None = None,
+        noise_wav: bytes | None = None,
     ):
         self.store = store
         self.prisma = prisma
@@ -30,6 +60,10 @@ class Workflow:
         self.normalize_audio = normalize_audio if normalize_audio is not None else normalize_upload
         self.bias_words = bias_words
         self.use_bias = use_bias
+        self.timbre = timbre
+        self.codec = codec
+        self.target_snr_db = target_snr_db
+        self.noise_wav = noise_wav
 
     def intake(
         self,
@@ -131,4 +165,66 @@ class Workflow:
             expected_revision=expected_revision,
             card=updated_card,
             logs=(log,),
+        )
+
+    def start_readback(
+        self,
+        session_id: str,
+        expected_revision: int,
+        recorded_at_utc: datetime | None = None,
+    ) -> Readback:
+        session = self.store.get(session_id)
+        if session.card is None or session.card.needs_review:
+            raise Conflict("card needs review")
+
+        text = make_readback(session.card)
+
+        if not self.timbre:
+            raise ValueError("Timbre client required for readback")
+
+        raw_mulaw = self.timbre.synthesize(text)
+        wav = mulaw_to_wav(raw_mulaw)
+
+        if self.noise_wav and self.target_snr_db is not None:
+            degraded_wav, measured_snr = mix_at_snr(wav, self.noise_wav, self.target_snr_db)
+        else:
+            degraded_wav, measured_snr = wav, float("inf")
+
+        final_wav = codec_round_trip(degraded_wav, self.codec)
+
+        manifest = {
+            "codec": self.codec,
+            "sample_rate": 8000,
+            "noise_source": "synthetic" if self.noise_wav else "none",
+            "target_snr_db": self.target_snr_db,
+            "measured_snr_db": measured_snr,
+            "loss_percent": 0,
+            "revision": expected_revision,
+        }
+
+        rec_time = recorded_at_utc or datetime.now(timezone.utc)
+        if rec_time.tzinfo is None:
+            rec_time = rec_time.replace(tzinfo=timezone.utc)
+
+        log = TranscriptLog(
+            role="system",
+            mode="timbre_readback",
+            text=text,
+            recorded_at_utc=rec_time,
+        )
+
+        updated_session = self.store.start_readback(
+            session_id, expected_revision=expected_revision, log=log
+        )
+
+        return Readback(
+            text=text,
+            audio_wav=final_wav,
+            manifest=manifest,
+            revision=updated_session.revision,
+            readback_revision=(
+                updated_session.readback_revision
+                if updated_session.readback_revision is not None
+                else expected_revision
+            ),
         )

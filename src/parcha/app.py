@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+import json
 from pathlib import Path
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request
+import re
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request, Query, Response
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -43,6 +45,7 @@ def default_services() -> AppServices:
         prisma=prisma,
         extractor=extractor,
         normalize_audio=normalize_upload,
+        timbre=timbre,
     )
     return AppServices(settings, store, workflow, timbre)
 
@@ -151,6 +154,69 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             raise HTTPException(503, str(exc))
         except GnaniError as exc:
             raise HTTPException(502, str(exc))
+
+    @app.post("/sessions/{session_id}/readback")
+    async def start_readback(
+        session_id: str,
+        expected_revision: int = Form(...),
+    ):
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+            raise HTTPException(404, "unknown session")
+
+        try:
+            readback = services.workflow.start_readback(session_id, expected_revision)
+            base_dir = Path("var/sessions").resolve()
+            wav_path = (base_dir / session_id / f"{readback.revision}.wav").resolve()
+            if not wav_path.is_relative_to(base_dir):
+                raise HTTPException(400, "invalid path")
+            wav_path.parent.mkdir(parents=True, exist_ok=True)
+            wav_path.write_bytes(readback.audio_wav)
+            payload = {
+                "revision": readback.revision,
+                "readback_revision": readback.readback_revision,
+                "audio_url": f"/sessions/{session_id}/readback.wav?revision={readback.revision}",
+                "text": readback.text,
+                "manifest": readback.manifest,
+            }
+            return Response(
+                content=json.dumps(payload, ensure_ascii=False),
+                media_type="application/json",
+            )
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+        except Conflict as exc:
+            raise HTTPException(409, str(exc))
+        except ValueError as exc:
+            raise HTTPException(503, str(exc))
+        except GnaniError as exc:
+            raise HTTPException(502, str(exc))
+
+    @app.get("/sessions/{session_id}/readback.wav")
+    def get_readback_wav(
+        session_id: str,
+        revision: int = Query(...),
+    ):
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+            raise HTTPException(404, "unknown session")
+
+        try:
+            session = services.store.get(session_id)
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+
+        if session.status != "awaiting_reply" or session.readback_revision != revision:
+            raise HTTPException(409, "readback revision is stale or invalid")
+
+        base_dir = Path("var/sessions").resolve()
+        wav_path = (base_dir / session_id / f"{revision}.wav").resolve()
+        if not wav_path.is_relative_to(base_dir):
+            raise HTTPException(400, "invalid path")
+
+        if not wav_path.is_file():
+            raise HTTPException(404, "audio file not found")
+
+        content = wav_path.read_bytes()
+        return Response(content=content, media_type="audio/wav")
 
     return app
 
