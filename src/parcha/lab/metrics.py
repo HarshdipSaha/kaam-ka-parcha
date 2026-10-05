@@ -158,7 +158,7 @@ def short_reply_drop(expected_reply: str, hypothesis: str) -> bool:
     return hyp_class != classify_reply(expected_reply)
 
 
-def hallucinated_words(hypothesis: str) -> int:
+def hallucinated_words(hypothesis: str | None) -> int:
     """Return count of words in hypothesis (used for silence/noise-only evaluation)."""
     if not hypothesis:
         return 0

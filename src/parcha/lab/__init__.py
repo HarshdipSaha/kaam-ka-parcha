@@ -7,6 +7,7 @@ from .dataset import (
     make_prompts,
     save_manifest,
 )
+from .noise import IMPULSE_PROFILES, inject_impulses
 
 __all__ = [
     "AMOUNTS",
@@ -16,4 +17,6 @@ __all__ = [
     "load_manifest",
     "make_prompts",
     "save_manifest",
+    "IMPULSE_PROFILES",
+    "inject_impulses",
 ]

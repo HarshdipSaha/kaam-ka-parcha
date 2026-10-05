@@ -154,13 +154,22 @@ def test_private_summary_aggregates_metrics_correctly():
             "clip_type": "engine",
             "transcript": "kuch",  # 1 hallucinated word
         },
+        {
+            "clip_id": "engine_03",
+            "clip_type": "engine_only",
+            "transcript": None,
+            "transcription_error": "HTTP 400",
+        },
     ]
 
     summary = private_summary(rows)
+    assert "Impulse profile" in summary
+    assert "Successful Transcriptions**: 2" in summary
+    assert "API-Rejected/Failed Clips**: 1" in summary
 
     # Check Markdown tables and structure
     assert "# Private Lab Evaluation Summary" in summary
-    assert "| Codec | SNR | Loss | N | Mean CER | Total Chars | Amount Match (%) | Latency Mean (ms) | Latency p50 (ms) | Latency p90 (ms) | Est. Credits Spent |" in summary
+    assert "| Codec | SNR | Loss | Impulse profile | N | Mean CER | Total Chars | Amount Match (%) | Latency Mean (ms) | Latency p50 (ms) | Latency p90 (ms) | Est. Credits Spent |" in summary
     assert "g711" in summary
     assert "amr_nb_4750" in summary
 
@@ -181,9 +190,9 @@ def test_private_summary_aggregates_metrics_correctly():
 
     # Non-speech / engine hallucination check
     assert "Non-Speech / Engine Idle Evaluation" in summary
-    assert "**Total Non-Speech Clips Evaluated**: 2" in summary
+    assert "**Total Non-Speech Clips Evaluated**: 3" in summary
     assert "**Total Hallucinated Words Emitted**: 4" in summary
-    assert "**Mean Hallucinated Words per Clip**: 2.00" in summary
+    assert "**Mean Hallucinated Words per Successful Transcription**: 2.00" in summary
     assert "engine_01" in summary
     assert "engine_02" in summary
 
