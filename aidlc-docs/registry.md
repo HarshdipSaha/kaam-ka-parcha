@@ -16,6 +16,7 @@
 | **004** | `enterprise-telephony-compliance` | Enterprise Voice-Sealed Service Agreement & Telephony Robustness Pipeline (Issues #3-#7, Epic #1) | **active** | 2026-10-05 | Pending | [`aidlc-docs/efforts/004-enterprise-telephony-compliance/`](efforts/004-enterprise-telephony-compliance/effort-state.md) |
 | **005** | `lab-max-audio-duration-rejection` | Split Long Lab Audio at the Gnani REST Duration Limit | **complete** | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/005-lab-max-audio-duration-rejection/`](efforts/005-lab-max-audio-duration-rejection/effort-state.md) |
 | **006** | `real-api-real-audio-benchmark` | Budgeted Real-API Benchmark Across Hindi Speech and User-Provided Workshop Audio | **active** | 2026-10-05 | Pending | [`aidlc-docs/efforts/006-real-api-real-audio-benchmark/`](efforts/006-real-api-real-audio-benchmark/effort-state.md) |
+| **007** | `gpu-sprint-multilingual-council` | A100 GPU Sprint Research (R7), Multilingual-Model Literature Review (R8) & LLM Council Verdict | **complete** (docs) | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/007-gpu-sprint-multilingual-council/`](efforts/007-gpu-sprint-multilingual-council/effort-state.md) |
 
 ---
 
