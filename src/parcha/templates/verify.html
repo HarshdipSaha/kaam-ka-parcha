@@ -156,6 +156,37 @@
       </div>
     </section>
 
+    <section class="panel" id="dpdp-compliance-panel">
+      <div class="panel-title">
+        <span>DPDP Act 2023 Statutory Consent &amp; Privacy Audit</span>
+        {% if dpdp_consent and dpdp_consent.granted %}
+        <span class="badge" style="background:rgba(16, 185, 129, 0.15); color:var(--success); border:1px solid rgba(16, 185, 129, 0.4);">✓ Statutory Consent Granted</span>
+        {% else %}
+        <span class="badge" style="background:rgba(239, 68, 68, 0.15); color:var(--danger); border:1px solid rgba(239, 68, 68, 0.4);">Consent Not Logged</span>
+        {% endif %}
+      </div>
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">Consent Status</span>
+          <strong>{{ "Granted & Verified" if (dpdp_consent and dpdp_consent.granted) else "Not Logged" }}</strong>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Recorded At (UTC)</span>
+          <span>{{ dpdp_consent.recorded_at_utc if (dpdp_consent and dpdp_consent.recorded_at_utc) else "N/A" }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Client User-Agent</span>
+          <span style="font-size:0.8rem; word-break:break-all;">{{ dpdp_consent.user_agent if (dpdp_consent and dpdp_consent.user_agent) else "N/A" }}</span>
+        </div>
+      </div>
+      {% if dpdp_consent and dpdp_consent.consent_sha256 %}
+      <div style="margin-top: 1rem;">
+        <span class="meta-label">Consent Verification Cryptographic SHA-256</span>
+        <div class="hash-display" id="dpdp-consent-digest">{{ dpdp_consent.consent_sha256 }}</div>
+      </div>
+      {% endif %}
+    </section>
+
     <section class="panel">
       <div class="panel-title">
         <span>Mechanic Intake Recording</span>

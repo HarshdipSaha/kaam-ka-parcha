@@ -347,6 +347,16 @@
       </div>
       <audio id="readback-player" controls preload="auto" {% if readback_revision is not none %}src="/sessions/{{ session.id }}/readback.wav?revision={{ readback_revision }}"{% endif %}></audio>
       
+      <div id="dpdp-consent-box" style="margin-bottom: 1rem; padding: 0.85rem 1rem; border-radius: 0.5rem; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3);">
+        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 0.85rem; line-height: 1.4; color: var(--text);">
+          <input type="checkbox" id="dpdp-consent-checkbox" style="margin-top: 0.2rem; cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent);" checked />
+          <span>
+            <strong style="color: var(--accent);">DPDP Act 2023 Statutory Privacy Notice:</strong>
+            I understand and give consent that my spoken voice reply will be recorded, processed, and cryptographically hashed as an electronic biometric confirmation record under the <em>Digital Personal Data Protection Act, 2023</em> and <em>Bharatiya Sakshya Adhiniyam, 2023</em>.
+          </span>
+        </label>
+      </div>
+
       <div class="reply-controls">
         <button id="customer-record" disabled>Record Reply (Say 'हाँ' or correct amount)</button>
         <button id="customer-stop" disabled>Stop</button>

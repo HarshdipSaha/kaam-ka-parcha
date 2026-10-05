@@ -19,6 +19,12 @@ def audit_manifest(session: Session) -> dict:
         "session_id": session.id,
         "revision": session.revision,
         "confirmed_at_utc": session.confirmed_at_utc.isoformat() if session.confirmed_at_utc else None,
+        "dpdp_consent": {
+            "granted": session.dpdp_consent_granted,
+            "recorded_at_utc": session.dpdp_consent_at_utc.isoformat() if session.dpdp_consent_at_utc else None,
+            "user_agent": session.dpdp_user_agent,
+            "consent_sha256": session.dpdp_consent_sha256,
+        },
         "logs": [
             {
                 "role": log.role,
@@ -106,24 +112,35 @@ def render_pdf(session: Session) -> bytes:
         c.setFont("Helvetica", 6.5)
         c.drawString(50, 725, f"Confirmation Audio SHA-256: {customer_log.audio_sha256}")
 
+    if session.dpdp_consent_granted and session.dpdp_consent_sha256:
+        c.setFont("Helvetica", 6.5)
+        c.drawString(
+            50,
+            715,
+            f"DPDP Act 2023 Statutory Consent: Granted (SHA-256: {session.dpdp_consent_sha256[:24]}...)",
+        )
+    else:
+        c.setFont("Helvetica-Oblique", 6.5)
+        c.drawString(50, 715, "DPDP Act 2023 Statutory Consent: Not Recorded")
+
     # Simulation notice
     c.setFont("Helvetica-Oblique", 8.5)
     c.drawString(
         50,
-        712,
+        702,
         "Simulated phone line: G.711 + recorded engine ambience at 5 dB. No real call was placed.",
     )
 
     # Separator
     c.setLineWidth(1)
-    c.line(50, 702, 545, 702)
+    c.line(50, 692, 545, 692)
 
     # Items section
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, 682, "Items:")
+    c.drawString(50, 674, "Items:")
 
     c.setFont("Helvetica", 10)
-    y = 662
+    y = 654
     for item in session.card.items:
         label = item.label or "Item"
         amount_paise = item.amount_paise if item.amount_paise is not None else 0
