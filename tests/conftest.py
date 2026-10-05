@@ -152,9 +152,10 @@ class FakeTimbreClient:
 def fake_services() -> AppServices:
     settings = Settings(
         api_key="test-api-key",
-        extractor_base_url="https://api.groq.com/openai/v1",
+        extractor_base_url="http://localhost:8080/v1",
         extractor_api_key="test-extractor-key",
-        extractor_model="llama-3.3-70b-versatile",
+        extractor_model="gnani-evon-v3.3",
+        extractor_provider="evon",
         gnani_base_url="https://api.vachana.ai",
         tts_voice="Nalini",
     )

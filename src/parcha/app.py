@@ -37,6 +37,7 @@ def default_services() -> AppServices:
         settings.extractor_base_url,
         settings.extractor_api_key,
         settings.extractor_model,
+        provider=settings.extractor_provider,
     )
     timbre = TimbreClient(
         settings.api_key,

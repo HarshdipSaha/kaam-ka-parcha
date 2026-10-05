@@ -9,13 +9,55 @@ from .schema import Delivery, Evidence, JobCard, LineItem
 CARD_SYSTEM_PROMPT = """Extract only explicitly spoken workshop facts from the two transcripts. Return JSON with
 items [{id,label,kind,amount_paise}], delivery {date,window,spoken} or null, evidence
 [{field,quote,review_score}]. Use item ids part-1, part-2, labour-1, etc.
-Evidence field must be 'items.{item_id}.label' (e.g. 'items.part-1.label'), 'items.{item_id}.amount_paise' (e.g. 'items.part-1.amount_paise'), or 'delivery'.
-A missing item label or amount is null, not a guess. Delivery window must be 'morning', 'afternoon', or 'evening'.
-Provide separate evidence for every label,
-amount and delivery; each quote must be contiguous in either transcript. Use the
-provided Asia/Kolkata recording date to resolve a weekday. Do not guess a missing
+Always return amount_paise as null.
+Evidence field must be 'items.{item_id}.label' (e.g. 'items.part-1.label') or 'delivery'.
+A missing item label is null, not a guess. Delivery window must be 'morning', 'afternoon', or 'evening'.
+Provide separate evidence for every label and delivery; each quote must be contiguous in either transcript.
+Use the provided Asia/Kolkata recording date to resolve a weekday. Do not guess a missing
 number/date, vehicle registration, customer name, or total. Score each field 0..1
 for human review, not statistical confidence. Return JSON only."""
+
+CARD_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "pattern": r"^[a-z]+-[0-9]+$"},
+                    "label": {"type": ["string", "null"]},
+                    "kind": {"type": "string", "enum": ["part", "labour"]},
+                    "amount_paise": {"type": ["integer", "null"]},
+                },
+                "required": ["id", "label", "kind", "amount_paise"],
+            },
+        },
+        "delivery": {
+            "type": ["object", "null"],
+            "properties": {
+                "date": {"type": "string"},
+                "window": {"type": "string", "enum": ["morning", "afternoon", "evening"]},
+                "spoken": {"type": "string"},
+            },
+            "required": ["date", "window", "spoken"],
+        },
+        "evidence": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "field": {"type": "string"},
+                    "quote": {"type": "string"},
+                    "review_score": {"type": "number"},
+                },
+                "required": ["field", "quote", "review_score"],
+            },
+        },
+    },
+    "required": ["items", "delivery", "evidence"],
+}
 
 CORRECTION_SYSTEM_PROMPT = """You are extracting a single corrected field for a workshop job card.
 Target field: {field}
@@ -312,6 +354,7 @@ class Extractor:
         api_key: str,
         model: str,
         http: httpx.Client | None = None,
+        provider: str = "evon",
     ):
         self.base_url = base_url.rstrip("/")
         self.api_keys = [k.strip() for k in api_key.split(",") if k.strip()]
@@ -319,9 +362,14 @@ class Extractor:
             self.api_keys = [""]
         self.model = model
         self.http = http or httpx.Client(timeout=30.0)
+        self.provider = provider
         self._key_index = 0
 
-    def _post_chat(self, messages: list[dict[str, str]]) -> dict[str, Any]:
+    def _post_chat(
+        self,
+        messages: list[dict[str, str]],
+        schema: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         num_keys = len(self.api_keys)
         last_error: Exception | None = None
 
@@ -331,11 +379,20 @@ class Extractor:
             if current_key:
                 headers["Authorization"] = f"Bearer {current_key}"
 
-            payload = {
+            payload: dict[str, Any] = {
                 "model": self.model,
                 "messages": messages,
                 "temperature": 0.0,
             }
+            if self.provider == "evon":
+                payload["chat_template_kwargs"] = {"enable_thinking": False}
+                if schema is not None:
+                    payload["response_format"] = {
+                        "type": "json_schema",
+                        "json_schema": {"name": "job_card", "schema": schema},
+                    }
+                else:
+                    payload["response_format"] = {"type": "json_object"}
             url = f"{self.base_url}/chat/completions"
 
             try:
@@ -364,6 +421,7 @@ class Extractor:
         raise ExtractionError(f"All API keys rate limited (429): {last_error}")
 
     def _parse_json(self, content: str) -> dict[str, Any]:
+        content = re.sub(r"<think>.*?</think>", "", content, flags=re.S)
         text = content.strip()
         if text.startswith("```"):
             lines = text.splitlines()
@@ -457,7 +515,7 @@ class Extractor:
                 ),
             },
         ]
-        data = self._post_chat(messages)
+        data = self._post_chat(messages, schema=CARD_RESPONSE_SCHEMA)
 
         items_raw = data.get("items", [])
         if not items_raw:

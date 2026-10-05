@@ -30,7 +30,7 @@ class Settings:
     extractor_base_url: str = ""
     extractor_api_key: str = field(default="", repr=False)
     extractor_model: str = ""
-    extractor_provider: str = "external"
+    extractor_provider: str = "evon"
     tts_voice: str = "Nalini"
     gnani_base_url: str = "https://api.vachana.ai"
     reply_transport: str = "rest"
@@ -43,17 +43,13 @@ class Settings:
     def from_mapping(cls, values: Mapping[str, str | None]) -> "Settings":
         base_url = (values.get("EXTRACTOR_BASE_URL") or "").strip()
         model = (values.get("EXTRACTOR_MODEL") or "").strip()
-        key = (values.get("EXTRACTOR_API_KEY") or values.get("GROQ_API_KEY") or "").strip()
-        if not base_url and ("GROQ_API_KEY" in values or key):
-            base_url = "https://api.groq.com/openai/v1"
-            if not model:
-                model = "llama-3.3-70b-versatile"
+        key = (values.get("EXTRACTOR_API_KEY") or "").strip()
         return cls(
             api_key=(values.get("API_KEY") or "").strip(),
             extractor_base_url=base_url,
             extractor_api_key=key,
             extractor_model=model,
-            extractor_provider=(values.get("EXTRACTOR_PROVIDER") or "").strip() or "external",
+            extractor_provider=(values.get("EXTRACTOR_PROVIDER") or "").strip() or "evon",
             tts_voice=(values.get("TTS_VOICE") or "").strip() or "Nalini",
             gnani_base_url=(values.get("GNANI_BASE_URL") or "").strip() or "https://api.vachana.ai",
             reply_transport=(values.get("REPLY_TRANSPORT") or "").strip() or "rest",
