@@ -57,10 +57,12 @@ class Readback:
 
 @dataclass(frozen=True)
 class ReplyResult:
-    outcome: Literal["confirmed", "needs_readback", "ask_field", "retry"]
+    outcome: Literal["confirmed", "needs_readback", "ask_field", "retry", "fallback"]
     transcript: str
     session: Session
     message: str | None = None
+    fallback_payload: dict | None = None
+
 
 
 class Workflow:
@@ -285,7 +287,16 @@ class Workflow:
             wav, _ = mix_at_snr(wav, self.noise_wav, self.target_snr_db)
             wav = codec_round_trip(wav, self.codec)
 
-        transcript = self.prisma.transcribe(wav, mode="transcribe")
+        confidence = 1.0
+        if hasattr(self.prisma, "transcribe_detailed"):
+            transcript, confidence = self.prisma.transcribe_detailed(wav, mode="transcribe")
+        else:
+            transcript = self.prisma.transcribe(wav, mode="transcribe")
+            if hasattr(self.prisma, "confidence"):
+                confidence = float(self.prisma.confidence)
+            elif hasattr(self.prisma, "last_confidence"):
+                confidence = float(self.prisma.last_confidence)
+
         audio_sha256 = hashlib.sha256(wav).hexdigest()
 
         recorded_at_utc = recorded_at_utc or datetime.now(timezone.utc)
@@ -299,6 +310,41 @@ class Workflow:
             recorded_at_utc=recorded_at_utc,
             audio_sha256=audio_sha256,
         )
+
+        # Count prior retry attempts during this readback cycle
+        prior_retries = sum(
+            1 for log in session.logs
+            if log.role == "customer" and log.mode in ("reply", "unclear", "unresolved_correction")
+        )
+
+        # 1. Confidence threshold evaluation (< 0.65 triggers digital fallback)
+        if confidence < 0.65:
+            fallback_log = TranscriptLog(
+                role="customer",
+                mode="low_confidence_fallback",
+                text=transcript,
+                recorded_at_utc=recorded_at_utc,
+                audio_sha256=audio_sha256,
+            )
+            updated_session = self.store.trigger_fallback(
+                session_id,
+                expected_revision=expected_revision,
+                log=fallback_log,
+            )
+            return ReplyResult(
+                outcome="fallback",
+                transcript=transcript,
+                session=updated_session,
+                message="Speech confidence below 0.65. Switched to digital confirmation fallback.",
+                fallback_payload={
+                    "session_id": session_id,
+                    "confidence": confidence,
+                    "actions": [
+                        {"label": "Approve Estimate", "action": "approve"},
+                        {"label": "Request Changes", "action": "request_changes"},
+                    ],
+                },
+            )
 
         classification = classify_reply(transcript)
 
@@ -386,6 +432,28 @@ class Workflow:
             )
 
         # classification in ("reject", "unclear")
+        # Check if 2 retries have already occurred (prior_retries >= 2 -> fallback)
+        if prior_retries >= 2:
+            updated_session = self.store.trigger_fallback(
+                session_id,
+                expected_revision=expected_revision,
+                log=customer_log,
+            )
+            return ReplyResult(
+                outcome="fallback",
+                transcript=transcript,
+                session=updated_session,
+                message="Repeated retries encountered on voice line. Switched to digital confirmation fallback.",
+                fallback_payload={
+                    "session_id": session_id,
+                    "retries": prior_retries + 1,
+                    "actions": [
+                        {"label": "Approve Estimate", "action": "approve"},
+                        {"label": "Request Changes", "action": "request_changes"},
+                    ],
+                },
+            )
+
         updated_session = self.store.record_observation(
             session_id,
             expected_revision=expected_revision,

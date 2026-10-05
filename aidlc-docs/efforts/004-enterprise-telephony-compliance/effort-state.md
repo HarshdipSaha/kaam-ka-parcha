@@ -27,6 +27,14 @@
   - Added unit tests in [`tests/test_readback.py`](../../tests/test_readback.py) and [`tests/test_reply.py`](../../tests/test_reply.py).
   - Verification: 171/171 offline tests passing, `python -m compileall -q src tests scripts` passing with 0 errors.
 
-## Next Phase: Issue #4 Implementation
-- Issue #4: `feat(telephony): Confidence-Gated Multi-Channel Digital Fallback`
+- [x] **Issue #4**: `feat(telephony): Confidence-Gated Multi-Channel Digital Fallback`
+  - Extended `Session` and `SessionStore` with `fallback_ready` status and `trigger_fallback` / `request_changes` transitions.
+  - Implemented confidence evaluation (`< 0.65`) and retry exhaustion (`>= 2 retries`) in `Workflow.reply()` to trigger digital fallback.
+  - Created `POST /sessions/{id}/fallback` endpoint supporting `approve`, `request_changes`, and `trigger` actions.
+  - Rendered interactive fallback panel with one-tap digital confirmation controls in `customer.html` and wired event listeners in `app.js`.
+  - Added unit and integration tests in [`tests/test_fallback.py`](../../tests/test_fallback.py).
+  - Verification: 176/176 offline tests passing, `python -m compileall -q src tests scripts` passing with 0 errors.
+
+## Next Phase: Issue #5 Implementation
+- Issue #5: `feat(audit): Scannable Verification QR Code & Audio Replay Endpoint`
 

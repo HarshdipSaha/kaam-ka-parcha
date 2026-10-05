@@ -326,6 +326,20 @@
       </div>
     </div>
 
+    <div id="fallback-banner" class="panel fallback-panel" style="{% if status != 'fallback_ready' %}display: none;{% endif %}border-color: rgba(245, 158, 11, 0.5); background-color: rgba(245, 158, 11, 0.1);">
+      <div class="panel-title">
+        <span>Digital Estimate Confirmation</span>
+        <span class="badge" style="background-color: rgba(245, 158, 11, 0.2); color: var(--primary); border-color: rgba(245, 158, 11, 0.4);">Voice Degraded Fallback</span>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">
+        Voice line quality was degraded or speech could not be recognized reliably. You can confirm your estimate or request changes using one-tap digital controls:
+      </p>
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button id="fallback-approve" class="btn btn-primary" type="button">Approve Estimate</button>
+        <button id="fallback-reject" class="btn btn-secondary" type="button">Request Changes</button>
+      </div>
+    </div>
+
     <section id="audio-panel" class="panel">
       <div class="panel-title">
         <span>Simulated Estimate Call</span>

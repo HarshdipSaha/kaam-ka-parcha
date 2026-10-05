@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request, Query, Response
@@ -13,7 +14,7 @@ from .workflow import Workflow
 from .audio import AudioError, normalize_upload
 from .extract import ExtractionError, Extractor
 from .gnani import PrismaClient, TimbreClient, GnaniError
-from .schema import review_fields
+from .schema import TranscriptLog, review_fields
 from .artefact import render_pdf, whatsapp_text
 from .vocabulary import AUTOMOTIVE_BIAS_WORDS
 
@@ -279,6 +280,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                 "outcome": result.outcome,
                 "transcript": result.transcript,
                 "message": result.message,
+                "fallback_payload": result.fallback_payload,
                 "id": result.session.id,
                 "revision": result.session.revision,
                 "readback_revision": result.session.readback_revision,
@@ -297,6 +299,64 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             raise HTTPException(503, str(exc))
         except GnaniError as exc:
             raise HTTPException(502, str(exc))
+
+    @app.post("/sessions/{session_id}/fallback")
+    def digital_fallback(
+        session_id: str,
+        action: str = Form("trigger"),
+        expected_revision: int = Form(...),
+    ):
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+            raise HTTPException(404, "unknown session")
+        try:
+            session = services.store.get(session_id)
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+
+        now = datetime.now(timezone.utc)
+        log = TranscriptLog(
+            role="customer",
+            mode=f"digital_fallback_{action}",
+            text=f"Digital fallback: {action}",
+            recorded_at_utc=now,
+        )
+
+        try:
+            if action in ("approve", "confirm"):
+                updated = services.store.confirm(
+                    session_id,
+                    expected_revision=expected_revision,
+                    when=now,
+                    log=log,
+                )
+            elif action in ("request_changes", "change", "reject"):
+                updated = services.store.request_changes(
+                    session_id,
+                    expected_revision=expected_revision,
+                    log=log,
+                )
+            else:
+                updated = services.store.trigger_fallback(
+                    session_id,
+                    expected_revision=expected_revision,
+                    log=log,
+                )
+
+            return {
+                "id": updated.id,
+                "status": updated.status,
+                "revision": updated.revision,
+                "readback_revision": updated.readback_revision,
+                "actions": [
+                    {"label": "Approve Estimate", "action": "approve"},
+                    {"label": "Request Changes", "action": "request_changes"},
+                ],
+                "card": updated.card.model_dump(mode="json") if updated.card else None,
+                "total_paise": updated.card.maybe_total_paise if updated.card else None,
+            }
+        except Conflict as exc:
+            raise HTTPException(409, str(exc))
+
 
     @app.get("/sessions/{session_id}/parcha.pdf")
     @app.get("/sessions/{session_id}/pdf")

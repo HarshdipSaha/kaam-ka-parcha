@@ -482,7 +482,17 @@ function renderCustomerCard(data) {
       confirmedBanner.style.display = "none";
     }
   }
+
+  const fallbackBanner = document.getElementById("fallback-banner");
+  if (fallbackBanner) {
+    if (data.status === "fallback_ready") {
+      fallbackBanner.style.display = "block";
+    } else {
+      fallbackBanner.style.display = "none";
+    }
+  }
 }
+
 
 async function initCustomerPage() {
   const pathParts = window.location.pathname.replace(/\/+$/, "").split("/");
@@ -557,7 +567,57 @@ async function initCustomerPage() {
   if (recordBtn) {
     recordBtn.addEventListener("click", () => handleCustomerRecord(sessionId));
   }
+
+  const fallbackApproveBtn = document.getElementById("fallback-approve");
+  const fallbackRejectBtn = document.getElementById("fallback-reject");
+
+  if (fallbackApproveBtn) {
+    fallbackApproveBtn.addEventListener("click", async () => {
+      if (!currentCustomerSession) return;
+      try {
+        const formData = new FormData();
+        formData.append("action", "approve");
+        formData.append("expected_revision", currentCustomerSession.revision);
+        const res = await fetch(`/sessions/${sessionId}/fallback`, {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) throw new Error("Fallback confirmation failed");
+        const updated = await res.json();
+        currentCustomerSession = updated;
+        renderCustomerCard(currentCustomerSession);
+        if (statusEl) statusEl.textContent = "Estimate Approved via Digital Fallback!";
+        if (messageEl) messageEl.textContent = "Your estimate has been verified and confirmed.";
+      } catch (err) {
+        if (statusEl) statusEl.textContent = "Error: " + err.message;
+      }
+    });
+  }
+
+  if (fallbackRejectBtn) {
+    fallbackRejectBtn.addEventListener("click", async () => {
+      if (!currentCustomerSession) return;
+      try {
+        const formData = new FormData();
+        formData.append("action", "request_changes");
+        formData.append("expected_revision", currentCustomerSession.revision);
+        const res = await fetch(`/sessions/${sessionId}/fallback`, {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) throw new Error("Fallback request failed");
+        const updated = await res.json();
+        currentCustomerSession = updated;
+        renderCustomerCard(currentCustomerSession);
+        if (statusEl) statusEl.textContent = "Changes requested from workshop.";
+        if (messageEl) messageEl.textContent = "The workshop will review your change request.";
+      } catch (err) {
+        if (statusEl) statusEl.textContent = "Error: " + err.message;
+      }
+    });
+  }
 }
+
 
 async function handleCustomerRecord(sessionId) {
   const player = document.getElementById("readback-player");
@@ -665,6 +725,15 @@ async function handleCustomerRecord(sessionId) {
           replyData.message || 'Which item would you like to correct? Click "Record Reply" to clarify.';
       }
       if (recordBtn) recordBtn.disabled = false;
+    } else if (replyData.outcome === "fallback") {
+      const fbBanner = document.getElementById("fallback-banner");
+      if (fbBanner) fbBanner.style.display = "block";
+      if (statusEl) statusEl.textContent = "Voice quality degraded. Digital confirmation available.";
+      if (messageEl) {
+        messageEl.textContent =
+          replyData.message || "Line audio was unclear. Please approve or request changes below.";
+      }
+      if (recordBtn) recordBtn.disabled = true;
     } else if (replyData.outcome === "retry") {
       if (statusEl) statusEl.textContent = "Could not recognize response";
       if (messageEl) {
@@ -673,6 +742,7 @@ async function handleCustomerRecord(sessionId) {
       }
       if (recordBtn) recordBtn.disabled = false;
     }
+
   } catch (err) {
     console.error("Customer reply failed:", err);
     if (statusEl) statusEl.textContent = `Error: ${err.message}`;
