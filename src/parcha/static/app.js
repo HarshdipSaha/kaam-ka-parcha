@@ -363,16 +363,40 @@ async function handleReask(field, buttonEl) {
   }
 }
 
-function handleStartReadback() {
+async function handleStartReadback() {
   const messageEl = document.getElementById("message");
   const customerLink = document.getElementById("customer-link");
+  const readbackBtn = document.getElementById("start-readback");
   if (!currentSession) return;
-  if (messageEl) {
-    messageEl.textContent =
-      "Estimate confirmed ready for customer read-back. Open the customer link to proceed.";
-  }
-  if (customerLink) {
-    customerLink.style.display = "inline-block";
+
+  try {
+    if (readbackBtn) readbackBtn.disabled = true;
+    if (messageEl) messageEl.textContent = "Generating telephony read-back audio...";
+    
+    const formData = new FormData();
+    formData.append("expected_revision", currentSession.revision);
+    const resp = await fetch(`/sessions/${currentSession.id}/readback`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    if (messageEl) {
+      messageEl.textContent =
+        "Estimate confirmed ready for customer read-back. Open the customer link to proceed.";
+    }
+    if (customerLink) {
+      customerLink.href = `/customer/${currentSession.id}`;
+      customerLink.style.display = "inline-block";
+    }
+  } catch (err) {
+    console.error("Readback failed:", err);
+    if (messageEl) messageEl.textContent = `Error starting read-back: ${err.message}`;
+  } finally {
+    if (readbackBtn) readbackBtn.disabled = false;
   }
 }
 

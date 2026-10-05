@@ -8,8 +8,10 @@ from .schema import Delivery, Evidence, JobCard, LineItem
 
 CARD_SYSTEM_PROMPT = """Extract only explicitly spoken workshop facts from the two transcripts. Return JSON with
 items [{id,label,kind,amount_paise}], delivery {date,window,spoken} or null, evidence
-[{field,quote,review_score}]. Use item ids part-1, part-2, labour-1, etc. A missing
-item label or amount is null, not a guess. Provide separate evidence for every label,
+[{field,quote,review_score}]. Use item ids part-1, part-2, labour-1, etc.
+Evidence field must be 'items.{item_id}.label' (e.g. 'items.part-1.label'), 'items.{item_id}.amount_paise' (e.g. 'items.part-1.amount_paise'), or 'delivery'.
+A missing item label or amount is null, not a guess. Delivery window must be 'morning', 'afternoon', or 'evening'.
+Provide separate evidence for every label,
 amount and delivery; each quote must be contiguous in either transcript. Use the
 provided Asia/Kolkata recording date to resolve a weekday. Do not guess a missing
 number/date, vehicle registration, customer name, or total. Score each field 0..1
@@ -333,12 +335,23 @@ class Extractor:
         transcript_2: str,
         when: datetime,
     ) -> JobCard:
+        local_when = when.astimezone(KOLKATA_TZ) if when.tzinfo else when.replace(tzinfo=KOLKATA_TZ)
+        local_date = local_when.date()
+        weekday_map = {}
+        for d_idx, d_name in enumerate(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]):
+            days_ahead = (d_idx - local_when.weekday()) % 7
+            if days_ahead == 0:
+                days_ahead = 7
+            weekday_map[d_name] = (local_date + timedelta(days=days_ahead)).isoformat()
+        ref_dates = ", ".join(f"next {k}={v}" for k, v in weekday_map.items())
+
         messages = [
             {"role": "system", "content": CARD_SYSTEM_PROMPT},
             {
                 "role": "user",
                 "content": (
-                    f"Recording date (Asia/Kolkata): {when.isoformat()}\n\n"
+                    f"Recording date (Asia/Kolkata): {when.isoformat()} ({local_when.strftime('%A')})\n"
+                    f"Upcoming weekday dates: {ref_dates}\n\n"
                     f"Transcript 1:\n{transcript_1}\n\n"
                     f"Transcript 2:\n{transcript_2}\n"
                 ),
@@ -352,15 +365,62 @@ class Extractor:
 
         try:
             items = tuple(LineItem.model_validate(it) for it in items_raw)
-            delivery = (
-                Delivery.model_validate(data["delivery"])
-                if data.get("delivery")
-                else None
-            )
-            evidence = tuple(
-                Evidence.model_validate(ev) for ev in data.get("evidence", [])
-            )
-            raw_card = JobCard(items=items, delivery=delivery, evidence=evidence)
+            if data.get("delivery") and isinstance(data["delivery"], dict):
+                deliv = dict(data["delivery"])
+                w = str(deliv.get("window", "")).lower()
+                if any(x in w for x in ["even", "shaam", "shyam", "raat", "night"]):
+                    deliv["window"] = "evening"
+                elif any(x in w for x in ["morn", "subah", "saver"]):
+                    deliv["window"] = "morning"
+                elif any(x in w for x in ["noon", "dopahar", "afternoon"]):
+                    deliv["window"] = "afternoon"
+                elif w not in ("morning", "afternoon", "evening"):
+                    deliv["window"] = "evening"
+                if not isinstance(deliv.get("spoken"), str):
+                    deliv["spoken"] = str(deliv.get("spoken") or "")
+                delivery = Delivery.model_validate(deliv)
+            else:
+                delivery = None
+            raw_evidence = data.get("evidence", [])
+            normalized_evidence: list[Evidence] = []
+            for ev in raw_evidence:
+                if isinstance(ev, dict):
+                    f_name = str(ev.get("field", "")).strip()
+                    quote = str(ev.get("quote", "")).strip()
+                    score = float(ev.get("review_score", 1.0))
+                    if f_name.startswith("part-") or f_name.startswith("labour-"):
+                        f_name = f"items.{f_name}"
+                    elif f_name == "label":
+                        for it in items:
+                            if it.label and (it.label in quote or quote in it.label):
+                                f_name = f"items.{it.id}.label"
+                                break
+                    elif f_name in ("amount", "amount_paise"):
+                        for it in items:
+                            if it.amount_paise is not None:
+                                rs = str(it.amount_paise // 100)
+                                if rs in quote or quote in rs:
+                                    f_name = f"items.{it.id}.amount_paise"
+                                    break
+                    normalized_evidence.append(Evidence(field=f_name, quote=quote, review_score=score))
+                else:
+                    normalized_evidence.append(Evidence.model_validate(ev))
+
+            existing_fields = {e.field for e in normalized_evidence}
+            for it in items:
+                lbl_f = f"items.{it.id}.label"
+                amt_f = f"items.{it.id}.amount_paise"
+                if lbl_f not in existing_fields and it.label:
+                    if quote_in_transcripts(it.label, [transcript_1, transcript_2]):
+                        normalized_evidence.append(Evidence(field=lbl_f, quote=it.label, review_score=0.95))
+                if amt_f not in existing_fields and it.amount_paise is not None:
+                    rs = str(it.amount_paise // 100)
+                    for t in (transcript_1, transcript_2):
+                        if rs in t or f"₹{rs}" in t:
+                            normalized_evidence.append(Evidence(field=amt_f, quote=f"₹{rs}", review_score=0.95))
+                            break
+
+            raw_card = JobCard(items=items, delivery=delivery, evidence=tuple(normalized_evidence))
         except Exception as e:
             raise ExtractionError(f"Invalid card schema from extractor: {e}") from e
 

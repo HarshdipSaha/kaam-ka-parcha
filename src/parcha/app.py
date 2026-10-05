@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import re
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request, Query, Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -74,6 +74,10 @@ def create_app(services: AppServices | None = None) -> FastAPI:
 
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
     templates = Jinja2Templates(directory=templates_dir)
+
+    @app.get("/")
+    def index():
+        return RedirectResponse("/workshop")
 
     @app.get("/health")
     def health():

@@ -1,0 +1,177 @@
+{
+  "timestamp": "2026-10-05 06:43:29",
+  "elapsed_seconds": 23.7,
+  "target_base_url": "http://127.0.0.1:8000",
+  "surface_probe": {
+    "visited_routes": [
+      "http://127.0.0.1:8000/",
+      "http://127.0.0.1:8000/workshop",
+      "http://127.0.0.1:8000/health"
+    ],
+    "api_traffic": [
+      "GET http://127.0.0.1:8000/",
+      "GET http://127.0.0.1:8000/health",
+      "GET http://127.0.0.1:8000/workshop"
+    ],
+    "discovered_links": [],
+    "discovered_buttons": [
+      {
+        "page": "http://127.0.0.1:8000/",
+        "button": {
+          "id": "record",
+          "text": "Record estimate",
+          "disabled": false
+        }
+      },
+      {
+        "page": "http://127.0.0.1:8000/",
+        "button": {
+          "id": "stop",
+          "text": "Stop",
+          "disabled": true
+        }
+      },
+      {
+        "page": "http://127.0.0.1:8000/",
+        "button": {
+          "id": "start-readback",
+          "text": "Read estimate to customer",
+          "disabled": true
+        }
+      },
+      {
+        "page": "http://127.0.0.1:8000/workshop",
+        "button": {
+          "id": "record",
+          "text": "Record estimate",
+          "disabled": false
+        }
+      },
+      {
+        "page": "http://127.0.0.1:8000/workshop",
+        "button": {
+          "id": "stop",
+          "text": "Stop",
+          "disabled": true
+        }
+      },
+      {
+        "page": "http://127.0.0.1:8000/workshop",
+        "button": {
+          "id": "start-readback",
+          "text": "Read estimate to customer",
+          "disabled": true
+        }
+      }
+    ],
+    "console_logs": [],
+    "page_errors": []
+  },
+  "responsive_audits": {
+    "workshop": [
+      {
+        "viewport": "Desktop_1080p",
+        "dimensions": "1920x1080",
+        "status": "PASS",
+        "overflow_count": 0,
+        "overflows": [],
+        "screenshot": "docs\\webattack_artifacts\\workshop_Desktop_1080p.png"
+      },
+      {
+        "viewport": "Desktop_1440w",
+        "dimensions": "1440x900",
+        "status": "PASS",
+        "overflow_count": 0,
+        "overflows": [],
+        "screenshot": "docs\\webattack_artifacts\\workshop_Desktop_1440w.png"
+      },
+      {
+        "viewport": "Tablet_768w",
+        "dimensions": "768x1024",
+        "status": "PASS",
+        "overflow_count": 0,
+        "overflows": [],
+        "screenshot": "docs\\webattack_artifacts\\workshop_Tablet_768w.png"
+      },
+      {
+        "viewport": "Mobile_iPhone14",
+        "dimensions": "390x844",
+        "status": "PASS",
+        "overflow_count": 0,
+        "overflows": [],
+        "screenshot": "docs\\webattack_artifacts\\workshop_Mobile_iPhone14.png"
+      }
+    ],
+    "customer": [
+      {
+        "viewport": "Desktop_1080p",
+        "dimensions": "1920x1080",
+        "status": "PASS",
+        "overflow_count": 0,
+        "overflows": [],
+        "screenshot": "docs\\webattack_artifacts\\customer_Desktop_1080p.png"
+      },
+      {
+        "viewport": "Desktop_1440w",
+        "dimensions": "1440x900",
+        "status": "PASS",
+        "overflow_count": 0,
+        "overflows": [],
+        "screenshot": "docs\\webattack_artifacts\\customer_Desktop_1440w.png"
+      },
+      {
+        "viewport": "Tablet_768w",
+        "dimensions": "768x1024",
+        "status": "PASS",
+        "overflow_count": 0,
+        "overflows": [],
+        "screenshot": "docs\\webattack_artifacts\\customer_Tablet_768w.png"
+      },
+      {
+        "viewport": "Mobile_iPhone14",
+        "dimensions": "390x844",
+        "status": "PASS",
+        "overflow_count": 0,
+        "overflows": [],
+        "screenshot": "docs\\webattack_artifacts\\customer_Mobile_iPhone14.png"
+      }
+    ]
+  },
+  "e2e_interactive": {
+    "session_id": "EHdlLOEc3bM0lretHf667L43",
+    "intake_status": 200,
+    "readback_status": 200,
+    "reply_status": 200,
+    "pdf_download_status": 200,
+    "pdf_bytes": 3503,
+    "whatsapp_download_status": 200,
+    "whatsapp_preview": "*Kaam ka Parcha — confirmed*\nSession: EHdlLOEc3bM0lretHf667L43 (rev 1)\nConfirmed: 2026-10-05 01:13:24 UTC\n\n*Items:*\n- फ्रंट ब्रेक पैड (part): ₹1\n- फ्रंट ब्रेक पैड (part): ₹4.50\n- लेबर (labour): ₹2\n\n*T"
+  },
+  "negative_security_tests": [
+    {
+      "test": "Unknown session GET returns 404",
+      "status": "PASS",
+      "code": 404
+    },
+    {
+      "test": "Unconfirmed PDF download returns 409 Conflict",
+      "status": "PASS",
+      "code": 409
+    },
+    {
+      "test": "Path traversal in session_id rejected",
+      "status": "PASS",
+      "code": 404
+    },
+    {
+      "test": "Empty audio intake returns 422",
+      "status": "PASS",
+      "code": 422
+    },
+    {
+      "test": "Stale revision reply returns 409",
+      "status": "PASS",
+      "code": 409
+    }
+  ]
+}

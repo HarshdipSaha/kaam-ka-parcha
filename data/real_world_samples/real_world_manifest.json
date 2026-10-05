@@ -1,0 +1,120 @@
+{
+  "description": "Real-world acoustic samples and authentic workshop repair case studies for Kaam Ka Parcha",
+  "collected_at": "2026-10-05",
+  "audio_samples": [
+    {
+      "title": "File:5 cylinder engine sound.ogg",
+      "category": "engine_ambient",
+      "description": "Real car engine rumble & idling sound from Volvo 850 T5",
+      "raw_file": "data\\real_world_samples\\car_engine_idle.ogg",
+      "wav_file": "data\\real_world_samples\\car_engine_idle_16k.wav",
+      "source_url": "https://commons.wikimedia.org/wiki/File:5 cylinder engine sound.ogg"
+    },
+    {
+      "title": "File:Ferrari 250 GTO, Engine Sound.ogg",
+      "category": "engine_rev",
+      "description": "Real vehicle engine revving & acceleration sound",
+      "raw_file": "data\\real_world_samples\\engine_rev.ogg",
+      "wav_file": "data\\real_world_samples\\engine_rev_16k.wav",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ferrari 250 GTO, Engine Sound.ogg"
+    },
+    {
+      "title": "File:Hi-Hindi.ogg",
+      "category": "speech_hindi",
+      "description": "Native Hindi speaker pronouncing Hindi",
+      "raw_file": "data\\real_world_samples\\hi_hindi.ogg",
+      "wav_file": "data\\real_world_samples\\hi_hindi_16k.wav",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Hi-Hindi.ogg"
+    },
+    {
+      "title": "File:Hi-Bharat.ogg",
+      "category": "speech_hindi",
+      "description": "Native Hindi speaker pronouncing Bharat",
+      "raw_file": "data\\real_world_samples\\hi_bharat.ogg",
+      "wav_file": "data\\real_world_samples\\hi_bharat_16k.wav",
+      "source_url": "https://upload.wikimedia.org/wikipedia/commons/7/79/Hi-Bharat.ogg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+    },
+    {
+      "title": "File:LL-Q1568 (hin)-AryamanA-अंक.wav",
+      "category": "speech_numeric",
+      "description": "Native Hindi speaker pronouncing Ank (Number/Digit)",
+      "raw_file": "data\\real_world_samples\\hi_ank.wav",
+      "wav_file": "data\\real_world_samples\\hi_ank_16k.wav",
+      "source_url": "https://upload.wikimedia.org/wikipedia/commons/d/d7/LL-Q1568_%28hin%29-AryamanA-%E0%A4%85%E0%A4%82%E0%A4%95.wav?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original"
+    }
+  ],
+  "case_studies": [
+    {
+      "case_id": "CASE-RW-001",
+      "vehicle_type": "Two-Wheeler (Honda Activa 6G)",
+      "registration": "DL 4S CF 4921",
+      "customer_phone": "9810123456",
+      "spoken_hinglish": "Bhaiya iska rear brake shoe change kar dena, aur mobil oil daal do. Brake shoe teen sau rupaye ka, oil chaar sau ka, labour do sau rupaye. Kal subah 11 baje gaadi mil jayegi.",
+      "expected_items": [
+        {
+          "description": "Rear Brake Shoe",
+          "amount_paise": 30000
+        },
+        {
+          "description": "Mobil Oil",
+          "amount_paise": 40000
+        },
+        {
+          "description": "Labour Charge",
+          "amount_paise": 20000
+        }
+      ],
+      "expected_total_paise": 90000,
+      "dispute_scenario": "Customer at pickup claims mechanic promised ₹750 total bill including labour.",
+      "resolution_path": "Dual-pass extraction seals ₹900 job card with verbatim transcript; customer telephony confirms before mechanic begins work."
+    },
+    {
+      "case_id": "CASE-RW-002",
+      "vehicle_type": "Four-Wheeler (Maruti Suzuki Swift)",
+      "registration": "HR 26 DQ 8812",
+      "customer_phone": "9871098765",
+      "spoken_hinglish": "Front disc brake pad badal diya, part baarah sau rupaye ka hai, disc lathe turning ka chaar sau, labour teen sau. Somvaar shaam 6 baje tak ready.",
+      "expected_items": [
+        {
+          "description": "Front Disc Brake Pad",
+          "amount_paise": 120000
+        },
+        {
+          "description": "Disc Lathe Turning",
+          "amount_paise": 40000
+        },
+        {
+          "description": "Labour Charge",
+          "amount_paise": 30000
+        }
+      ],
+      "expected_total_paise": 190000,
+      "dispute_scenario": "Customer disputes ₹1900 total: 'Aapne disc turning free bola tha!'",
+      "resolution_path": "Timbre readback specifies lathe turning ₹400 explicitly. Customer can request voice correction before confirmation."
+    },
+    {
+      "case_id": "CASE-RW-003",
+      "vehicle_type": "Auto Rickshaw (Bajaj Compact 4S)",
+      "registration": "UP 16 AT 5543",
+      "customer_phone": "9958043210",
+      "spoken_hinglish": "Clutch wire tut gaya tha, naya clutch wire daala dedh sau ka, spark plug do sau ka, aur tuning labour ek sau pachaas. Aaj raat 8 baje tak le jaana.",
+      "expected_items": [
+        {
+          "description": "Clutch Wire",
+          "amount_paise": 15000
+        },
+        {
+          "description": "Spark Plug",
+          "amount_paise": 20000
+        },
+        {
+          "description": "Tuning Labour",
+          "amount_paise": 15000
+        }
+      ],
+      "expected_total_paise": 50000,
+      "dispute_scenario": "Driver contests total: thought spark plug was ₹150 instead of ₹200.",
+      "resolution_path": "Targeted delta update adjusts spark plug from ₹200 to ₹150; new total ₹450 automatically recalculated."
+    }
+  ]
+}
