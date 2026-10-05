@@ -69,8 +69,8 @@ def _is_engine_row(r: dict[str, Any]) -> bool:
     kind = str(r.get("kind", "")).lower()
     clip_id = str(r.get("clip_id", "")).lower()
     return (
-        clip_type in ("engine", "silence", "non_speech", "non-speech")
-        or kind in ("engine", "silence", "non_speech", "non-speech")
+        clip_type in ("engine", "engine_only", "silence", "non_speech", "non-speech")
+        or kind in ("engine", "engine_only", "silence", "non_speech", "non-speech")
         or clip_id.startswith("engine")
         or bool(r.get("is_engine"))
         or bool(r.get("is_non_speech"))
@@ -144,14 +144,15 @@ def private_summary(rows: list[dict[str, Any]]) -> str:
         else:
             clean_rows.append(r)
 
-    # Group clean rows by (codec, snr, loss)
-    groups: dict[tuple[str, Any, float], list[dict[str, Any]]] = {}
+    # Group clean rows by degradation condition, including the transient profile.
+    groups: dict[tuple[str, Any, float, str], list[dict[str, Any]]] = {}
     for r in clean_rows:
         codec = r.get("codec")
         codec_str = str(codec) if codec is not None else "default"
         snr = r.get("snr")
         loss = float(r.get("loss", 0.0))
-        key = (codec_str, snr, loss)
+        impulse_profile = str(r.get("impulse_profile") or "none")
+        key = (codec_str, snr, loss, impulse_profile)
         if key not in groups:
             groups[key] = []
         groups[key].append(r)
@@ -171,8 +172,8 @@ def private_summary(rows: list[dict[str, Any]]) -> str:
 
     if groups:
         lines.extend([
-            "| Codec | SNR | Loss | N | Mean CER | Total Chars | Amount Match (%) | Latency Mean (ms) | Latency p50 (ms) | Latency p90 (ms) | Est. Credits Spent |",
-            "|---|---|---|---|---|---|---|---|---|---|---|",
+            "| Codec | SNR | Loss | Impulse profile | N | Mean CER | Total Chars | Amount Match (%) | Latency Mean (ms) | Latency p50 (ms) | Latency p90 (ms) | Est. Credits Spent |",
+            "|---|---|---|---|---|---|---|---|---|---|---|---|",
         ])
 
         total_clips = 0
@@ -182,10 +183,10 @@ def private_summary(rows: list[dict[str, Any]]) -> str:
         total_amt_evaluated = 0
 
         # Sort groups deterministically: codec, snr (clean first, then descending), loss
-        def sort_key(k: tuple[str, Any, float]) -> tuple[str, float, float]:
-            c, s, l = k
+        def sort_key(k: tuple[str, Any, float, str]) -> tuple[str, float, float, str]:
+            c, s, l, p = k
             snr_val = -1000.0 if s is None or s == "clean" else float(s)
-            return (c, -snr_val, l)
+            return (c, -snr_val, l, p)
 
         for key in sorted(groups.keys(), key=sort_key):
             group_items = groups[key]
@@ -233,7 +234,7 @@ def private_summary(rows: list[dict[str, Any]]) -> str:
             loss_disp = f"{key[2]:.1f}%" if isinstance(key[2], float) else f"{key[2]}%"
 
             lines.append(
-                f"| {codec_disp} | {snr_disp} | {loss_disp} | {n} | {mean_cer:.4f} | {chars} | {amt_str} | {mean_lat:.1f} | {p50_lat:.1f} | {p90_lat:.1f} | {spent:.2f} |"
+                f"| {codec_disp} | {snr_disp} | {loss_disp} | {key[3]} | {n} | {mean_cer:.4f} | {chars} | {amt_str} | {mean_lat:.1f} | {p50_lat:.1f} | {p90_lat:.1f} | {spent:.2f} |"
             )
 
         lines.extend([
@@ -250,21 +251,25 @@ def private_summary(rows: list[dict[str, Any]]) -> str:
     # Non-speech / engine hallucination section
     if engine_rows:
         total_engine = len(engine_rows)
-        words = [hallucinated_words(r.get("transcript", "")) for r in engine_rows]
+        successful_engine_rows = [row for row in engine_rows if row.get("transcript") is not None]
+        words = [hallucinated_words(r.get("transcript")) for r in successful_engine_rows]
         total_words = sum(words)
-        rate = total_words / total_engine if total_engine > 0 else 0.0
+        rate = total_words / len(successful_engine_rows) if successful_engine_rows else 0.0
 
         lines.extend([
             "## Non-Speech / Engine Idle Evaluation",
             "",
             f"- **Total Non-Speech Clips Evaluated**: {total_engine}",
+            f"- **Successful Transcriptions**: {len(successful_engine_rows)}",
+            f"- **API-Rejected/Failed Clips**: {total_engine - len(successful_engine_rows)}",
             f"- **Total Hallucinated Words Emitted**: {total_words}",
-            f"- **Mean Hallucinated Words per Clip**: {rate:.2f}",
+            f"- **Mean Hallucinated Words per Successful Transcription**: {rate:.2f}",
             "",
             "| Clip ID | Transcript | Hallucinated Word Count |",
             "|---|---|---|",
         ])
-        for r, w in zip(engine_rows, words):
+        for r in successful_engine_rows:
+            w = hallucinated_words(r.get("transcript"))
             cid = r.get("clip_id") or r.get("id") or "unnamed"
             tx = str(r.get("transcript", "")).replace("|", "\\|")
             lines.append(f"| {cid} | {tx} | {w} |")

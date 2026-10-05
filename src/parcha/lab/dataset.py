@@ -17,7 +17,7 @@ class Clip(BaseModel):
     audio: str
     kind: Literal["speech", "reply", "engine_only"]
     seed: int
-    source: Literal["timbre", "consented_script", "synthetic_noise"] = "timbre"
+    source: Literal["timbre", "consented_script", "synthetic_noise", "recorded_ambient"] = "timbre"
 
 
 PART_WORDS = (

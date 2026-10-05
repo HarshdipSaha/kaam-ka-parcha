@@ -129,6 +129,7 @@ def test_runner_dry_run_forecast(tmp_path, capsys):
     assert rc == 0
     captured = capsys.readouterr()
     assert "Line Noise Lab STT Pre-Flight Forecast" in captured.out
+    assert "Impulse profiles (4): none, impact_wrench, metal_spanner, compressor_exhaust" in captured.out
     assert "PASS (Within budget cap)" in captured.out
 
 
