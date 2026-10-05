@@ -1,12 +1,12 @@
 {
-  "timestamp": "2026-10-05 06:43:29",
-  "elapsed_seconds": 23.7,
+  "timestamp": "2026-10-05 10:40:41",
+  "elapsed_seconds": 27.67,
   "target_base_url": "http://127.0.0.1:8000",
   "surface_probe": {
     "visited_routes": [
       "http://127.0.0.1:8000/",
-      "http://127.0.0.1:8000/workshop",
-      "http://127.0.0.1:8000/health"
+      "http://127.0.0.1:8000/health",
+      "http://127.0.0.1:8000/workshop"
     ],
     "api_traffic": [
       "GET http://127.0.0.1:8000/",
@@ -138,14 +138,14 @@
     ]
   },
   "e2e_interactive": {
-    "session_id": "EHdlLOEc3bM0lretHf667L43",
+    "session_id": "eIB4c7XaZT252vS1sGcHhaxN",
     "intake_status": 200,
     "readback_status": 200,
     "reply_status": 200,
     "pdf_download_status": 200,
-    "pdf_bytes": 3503,
+    "pdf_bytes": 3950,
     "whatsapp_download_status": 200,
-    "whatsapp_preview": "*Kaam ka Parcha — confirmed*\nSession: EHdlLOEc3bM0lretHf667L43 (rev 1)\nConfirmed: 2026-10-05 01:13:24 UTC\n\n*Items:*\n- फ्रंट ब्रेक पैड (part): ₹1\n- फ्रंट ब्रेक पैड (part): ₹4.50\n- लेबर (labour): ₹2\n\n*T"
+    "whatsapp_preview": "*Kaam ka Parcha — confirmed*\nSession: eIB4c7XaZT252vS1sGcHhaxN (rev 1)\nConfirmed: 2026-10-05 05:10:36 UTC\n\n*Items:*\n- फ्रंट ब्रेक पैड (part): ₹450\n- लेबर (labour): ₹200\n\n*Total:* ₹650\n*Delivery:* 2026"
   },
   "negative_security_tests": [
     {

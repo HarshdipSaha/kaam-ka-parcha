@@ -13,6 +13,16 @@ class LineItem(StrictModel):
     kind: Literal["part", "labour"]
     amount_paise: int | None = Field(default=None, ge=0, le=10_000_000)
 
+    @field_validator("amount_paise", mode="before")
+    @classmethod
+    def amount_must_be_an_integer(cls, value: object) -> object:
+        """Reject JSON coercions so an extractor typo cannot change a total."""
+        if value is None:
+            return value
+        if type(value) is not int:
+            raise ValueError("amount_paise must be an integer")
+        return value
+
     @field_validator("label")
     @classmethod
     def nonblank_label(cls, value: str | None) -> str | None:
@@ -87,3 +97,4 @@ class TranscriptLog(StrictModel):
     mode: str
     text: str
     recorded_at_utc: datetime
+    audio_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")

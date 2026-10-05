@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import hashlib
 import inspect
 import re
 from typing import Literal
@@ -13,6 +14,7 @@ from .extract import Extractor
 from .gnani import PrismaClient, TimbreClient
 from .schema import JobCard, LineItem, TranscriptLog
 from .session import Conflict, Session, SessionStore
+from .vocabulary import AUTOMOTIVE_BIAS_WORDS
 
 REASK_FIELD_PATTERN = re.compile(r"^items\.[a-z]+-[0-9]+\.(label|amount_paise)$")
 
@@ -99,12 +101,13 @@ class Workflow:
         prisma: PrismaClient,
         extractor: Extractor,
         normalize_audio: Callable[[bytes, str], bytes] | None = None,
-        bias_words: tuple[str, ...] = ("brake", "clutch", "Honda"),
-        use_bias: bool = False,
+        bias_words: tuple[str, ...] = AUTOMOTIVE_BIAS_WORDS,
+        use_bias: bool = True,
         timbre: TimbreClient | None = None,
         codec: str = "g711",
         target_snr_db: float | None = None,
         noise_wav: bytes | None = None,
+        noise_source: str = "synthetic",
     ):
         self.store = store
         self.prisma = prisma
@@ -116,6 +119,7 @@ class Workflow:
         self.codec = codec
         self.target_snr_db = target_snr_db
         self.noise_wav = noise_wav
+        self.noise_source = noise_source if noise_wav else "none"
 
     def intake(
         self,
@@ -131,6 +135,7 @@ class Workflow:
             recorded_at_utc = recorded_at_utc.replace(tzinfo=timezone.utc)
 
         wav = self.normalize_audio(blob, mime)
+        audio_sha256 = hashlib.sha256(wav).hexdigest()
         normalized = self.prisma.transcribe(wav, mode="transcribe")
         verbatim = self.prisma.transcribe(
             wav,
@@ -144,12 +149,14 @@ class Workflow:
                 mode="transcribe",
                 text=normalized,
                 recorded_at_utc=recorded_at_utc,
+                audio_sha256=audio_sha256,
             ),
             TranscriptLog(
                 role="mechanic",
                 mode="verbatim",
                 text=verbatim,
                 recorded_at_utc=recorded_at_utc,
+                audio_sha256=audio_sha256,
             ),
         )
         return self.store.set_card(
@@ -186,6 +193,7 @@ class Workflow:
             recorded_at_utc = recorded_at_utc.replace(tzinfo=timezone.utc)
 
         wav = self.normalize_audio(blob, mime)
+        audio_sha256 = hashlib.sha256(wav).hexdigest()
         transcript = self.prisma.transcribe(wav, mode="transcribe")
 
         sig = inspect.signature(self.extractor.extract_field)
@@ -211,6 +219,7 @@ class Workflow:
             mode=f"reask:{field}",
             text=transcript,
             recorded_at_utc=recorded_at_utc,
+            audio_sha256=audio_sha256,
         )
         return self.store.set_card(
             session_id,
@@ -247,7 +256,7 @@ class Workflow:
         manifest = {
             "codec": self.codec,
             "sample_rate": 8000,
-            "noise_source": "synthetic" if self.noise_wav else "none",
+            "noise_source": self.noise_source,
             "target_snr_db": self.target_snr_db,
             "measured_snr_db": measured_snr,
             "loss_percent": 0,
@@ -263,6 +272,7 @@ class Workflow:
             mode="timbre_readback",
             text=text,
             recorded_at_utc=rec_time,
+            audio_sha256=hashlib.sha256(final_wav).hexdigest(),
         )
 
         updated_session = self.store.start_readback(
@@ -307,6 +317,7 @@ class Workflow:
             wav = codec_round_trip(wav, self.codec)
 
         transcript = self.prisma.transcribe(wav, mode="transcribe")
+        audio_sha256 = hashlib.sha256(wav).hexdigest()
 
         recorded_at_utc = recorded_at_utc or datetime.now(timezone.utc)
         if recorded_at_utc.tzinfo is None:
@@ -317,6 +328,7 @@ class Workflow:
             mode="reply",
             text=transcript,
             recorded_at_utc=recorded_at_utc,
+            audio_sha256=audio_sha256,
         )
 
         classification = classify_reply(transcript)
@@ -358,6 +370,7 @@ class Workflow:
                         mode="unresolved_correction",
                         text=transcript,
                         recorded_at_utc=recorded_at_utc,
+                        audio_sha256=audio_sha256,
                     )
                     updated = self.store.record_observation(
                         session_id,

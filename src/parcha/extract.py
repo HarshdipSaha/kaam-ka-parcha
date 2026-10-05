@@ -205,6 +205,106 @@ def mentions_item(transcript: str, item: LineItem) -> bool:
     return False
 
 
+def _item_evidence(evidence: list[Evidence], item_id: str) -> list[Evidence]:
+    prefix = f"items.{item_id}."
+    return [entry for entry in evidence if entry.field.startswith(prefix)]
+
+
+def _canonical_label(label: str | None) -> str:
+    if not label:
+        return ""
+    normalized = unicodedata.normalize("NFKC", label).casefold()
+    return " ".join(re.findall(r"[\w]+", normalized, re.UNICODE))
+
+
+def _labels_describe_same_item(first: str | None, second: str | None) -> bool:
+    """Recognise safe label variants such as ``front brake pad`` / ``brake-pad``.
+
+    Deduplication only applies within one item kind. For non-identical labels we
+    require every token of the shorter label to occur in the longer label and at
+    least two tokens to overlap. This avoids collapsing broad single-word labels
+    such as ``brake`` into a distinct brake component.
+    """
+    first_tokens = set(_canonical_label(first).split())
+    second_tokens = set(_canonical_label(second).split())
+    if not first_tokens or not second_tokens:
+        return False
+    if first_tokens == second_tokens:
+        return True
+    shorter, longer = sorted((first_tokens, second_tokens), key=len)
+    return len(shorter) >= 2 and shorter.issubset(longer)
+
+
+def _deduplicate_items(
+    items: tuple[LineItem, ...], evidence: list[Evidence], verbatim_transcript: str
+) -> tuple[tuple[LineItem, ...], tuple[Evidence, ...]]:
+    """Keep one strongly-supported item when dual STT passes name it twice.
+
+    A normalised pass can turn a spoken amount into a timestamp or another number.
+    If it produces a duplicate label, evidence quoted from the verbatim pass is the
+    safer source. Tied duplicate candidates become an incomplete field that must be
+    re-asked instead of being silently added to the total.
+    """
+    groups: list[list[LineItem]] = []
+    for item in items:
+        matching_group = next(
+            (
+                group
+                for group in groups
+                if group[0].kind == item.kind
+                and _labels_describe_same_item(group[0].label, item.label)
+            ),
+            None,
+        )
+        if matching_group is None:
+            groups.append([item])
+        else:
+            matching_group.append(item)
+
+    selected: list[LineItem] = []
+    ambiguous_ids: set[str] = set()
+    for group in groups:
+        if len(group) == 1:
+            selected.append(group[0])
+            continue
+
+        def support(item: LineItem) -> tuple[int, float]:
+            item_evidence = _item_evidence(evidence, item.id)
+            verbatim = [entry for entry in item_evidence if quote_in_transcripts(entry.quote, [verbatim_transcript])]
+            return (len(verbatim), sum(entry.review_score for entry in verbatim))
+
+        ranked = sorted(group, key=support, reverse=True)
+        if support(ranked[0]) > support(ranked[1]):
+            selected.append(ranked[0])
+        else:
+            ambiguous_ids.add(ranked[0].id)
+            selected.append(ranked[0].model_copy(update={"amount_paise": None}))
+
+    counters = {"part": 0, "labour": 0}
+    id_map: dict[str, str] = {}
+    canonical_items: list[LineItem] = []
+    for item in selected:
+        counters[item.kind] += 1
+        new_id = f"{item.kind}-{counters[item.kind]}"
+        id_map[item.id] = new_id
+        canonical_items.append(item.model_copy(update={"id": new_id}))
+
+    canonical_evidence: list[Evidence] = []
+    for entry in evidence:
+        match = re.match(r"^items\.([a-z]+-[0-9]+)\.(label|amount_paise)$", entry.field)
+        if not match:
+            canonical_evidence.append(entry)
+            continue
+        old_id, field = match.groups()
+        if old_id not in id_map:
+            continue
+        score = 0.0 if old_id in ambiguous_ids and field == "amount_paise" else entry.review_score
+        canonical_evidence.append(
+            Evidence(field=f"items.{id_map[old_id]}.{field}", quote=entry.quote, review_score=score)
+        )
+    return tuple(canonical_items), tuple(canonical_evidence)
+
+
 class Extractor:
     def __init__(
         self,
@@ -376,8 +476,17 @@ class Extractor:
                     deliv["window"] = "afternoon"
                 elif w not in ("morning", "afternoon", "evening"):
                     deliv["window"] = "evening"
-                if not isinstance(deliv.get("spoken"), str):
-                    deliv["spoken"] = str(deliv.get("spoken") or "")
+                raw_spoken = deliv.get("spoken")
+                if not isinstance(raw_spoken, str) or raw_spoken.strip().casefold() in {"", "true", "false"}:
+                    delivery_evidence = next(
+                        (
+                            str(entry.get("quote", "")).strip()
+                            for entry in data.get("evidence", [])
+                            if isinstance(entry, dict) and entry.get("field") == "delivery"
+                        ),
+                        "",
+                    )
+                    deliv["spoken"] = delivery_evidence
                 delivery = Delivery.model_validate(deliv)
             else:
                 delivery = None
@@ -420,7 +529,8 @@ class Extractor:
                             normalized_evidence.append(Evidence(field=amt_f, quote=f"₹{rs}", review_score=0.95))
                             break
 
-            raw_card = JobCard(items=items, delivery=delivery, evidence=tuple(normalized_evidence))
+            items, normalized_evidence = _deduplicate_items(items, normalized_evidence, transcript_2)
+            raw_card = JobCard(items=items, delivery=delivery, evidence=normalized_evidence)
         except Exception as e:
             raise ExtractionError(f"Invalid card schema from extractor: {e}") from e
 
@@ -528,29 +638,25 @@ class Extractor:
 
         # Handling line item field update
         target_item = next(it for it in old_card.items if it.id == target_item_id)
-        if target_attr == "amount_paise":
-            if isinstance(value, str):
-                digits = re.sub(r"[^\d]", "", value)
-                amount = int(digits) if digits else None
-            elif value is not None:
-                amount = int(value)
+        try:
+            if target_attr == "amount_paise":
+                new_item = LineItem(
+                    id=target_item.id,
+                    label=target_item.label,
+                    kind=target_item.kind,
+                    amount_paise=value,
+                )
+            elif target_attr == "label":
+                new_item = LineItem(
+                    id=target_item.id,
+                    label=str(value) if value is not None else None,
+                    kind=target_item.kind,
+                    amount_paise=target_item.amount_paise,
+                )
             else:
-                amount = None
-            new_item = LineItem(
-                id=target_item.id,
-                label=target_item.label,
-                kind=target_item.kind,
-                amount_paise=amount,
-            )
-        elif target_attr == "label":
-            new_item = LineItem(
-                id=target_item.id,
-                label=str(value) if value is not None else None,
-                kind=target_item.kind,
-                amount_paise=target_item.amount_paise,
-            )
-        else:
-            raise ExtractionError(f"Unsupported item attribute: {target_attr}")
+                raise ExtractionError(f"Unsupported item attribute: {target_attr}")
+        except Exception as e:
+            raise ExtractionError(f"Invalid item update: {e}") from e
 
         new_items = tuple(
             new_item if it.id == target_item_id else it

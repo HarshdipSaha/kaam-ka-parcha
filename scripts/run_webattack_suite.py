@@ -178,6 +178,12 @@ async def run_e2e_interactive_journey(browser):
     session_data = intake_resp.json()
     total_rs = session_data['total_paise'] / 100 if session_data.get('total_paise') else 0
     print(f"   -> Parsed Card Total: ₹{total_rs} (rev: {session_data['revision']}, status: {session_data['status']}, items: {len(session_data['card']['items']) if session_data.get('card') else 0})")
+    parsed_items = session_data["card"]["items"]
+    assert [(item["kind"], item["amount_paise"]) for item in parsed_items] == [
+        ("part", 45000),
+        ("labour", 20000),
+    ], f"unexpected parsed items: {parsed_items}"
+    assert session_data["total_paise"] == 65000, f"unexpected total: {session_data['total_paise']}"
 
     # 3. Drive Workshop UI in Playwright to verify rendering of parsed card
     print(f"  3. Driving Workshop UI in Playwright for session {session_id}...")
@@ -298,8 +304,20 @@ async def run_e2e_interactive_journey(browser):
     print(f"   -> Sealed PDF Status: {pdf_resp.status_code} ({len(pdf_resp.content)} bytes, Type: {pdf_resp.headers.get('content-type')})")
     assert pdf_resp.status_code == 200
     assert pdf_resp.content.startswith(b"%PDF"), "Response is not a valid PDF header"
+    from pypdf import PdfReader
+    pdf_reader = PdfReader(io.BytesIO(pdf_resp.content))
+    attach_data = pdf_reader.attachments["transcripts.json"][0]
+
+    raw_json = attach_data if isinstance(attach_data, bytes) else attach_data.get_data()
+    manifest_payload = json.loads(raw_json.decode("utf-8"))
+
+    assert "audit_manifest_sha256" in manifest_payload
+    page_text = pdf_reader.pages[0].extract_text()
+    assert manifest_payload["audit_manifest_sha256"] in page_text
+    print(f"   -> Verified Audit Manifest SHA-256 in PDF: {manifest_payload['audit_manifest_sha256']}")
 
     whatsapp_resp = requests.get(f"{BASE_URL}/sessions/{session_id}/whatsapp")
+
     print(f"   -> WhatsApp Text Status: {whatsapp_resp.status_code}")
     print(f"   -> WhatsApp Summary Preview:\n{'-'*30}\n{whatsapp_resp.text.strip()}\n{'-'*30}")
     assert whatsapp_resp.status_code == 200

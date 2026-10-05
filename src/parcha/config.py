@@ -1,7 +1,27 @@
 from dataclasses import dataclass, field
 from os import environ
+from pathlib import Path
 from typing import Mapping
 from dotenv import dotenv_values
+
+PACKAGE_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+PACKAGE_ASSET_PATH = PACKAGE_ROOT / "assets" / "car_engine_idle_16k.wav"
+PROJECT_DATA_PATH = PROJECT_ROOT / "data" / "real_world_samples" / "car_engine_idle_16k.wav"
+
+DEFAULT_TELEPHONY_NOISE_PATH = PACKAGE_ASSET_PATH if PACKAGE_ASSET_PATH.exists() else PROJECT_DATA_PATH
+
+
+def resolve_project_path(value: str | Path) -> Path:
+    path = Path(value)
+    if path.is_absolute():
+        return path
+    candidate_package = PACKAGE_ROOT / path
+    if candidate_package.exists():
+        return candidate_package
+    return PROJECT_ROOT / path
+
 
 
 @dataclass(frozen=True)
@@ -14,6 +34,10 @@ class Settings:
     tts_voice: str = "Nalini"
     gnani_base_url: str = "https://api.vachana.ai"
     reply_transport: str = "rest"
+    use_automotive_bias: bool = True
+    telephony_codec: str = "g711"
+    telephony_target_snr_db: float = 5.0
+    telephony_noise_path: Path = DEFAULT_TELEPHONY_NOISE_PATH
 
     @classmethod
     def from_mapping(cls, values: Mapping[str, str | None]) -> "Settings":
@@ -33,6 +57,13 @@ class Settings:
             tts_voice=(values.get("TTS_VOICE") or "").strip() or "Nalini",
             gnani_base_url=(values.get("GNANI_BASE_URL") or "").strip() or "https://api.vachana.ai",
             reply_transport=(values.get("REPLY_TRANSPORT") or "").strip() or "rest",
+            use_automotive_bias=(values.get("USE_AUTOMOTIVE_BIAS") or "true").strip().casefold() not in {"0", "false", "no", "off"},
+            telephony_codec=(values.get("TELEPHONY_CODEC") or "").strip() or "g711",
+            telephony_target_snr_db=float((values.get("TELEPHONY_TARGET_SNR_DB") or "5.0").strip()),
+            telephony_noise_path=resolve_project_path(
+                (values.get("TELEPHONY_NOISE_PATH") or "").strip()
+                or DEFAULT_TELEPHONY_NOISE_PATH
+            ),
         )
 
     @classmethod

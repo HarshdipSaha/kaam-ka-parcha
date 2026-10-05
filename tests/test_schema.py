@@ -94,3 +94,15 @@ def test_transcript_log_validates():
             text="hello",
             recorded_at_utc=now,
         )
+
+
+@pytest.mark.parametrize("invalid_amount", [True, False, "750", 450.5, -10])
+def test_line_item_amount_paise_rejects_non_integers_and_negatives(invalid_amount):
+    with pytest.raises(ValidationError):
+        LineItem(id="part-1", label="brake pad", kind="part", amount_paise=invalid_amount)
+
+
+@pytest.mark.parametrize("valid_amount", [0, 45000, None])
+def test_line_item_amount_paise_accepts_integers_and_none(valid_amount):
+    item = LineItem(id="part-1", label="brake pad", kind="part", amount_paise=valid_amount)
+    assert item.amount_paise == valid_amount

@@ -1,12 +1,13 @@
 from datetime import datetime, timezone
 from io import BytesIO
 import json
+import hashlib
 import pytest
 from fastapi.testclient import TestClient
 from pypdf import PdfReader
 
 from parcha.app import AppServices
-from parcha.artefact import render_pdf, whatsapp_text
+from parcha.artefact import audit_manifest_sha256, render_pdf, whatsapp_text
 from parcha.schema import TranscriptLog
 from parcha.session import Conflict, Session
 from tests.conftest import make_test_card
@@ -64,12 +65,14 @@ def test_pdf_embeds_exact_transcripts():
             mode="intake",
             text="Agla brake pad badalna hai ₹450, aur labour ₹200",
             recorded_at_utc=datetime(2026, 10, 5, 14, 0, 0, tzinfo=timezone.utc),
+            audio_sha256="a" * 64,
         ),
         TranscriptLog(
             role="customer",
             mode="reply",
             text="हाँ, बिल्कुल ठीक है",
             recorded_at_utc=datetime(2026, 10, 5, 14, 25, 0, tzinfo=timezone.utc),
+            audio_sha256="b" * 64,
         ),
     )
     session = Session(
@@ -114,6 +117,22 @@ def test_pdf_embeds_exact_transcripts():
     assert payload["logs"][1]["role"] == "customer"
     assert payload["logs"][1]["mode"] == "reply"
     assert payload["logs"][1]["text"] == "हाँ, बिल्कुल ठीक है"
+    assert payload["logs"][0]["audio_sha256"] == "a" * 64
+    assert payload["audit_manifest_sha256"] == hashlib.sha256(
+        json.dumps(
+            {
+                "session_id": payload["session_id"],
+                "revision": payload["revision"],
+                "confirmed_at_utc": payload["confirmed_at_utc"],
+                "logs": payload["logs"],
+            },
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+    assert payload["audit_manifest_sha256"] == audit_manifest_sha256(session)
+    assert payload["audit_manifest_sha256"] in page_text
 
 
 def test_whatsapp_text_has_derived_total_and_no_delivery_claim():
