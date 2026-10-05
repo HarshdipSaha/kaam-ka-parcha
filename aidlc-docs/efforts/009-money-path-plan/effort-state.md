@@ -24,6 +24,9 @@
 - **Task 1 — Complete:** Corrected README speech/extractor settings, removed unmeasured README/demo claims, and corrected the gate ledger and audio provenance. Commit subject: `docs: remove unmeasured claims and mark extractor required`.
 - **Validation:** README uses `GNANI_BASE_URL` and not `API_BASE_URL`; margin claims absent; generalisation/E2E rows remain not reproducible and future gates pending; `git diff --check`: PASS. Application tests were not run for this documentation-only task.
 
+- **Task 2 — Complete:** Added deterministic Hinglish/Devanagari/ITN amount parsing and Hindi/colloquial renderers in src/parcha/numerals.py, with public-interface coverage in tests/test_numerals.py, including half-multiplier, year/date, and hyphenated-registration safety cases. Commit subject: feat(money): deterministic Hinglish amount grammar.
+- **Validation:** Initial Task 2 TDD RED confirmed ModuleNotFoundError: No module named parcha.numerals; review regressions RED: 8 cases failed, then the May-date case and five model/date cases failed before fixes; focused suite: 175 passed, 1 warning (0.64s); full offline suite: 385 passed, 1 warning (27.75s); git diff --check: PASS.
+
 ## Next
 
-Task 2.
+Task 3.
