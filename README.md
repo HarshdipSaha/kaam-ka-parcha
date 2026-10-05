@@ -20,7 +20,7 @@ Two-wheeler and four-wheeler workshops in India run almost exclusively on verbal
 Estimates are casually spoken at vehicle drop-off, but at vehicle pick-up, quotes are frequently contested:
 > *"Aapne ₹400 bola tha, ₹750 ka bill kaise bana diya?"*
 
-These daily verbal disputes cause customer friction, delay vehicle deliveries, and cost Indian independent workshops **5% to 8% of their gross service margins** in forced bill discounts and unrecovered parts costs.
+These daily verbal disputes create customer friction, delay vehicle deliveries, and can lead to avoidable discounts and unrecovered parts costs for independent workshops.
 
 ---
 
@@ -183,10 +183,13 @@ Rather than relying on best-case clean audio demos, Kaam Ka Parcha includes a de
    ```ini
    # Gnani AI API Credentials
    API_KEY=your_gnani_vachana_api_key_here
-   API_BASE_URL=https://api.vachana.ai
+   GNANI_BASE_URL=https://api.vachana.ai
 
-   # Optional Extractor / LLM API Key (used for delta extraction)
-   GROQ_API_KEY=your_groq_api_key_here
+   # Extractor endpoint (required): Evon v3.3 via an OpenAI-compatible server; it structures line items only — amounts are read by deterministic code
+   EXTRACTOR_BASE_URL=http://localhost:8080/v1
+   EXTRACTOR_API_KEY=
+   EXTRACTOR_MODEL=gnani-evon-v3.3
+   EXTRACTOR_PROVIDER=evon
 
    # Speech Configuration
    GNANI_LANG_CODE=hi-IN
