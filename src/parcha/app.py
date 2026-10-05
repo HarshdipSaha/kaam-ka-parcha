@@ -15,6 +15,7 @@ from .extract import ExtractionError, Extractor
 from .gnani import PrismaClient, TimbreClient, GnaniError
 from .schema import review_fields
 from .artefact import render_pdf, whatsapp_text
+from .vocabulary import AUTOMOTIVE_BIAS_WORDS
 
 ROOT = Path(__file__).parent
 
@@ -41,12 +42,26 @@ def default_services() -> AppServices:
         voice=settings.tts_voice,
         base_url=settings.gnani_base_url,
     )
+    try:
+        noise_wav = normalize_upload(
+            settings.telephony_noise_path.read_bytes(), "audio/wav", sample_rate=8000
+        )
+    except (OSError, AudioError) as exc:
+        raise RuntimeError(
+            f"Unable to load telephony noise asset {settings.telephony_noise_path}: {exc}"
+        ) from exc
     workflow = Workflow(
         store=store,
         prisma=prisma,
         extractor=extractor,
         normalize_audio=normalize_upload,
         timbre=timbre,
+        bias_words=AUTOMOTIVE_BIAS_WORDS,
+        use_bias=settings.use_automotive_bias,
+        codec=settings.telephony_codec,
+        target_snr_db=settings.telephony_target_snr_db,
+        noise_wav=noise_wav,
+        noise_source="recorded_engine_idle",
     )
     return AppServices(settings, store, workflow, timbre)
 

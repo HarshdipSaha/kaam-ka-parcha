@@ -4,7 +4,7 @@
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
-[![Pytest Passed](https://img.shields.io/badge/tests-139%20passed%20(100%25%20offline)-brightgreen.svg)](tests/)
+[![Pytest Passed](https://img.shields.io/badge/tests-141%20passed%20(100%25%20offline)-brightgreen.svg)](tests/)
 [![Playwright E2E](https://img.shields.io/badge/playwright-E2E%20Passed%20(4%20Viewports)-purple.svg)](scripts/run_webattack_suite.py)
 [![Gnani AI](https://img.shields.io/badge/Gnani%20AI-Prisma%20%7C%20Timbre-orange.svg)](https://vachana.ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -94,7 +94,7 @@ Rather than relying on best-case clean audio demos, Kaam Ka Parcha includes a de
 - **Acoustic Noise Bands**: Clean, 10 dB SNR, 5 dB SNR, 0 dB SNR (real street and engine noise).
 - **Network Degradation**: Simulated packet loss (0%, 2%, 5%).
 - **Evaluated Metrics**: Character Error Rate (CER), Word Error Rate (WER), rupee amount exact recovery percentage, and non-speech hallucination rates during engine idle.
-- **WebSocket Silence Flush Probe**: Isolates the short-reply problem ("हाँ", "नहीं") on streaming telephony endpoints, proving that an 8-frame (512 ms) zero-padding silence tail achieves **96.0% affirmative recovery** without remote VAD cutoff.
+- **WebSocket Silence Flush Probe**: Provides a reproducible experiment for short replies ("हाँ", "नहीं"). Its recovery rate is reported only after the tracked gate run completes.
 
 ---
 
@@ -311,7 +311,7 @@ The test suite runs **100% offline** using mock fixtures and synthetic audio buf
 
 Output:
 ```
-139 passed, 2 warnings in 17.23s
+141 passed, 1 warning in 19.12s
 ```
 
 ### Test Coverage Highlights

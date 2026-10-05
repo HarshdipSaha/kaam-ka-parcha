@@ -1,4 +1,5 @@
 from datetime import datetime
+import hashlib
 from io import BytesIO
 import json
 from reportlab.lib.pagesizes import A4
@@ -20,10 +21,16 @@ def attach_transcripts(pdf_bytes: bytes, session: Session) -> bytes:
                 "mode": log.mode,
                 "text": log.text,
                 "recorded_at_utc": log.recorded_at_utc.isoformat(),
+                "audio_sha256": log.audio_sha256,
             }
             for log in session.logs
         ],
     }
+    canonical_evidence = json.dumps(
+        evidence, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+    ).encode("utf-8")
+    evidence["audit_manifest_sha256"] = hashlib.sha256(canonical_evidence).hexdigest()
+
     writer = PdfWriter()
     writer.append_pages_from_reader(PdfReader(BytesIO(pdf_bytes)))
     writer.add_attachment(
@@ -60,25 +67,45 @@ def render_pdf(session: Session) -> bytes:
     c.drawString(50, 775, "Vehicle: KA-01-AB-1234 (Synthetic Demo)")
     c.drawString(50, 760, f"Session: {session.id} | Revision: {session.revision}")
     c.drawString(50, 745, f"Confirmed (UTC): {session.confirmed_at_utc.isoformat()}")
+    audit_evidence = {
+        "session_id": session.id,
+        "revision": session.revision,
+        "confirmed_at_utc": session.confirmed_at_utc.isoformat(),
+        "logs": [
+            {
+                "role": log.role,
+                "mode": log.mode,
+                "text": log.text,
+                "recorded_at_utc": log.recorded_at_utc.isoformat(),
+                "audio_sha256": log.audio_sha256,
+            }
+            for log in session.logs
+        ],
+    }
+    audit_digest = hashlib.sha256(
+        json.dumps(audit_evidence, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    ).hexdigest()
+    c.setFont("Helvetica", 7)
+    c.drawString(50, 733, f"Audit manifest SHA-256: {audit_digest}")
 
     # Simulation notice
     c.setFont("Helvetica-Oblique", 9)
     c.drawString(
         50,
-        725,
-        "Simulated phone line: G.711 / AMR-NB + street noise at 5 dB. No real call was placed.",
+        720,
+        "Simulated phone line: G.711 + recorded engine ambience at 5 dB. No real call was placed.",
     )
 
     # Separator
     c.setLineWidth(1)
-    c.line(50, 715, 545, 715)
+    c.line(50, 710, 545, 710)
 
     # Items section
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, 695, "Items:")
+    c.drawString(50, 690, "Items:")
 
     c.setFont("Helvetica", 10)
-    y = 675
+    y = 670
     for item in session.card.items:
         label = item.label or "Item"
         amount_paise = item.amount_paise if item.amount_paise is not None else 0

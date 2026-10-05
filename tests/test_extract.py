@@ -36,6 +36,42 @@ def test_unquoted_evidence_blocks_dispatch():
     card = Extractor("http://test/v1", "key", "model", http).extract_card("₹450 Somvaar", "", WHEN)
     assert card.needs_review
 
+
+def test_duplicate_item_from_corrupted_transcribe_pass_prefers_verbatim_evidence():
+    """A corrupted normal pass must not create a second, lower-value job-card item."""
+    payload = {
+        "items": [
+            {"id": "part-1", "label": "फ्रंट ब्रेक पैड", "kind": "part", "amount_paise": 10000},
+            {"id": "part-2", "label": "फ्रंट ब्रेक पैड", "kind": "part", "amount_paise": 45000},
+            {"id": "labour-1", "label": "लेबर", "kind": "labour", "amount_paise": 20000},
+        ],
+        "delivery": {"date": "2026-10-06", "window": "evening", "spoken": True},
+        "evidence": [
+            {"field": "items.part-1.label", "quote": "फ्रंट ब्रेक पैड 04:30 100", "review_score": 1.0},
+            {"field": "items.part-1.amount_paise", "quote": "फ्रंट ब्रेक पैड 04:30 100", "review_score": 1.0},
+            {"field": "items.part-2.label", "quote": "फ्रंट ब्रेक पैड साढ़े चार सौ", "review_score": 1.0},
+            {"field": "items.part-2.amount_paise", "quote": "फ्रंट ब्रेक पैड साढ़े चार सौ", "review_score": 1.0},
+            {"field": "items.labour-1.label", "quote": "लेबर 200", "review_score": 1.0},
+            {"field": "items.labour-1.amount_paise", "quote": "लेबर 200", "review_score": 1.0},
+            {"field": "delivery", "quote": "मंगलवार शाम तक", "review_score": 1.0},
+        ],
+    }
+    http = httpx.Client(transport=httpx.MockTransport(lambda _: fake_chat(payload)))
+    card = Extractor("http://test/v1", "key", "model", http).extract_card(
+        "फ्रंट ब्रेक पैड 04:30 100 लेबर 200 मंगलवार शाम तक",
+        "फ्रंट ब्रेक पैड साढ़े चार सौ लेबर दो सौ मंगलवार शाम तक",
+        datetime(2026, 10, 5, 10, tzinfo=timezone.utc),
+    )
+
+    assert [(item.id, item.amount_paise) for item in card.items] == [
+        ("part-1", 45000),
+        ("labour-1", 20000),
+    ]
+    assert card.total_paise == 65000
+    assert card.delivery is not None
+    assert card.delivery.spoken == "मंगलवार शाम तक"
+    assert not card.needs_review
+
 def test_missing_amount_is_a_reaskable_draft():
     payload = {"items": [{"id":"part-1","label":"front brake pad","kind":"part",
                           "amount_paise":None}], "delivery":None,
@@ -331,4 +367,3 @@ def test_extract_card_invalid_json_raises():
     extractor = Extractor("http://test/v1", "key", "model", http)
     with pytest.raises(ExtractionError, match="No JSON object found"):
         extractor.extract_card("pad 450", "pad 450", WHEN)
-

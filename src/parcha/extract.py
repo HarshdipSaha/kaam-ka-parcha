@@ -205,6 +205,76 @@ def mentions_item(transcript: str, item: LineItem) -> bool:
     return False
 
 
+def _item_evidence(evidence: list[Evidence], item_id: str) -> list[Evidence]:
+    prefix = f"items.{item_id}."
+    return [entry for entry in evidence if entry.field.startswith(prefix)]
+
+
+def _canonical_label(label: str | None) -> str:
+    if not label:
+        return ""
+    normalized = unicodedata.normalize("NFKC", label).casefold()
+    return " ".join(normalized.split())
+
+
+def _deduplicate_items(
+    items: tuple[LineItem, ...], evidence: list[Evidence], verbatim_transcript: str
+) -> tuple[tuple[LineItem, ...], tuple[Evidence, ...]]:
+    """Keep one strongly-supported item when dual STT passes name it twice.
+
+    A normalised pass can turn a spoken amount into a timestamp or another number.
+    If it produces a duplicate label, evidence quoted from the verbatim pass is the
+    safer source. Tied duplicate candidates become an incomplete field that must be
+    re-asked instead of being silently added to the total.
+    """
+    groups: dict[tuple[str, str], list[LineItem]] = {}
+    for item in items:
+        groups.setdefault((item.kind, _canonical_label(item.label)), []).append(item)
+
+    selected: list[LineItem] = []
+    ambiguous_ids: set[str] = set()
+    for group in groups.values():
+        if len(group) == 1:
+            selected.append(group[0])
+            continue
+
+        def support(item: LineItem) -> tuple[int, float]:
+            item_evidence = _item_evidence(evidence, item.id)
+            verbatim = [entry for entry in item_evidence if quote_in_transcripts(entry.quote, [verbatim_transcript])]
+            return (len(verbatim), sum(entry.review_score for entry in verbatim))
+
+        ranked = sorted(group, key=support, reverse=True)
+        if support(ranked[0]) > support(ranked[1]):
+            selected.append(ranked[0])
+        else:
+            ambiguous_ids.add(ranked[0].id)
+            selected.append(ranked[0].model_copy(update={"amount_paise": None}))
+
+    counters = {"part": 0, "labour": 0}
+    id_map: dict[str, str] = {}
+    canonical_items: list[LineItem] = []
+    for item in selected:
+        counters[item.kind] += 1
+        new_id = f"{item.kind}-{counters[item.kind]}"
+        id_map[item.id] = new_id
+        canonical_items.append(item.model_copy(update={"id": new_id}))
+
+    canonical_evidence: list[Evidence] = []
+    for entry in evidence:
+        match = re.match(r"^items\.([a-z]+-[0-9]+)\.(label|amount_paise)$", entry.field)
+        if not match:
+            canonical_evidence.append(entry)
+            continue
+        old_id, field = match.groups()
+        if old_id not in id_map:
+            continue
+        score = 0.0 if old_id in ambiguous_ids and field == "amount_paise" else entry.review_score
+        canonical_evidence.append(
+            Evidence(field=f"items.{id_map[old_id]}.{field}", quote=entry.quote, review_score=score)
+        )
+    return tuple(canonical_items), tuple(canonical_evidence)
+
+
 class Extractor:
     def __init__(
         self,
@@ -376,8 +446,17 @@ class Extractor:
                     deliv["window"] = "afternoon"
                 elif w not in ("morning", "afternoon", "evening"):
                     deliv["window"] = "evening"
-                if not isinstance(deliv.get("spoken"), str):
-                    deliv["spoken"] = str(deliv.get("spoken") or "")
+                raw_spoken = deliv.get("spoken")
+                if not isinstance(raw_spoken, str) or raw_spoken.strip().casefold() in {"", "true", "false"}:
+                    delivery_evidence = next(
+                        (
+                            str(entry.get("quote", "")).strip()
+                            for entry in data.get("evidence", [])
+                            if isinstance(entry, dict) and entry.get("field") == "delivery"
+                        ),
+                        "",
+                    )
+                    deliv["spoken"] = delivery_evidence
                 delivery = Delivery.model_validate(deliv)
             else:
                 delivery = None
@@ -420,7 +499,8 @@ class Extractor:
                             normalized_evidence.append(Evidence(field=amt_f, quote=f"₹{rs}", review_score=0.95))
                             break
 
-            raw_card = JobCard(items=items, delivery=delivery, evidence=tuple(normalized_evidence))
+            items, normalized_evidence = _deduplicate_items(items, normalized_evidence, transcript_2)
+            raw_card = JobCard(items=items, delivery=delivery, evidence=normalized_evidence)
         except Exception as e:
             raise ExtractionError(f"Invalid card schema from extractor: {e}") from e
 

@@ -192,7 +192,7 @@ def test_customer_page_renders_card_and_disclosure(fake_services):
     assert '<meta name="viewport"' in html
     assert "Kaam ka Parcha — Customer Estimate Review" in html
     assert 'id="disclosure"' in html
-    assert "Simulated phone line: audio passed through G.711 / AMR-NB 4.75 kbps + street noise at 5 dB. No call was placed. All names and amounts are synthetic." in html
+    assert "Simulated phone line: audio passed through G.711 + recorded engine ambience at 5 dB. No call was placed. All names and amounts are synthetic." in html
     assert 'id="readback-player"' in html
     assert f"/sessions/{session_id}/readback.wav?revision=1" in html
     assert 'id="customer-record"' in html
@@ -419,4 +419,3 @@ def test_api_key_not_leaked_in_any_response(fake_services):
     # Customer page after confirmation
     r = client.get(f"/customer/{s_id}")
     assert_no_leak(r)
-

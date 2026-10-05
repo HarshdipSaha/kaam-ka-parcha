@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from os import environ
+from pathlib import Path
 from typing import Mapping
 from dotenv import dotenv_values
 
@@ -14,6 +15,10 @@ class Settings:
     tts_voice: str = "Nalini"
     gnani_base_url: str = "https://api.vachana.ai"
     reply_transport: str = "rest"
+    use_automotive_bias: bool = True
+    telephony_codec: str = "g711"
+    telephony_target_snr_db: float = 5.0
+    telephony_noise_path: Path = Path("data/real_world_samples/car_engine_idle_16k.wav")
 
     @classmethod
     def from_mapping(cls, values: Mapping[str, str | None]) -> "Settings":
@@ -33,6 +38,10 @@ class Settings:
             tts_voice=(values.get("TTS_VOICE") or "").strip() or "Nalini",
             gnani_base_url=(values.get("GNANI_BASE_URL") or "").strip() or "https://api.vachana.ai",
             reply_transport=(values.get("REPLY_TRANSPORT") or "").strip() or "rest",
+            use_automotive_bias=(values.get("USE_AUTOMOTIVE_BIAS") or "true").strip().casefold() not in {"0", "false", "no", "off"},
+            telephony_codec=(values.get("TELEPHONY_CODEC") or "").strip() or "g711",
+            telephony_target_snr_db=float((values.get("TELEPHONY_TARGET_SNR_DB") or "5.0").strip()),
+            telephony_noise_path=Path((values.get("TELEPHONY_NOISE_PATH") or "").strip() or "data/real_world_samples/car_engine_idle_16k.wav"),
         )
 
     @classmethod

@@ -178,6 +178,12 @@ async def run_e2e_interactive_journey(browser):
     session_data = intake_resp.json()
     total_rs = session_data['total_paise'] / 100 if session_data.get('total_paise') else 0
     print(f"   -> Parsed Card Total: ₹{total_rs} (rev: {session_data['revision']}, status: {session_data['status']}, items: {len(session_data['card']['items']) if session_data.get('card') else 0})")
+    parsed_items = session_data["card"]["items"]
+    assert [(item["kind"], item["amount_paise"]) for item in parsed_items] == [
+        ("part", 45000),
+        ("labour", 20000),
+    ], f"unexpected parsed items: {parsed_items}"
+    assert session_data["total_paise"] == 65000, f"unexpected total: {session_data['total_paise']}"
 
     # 3. Drive Workshop UI in Playwright to verify rendering of parsed card
     print(f"  3. Driving Workshop UI in Playwright for session {session_id}...")

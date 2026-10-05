@@ -15,6 +15,9 @@ def test_settings_keep_rest_as_safe_default():
     settings = Settings.from_mapping({"API_KEY": "example"})
     assert settings.gnani_base_url == "https://api.vachana.ai"
     assert settings.reply_transport == "rest"
+    assert settings.use_automotive_bias is True
+    assert settings.telephony_codec == "g711"
+    assert settings.telephony_target_snr_db == 5.0
 
 
 def test_settings_require_gnani_validation():
@@ -60,4 +63,3 @@ def test_settings_secrets_not_in_repr():
     as_str = repr(settings)
     assert "super-secret-gnani" not in as_str
     assert "super-secret-groq" not in as_str
-

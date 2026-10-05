@@ -102,6 +102,8 @@ def test_intake_uses_same_recording_for_two_prisma_passes():
     assert [call[1] for call in prisma.calls] == ["transcribe", "verbatim"]
     # 2. Both calls use the exact same normalized audio bytes
     assert prisma.calls[0][0] == prisma.calls[1][0] == b"RIFFpcm"
+    assert prisma.calls[1][2] is not None
+    assert "brake" in prisma.calls[1][2]
     # 3. Card total and session state updated
     assert result.card is not None
     assert result.card.total_paise == 65000

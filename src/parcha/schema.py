@@ -87,3 +87,4 @@ class TranscriptLog(StrictModel):
     mode: str
     text: str
     recorded_at_utc: datetime
+    audio_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
