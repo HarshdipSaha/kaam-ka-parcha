@@ -2,7 +2,7 @@
 
 **Effort ID:** 008
 **Reference:** `real-audio-analysis-council-spec`
-**Status:** complete for analysis and council; spec draft held back for owner revision
+**Status:** complete (analysis, council and spec; implementation plan in effort 009)
 **Started:** 2026-10-05
 **Completed:** 2026-10-05
 **Parents:** `006-real-api-real-audio-benchmark`, `007-gpu-sprint-multilingual-council`
@@ -14,7 +14,7 @@
 | Requirements | Complete | [`requirements-delta.md`](requirements-delta.md) |
 | R9 deep analysis | Complete | [`R9`](../../../docs/research/R9-real-audio-benchmark-analysis.md) plus a one-command reproduction, `scripts/analyze_real_audio_benchmark.py`. Private: absolute CER/WER. |
 | Council re-run | Complete | [`council-real-audio-verdict.md`](../../../docs/ideas/council-real-audio-verdict.md). Its gates supersede 007's where they conflict. |
-| Spec (`to-spec`) | Drafted; **held back** | `docs/specs/money-path-safety-spec.md` exists locally as a draft. At the owner's request it was not committed with this effort, because it will be revised first. Once revised: label `ready-for-agent`; publishing needs `gh` signed in as HarshdipSaha. |
+| Spec (`to-spec`) | Complete | [`money-path-safety-spec.md`](../../../docs/specs/money-path-safety-spec.md) was revised with the owner's decisions (Gramvaani mandatory, Timbre echo test, cost not a constraint) and committed with effort 009. Publishing it to GitHub Issues still needs `gh` signed in as HarshdipSaha. |
 | Audit | Complete | [`audit.md`](audit.md) |
 | Commit | Complete (partial by design) | Analysis, council, script and this effort were committed and pushed to `main`. The spec draft stays local until revised. |
 

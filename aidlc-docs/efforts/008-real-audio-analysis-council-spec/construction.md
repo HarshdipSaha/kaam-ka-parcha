@@ -64,7 +64,16 @@
 - The owner reported a remaining balance of about ₹4,700 at roughly 50 credits per ₹1 (≈ 235,000 credits). This is recorded in [`effort-state.md`](effort-state.md) with the arithmetic and the remaining provenance item. The council verdict was left unedited as a historical record; the update lives in this effort.
 - Committed and pushed to `main` with the repo-local personal identity: R9, the analysis script, the council round files and verdict, this effort folder, and the registry row. Not committed: the spec draft.
 
-## 6. Validation
+## 6. Spec draft updated with owner decisions (uncommitted)
+
+- The owner decided three things on 2026-10-05:
+  1. A Gramvaani real-telephone slice is mandatory (the Vistaar test slice, 1,032 utterances, evaluation-only, audio never committed).
+  2. Timbre is tested with a read-back echo test (all Hindi voices × words-vs-digits × clean control, G.711 clean and AMR-NB 0 dB, with a listening check on failures).
+  3. Cost is not a constraint (about ₹4,700 ≈ 235,000 credits).
+- The spec draft's plain-language section, problem statement, solution, user stories (now 51), implementation and testing decisions, out-of-scope list and further notes were updated. Two council-008 items change: the v2 credit cap is lifted, and the award choice is reopened pending the Gramvaani and echo-test results.
+- `/to-spec` could not be invoked by the agent: the skill is marked user-invocation-only. The owner should run it for a full skill-driven rewrite. The spec draft remains uncommitted at the owner's request.
+
+## 7. Validation
 
 - `git diff --check`, a relative-link check over every new markdown file, and a re-run of the analysis script. Results are in [`audit.md`](audit.md).
 - No credentials or private audio were written. The script reads only the committed bundle. No API calls.
