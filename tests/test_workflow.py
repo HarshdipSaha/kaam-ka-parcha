@@ -12,6 +12,7 @@ from parcha.audio import AudioError, normalize_upload
 from parcha.schema import Delivery, Evidence, JobCard, LineItem
 from parcha.session import Conflict, SessionStore
 from parcha.workflow import Workflow
+from tests.fakes import INTAKE_T, INTAKE_V, ScriptedPrisma
 from tests.test_schema import sample_card
 
 
@@ -36,7 +37,7 @@ class FakePrisma:
         return (
             "front brake pad ₹450, labour ₹200, Somvaar shaam tak"
             if mode == "transcribe"
-            else "front brake pad saade chaar sau"
+            else "front brake pad saade chaar sau labour do sau Somvaar shaam tak"
         )
 
 
@@ -116,7 +117,7 @@ def test_intake_uses_same_recording_for_two_prisma_passes():
     assert result.logs[0].text == "front brake pad ₹450, labour ₹200, Somvaar shaam tak"
     assert result.logs[1].role == "mechanic"
     assert result.logs[1].mode == "verbatim"
-    assert result.logs[1].text == "front brake pad saade chaar sau"
+    assert result.logs[1].text == "front brake pad saade chaar sau labour do sau Somvaar shaam tak"
     assert result.logs[0].recorded_at_utc.tzinfo is not None
 
     # Bias configuration passed to second call when use_bias=True
@@ -259,7 +260,7 @@ def test_reask_updates_single_field_and_increments_revision():
     session = store.create()
     service = Workflow(
         store=store,
-        prisma=FakePrisma(),
+        prisma=ScriptedPrisma([INTAKE_T, INTAKE_V, "₹500", "paanch sau", "Mangalvaar subah", "rear brake pad"]),
         extractor=FakeExtractor(),
         normalize_audio=lambda blob, mime: b"RIFFpcm",
     )

@@ -41,10 +41,12 @@ class FakePrisma:
         score: float = 1.0,
     ) -> str:
         self.calls.append((wav, mode, bias, score))
+        if len(self.calls) > 2:
+            return "₹500" if mode == "transcribe" else "paanch sau"
         return (
             "front brake pad ₹450, labour ₹200, Somvaar shaam tak"
             if mode == "transcribe"
-            else "front brake pad saade chaar sau"
+            else "front brake pad saade chaar sau labour do sau Somvaar shaam tak"
         )
 
 
@@ -150,9 +152,10 @@ class FakeTimbreClient:
 def fake_services() -> AppServices:
     settings = Settings(
         api_key="test-api-key",
-        extractor_base_url="https://api.groq.com/openai/v1",
+        extractor_base_url="http://localhost:8080/v1",
         extractor_api_key="test-extractor-key",
-        extractor_model="llama-3.3-70b-versatile",
+        extractor_model="gnani-evon-v3.3",
+        extractor_provider="evon",
         gnani_base_url="https://api.vachana.ai",
         tts_voice="Nalini",
     )

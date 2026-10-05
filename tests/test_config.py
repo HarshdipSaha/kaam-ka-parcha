@@ -47,11 +47,11 @@ def test_settings_require_extractor_validation():
     valid.require_extractor()
 
 
-def test_settings_fallback_to_groq_api_key():
+def test_settings_have_no_groq_fallback():
     settings = Settings.from_mapping({"GROQ_API_KEY": "groq-secret"})
-    assert settings.extractor_api_key == "groq-secret"
-    assert settings.extractor_base_url == "https://api.groq.com/openai/v1"
-    assert settings.extractor_model == "llama-3.3-70b-versatile"
+    assert settings.extractor_api_key == ""
+    assert settings.extractor_base_url == ""
+    assert settings.extractor_model == ""
 
 
 def test_settings_load_returns_settings_instance():

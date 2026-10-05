@@ -1,3 +1,19 @@
+const REPEAT_MESSAGE = "आवाज़ साफ़ नहीं आई — कृपया फिर से बोलिए (Please say it again)";
+const ABSTAIN_LABELS = {
+  incomplete_number: "अधूरी रकम — फिर से पूछेंगे",
+  crosscheck_disagreement: "रकम पक्की नहीं — फिर से पूछेंगे",
+  ambiguous_attachment: "कौन सी रकम किस आइटम की — साफ़ नहीं",
+  empty_transcript: "आवाज़ नहीं आई",
+  provider_504: "नेटवर्क रुका — फिर से बोलिए",
+  provider_429: "बहुत जल्दी-जल्दी — थोड़ा रुककर बोलिए",
+  out_of_range: "रकम सीमा से बाहर",
+};
+
+function describeHttpError(detail, status) {
+  if (detail && typeof detail === "object" && detail.repeat) return REPEAT_MESSAGE;
+  return (typeof detail === "string" && detail) || `Server returned HTTP ${status}`;
+}
+
 function getSupportedMimeType() {
   const candidates = [
     "audio/webm;codecs=opus",
@@ -157,6 +173,14 @@ function renderSession(data) {
         const labelSpan = document.createElement("span");
         labelSpan.textContent = `Needs review: ${field}`;
 
+        const reason = (data.abstentions || {})[field];
+        if (reason) {
+          const tag = document.createElement("span");
+          tag.className = "abstain-reason";
+          tag.textContent = ABSTAIN_LABELS[reason] || reason;
+          labelSpan.appendChild(tag);
+        }
+
         const reaskBtn = document.createElement("button");
         reaskBtn.className = "reask-btn";
         reaskBtn.textContent = "Record correction";
@@ -286,7 +310,7 @@ async function handleRecordEstimate() {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(err.detail || `Server returned HTTP ${res.status}`);
+      throw new Error(describeHttpError(err.detail, res.status));
     }
 
     const updated = await res.json();
@@ -342,7 +366,7 @@ async function handleReask(field, buttonEl) {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(err.detail || `Server returned HTTP ${res.status}`);
+      throw new Error(describeHttpError(err.detail, res.status));
     }
 
     const updated = await res.json();
