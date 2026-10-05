@@ -35,6 +35,14 @@
   - Added unit and integration tests in [`tests/test_fallback.py`](../../tests/test_fallback.py).
   - Verification: 176/176 offline tests passing, `python -m compileall -q src tests scripts` passing with 0 errors.
 
-## Next Phase: Issue #5 Implementation
-- Issue #5: `feat(audit): Scannable Verification QR Code & Audio Replay Endpoint`
+- [x] **Issue #5**: `feat(audit): Scannable Verification QR Code & Audio Replay Endpoint`
+  - Integrated dynamic `QrCodeWidget` generation into ReportLab PDF generator rendering link to `/verify/{session.id}` in PDF header.
+  - Implemented `GET /verify/{session_id}` route serving statutory compliance data (BSA 2023 §§ 61–63) in both HTML template and JSON format.
+  - Added streaming audio endpoints `GET /sessions/{id}/intake.wav` and `GET /sessions/{id}/reply.wav`.
+  - Created [`src/parcha/templates/verify.html`](../../src/parcha/templates/verify.html) with responsive audio players, itemized tables, and cryptographic digests.
+  - Added offline unit and integration tests in [`tests/test_verify.py`](../../tests/test_verify.py).
+  - Verification: 179/179 offline tests passing, `python -m compileall -q src tests scripts` passing with 0 errors.
+
+## Next Phase: Issue #6 Implementation
+- Issue #6: `feat(compliance): DPDP Act 2023 Statutory Consent & Audit Logging`
 
