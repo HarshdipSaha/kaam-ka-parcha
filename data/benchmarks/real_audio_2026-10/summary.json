@@ -1,0 +1,991 @@
+{
+  "schema_version": 1,
+  "manifest_sha256": "b00672ec42f5728a7e07cc1b766180c315b3c92dbd8d56433f242b93d88c957d",
+  "results_sha256": "3465cd981c4311cb61dc572add08dee77774917740c540ea656bac86a2f801cd",
+  "condition_count": 2000,
+  "unique_condition_count": 2000,
+  "clip_count": 125,
+  "conditions_per_clip": 16,
+  "source_counts_conditions": {
+    "open_dataset": 1920,
+    "user_provided_youtube": 80
+  },
+  "reference_type_counts_conditions": {
+    "dataset_reference": 1920,
+    "auto_caption": 80
+  },
+  "stt_modes": [
+    "transcribe",
+    "verbatim"
+  ],
+  "codecs": [
+    "amr_nb_4750",
+    "g711"
+  ],
+  "snr_levels": [
+    "clean",
+    "10dB",
+    "5dB",
+    "0dB"
+  ],
+  "successful_api_requests": 2000,
+  "active_error_rows": 0,
+  "failed_attempt_count": 2,
+  "failed_attempt_statuses": [
+    "HTTP 504",
+    "HTTP 504"
+  ],
+  "failed_attempt_estimated_credits": 5.3694,
+  "successful_condition_estimated_credits": 4964.864,
+  "all_attempts_estimated_credits": 4970.2334,
+  "amount_labeled_conditions": 0,
+  "groups": [
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "transcribe",
+      "codec": "amr_nb_4750",
+      "snr": "0dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.1891,
+        "median": 0.14415,
+        "p95": 0.496
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.24846,
+        "median": 0.2076,
+        "p95": 0.5172
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3192.4215,
+        "median": 2070.44,
+        "p95": 7318.38
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "transcribe",
+      "codec": "amr_nb_4750",
+      "snr": "10dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.16166,
+        "median": 0.12255,
+        "p95": 0.4615
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.21196,
+        "median": 0.18615,
+        "p95": 0.4857
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3175.7915,
+        "median": 2009.725,
+        "p95": 6926.24
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "transcribe",
+      "codec": "amr_nb_4750",
+      "snr": "5dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.16446,
+        "median": 0.1319,
+        "p95": 0.4729
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.21652,
+        "median": 0.1923,
+        "p95": 0.4878
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3174.6415,
+        "median": 2027.995,
+        "p95": 7244.83
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "transcribe",
+      "codec": "amr_nb_4750",
+      "snr": "clean",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.16368,
+        "median": 0.1217,
+        "p95": 0.4688
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.21496,
+        "median": 0.1835,
+        "p95": 0.5366
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3233.09367,
+        "median": 2107.645,
+        "p95": 7817.99
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "transcribe",
+      "codec": "g711",
+      "snr": "0dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.15612,
+        "median": 0.11785,
+        "p95": 0.456
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.20371,
+        "median": 0.17085,
+        "p95": 0.4571
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3274.1025,
+        "median": 2053.42,
+        "p95": 7558.08
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "transcribe",
+      "codec": "g711",
+      "snr": "10dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.15286,
+        "median": 0.11475,
+        "p95": 0.456
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.20089,
+        "median": 0.1667,
+        "p95": 0.4571
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3256.56908,
+        "median": 2060.405,
+        "p95": 7830.32
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "transcribe",
+      "codec": "g711",
+      "snr": "5dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.1534,
+        "median": 0.1158,
+        "p95": 0.456
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.19934,
+        "median": 0.1667,
+        "p95": 0.4571
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3263.33533,
+        "median": 2065.755,
+        "p95": 7383.06
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "transcribe",
+      "codec": "g711",
+      "snr": "clean",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.1522,
+        "median": 0.1132,
+        "p95": 0.4601
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.20087,
+        "median": 0.16845,
+        "p95": 0.4571
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3306.53825,
+        "median": 2069.26,
+        "p95": 7468.28
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "verbatim",
+      "codec": "amr_nb_4750",
+      "snr": "0dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.18596,
+        "median": 0.14415,
+        "p95": 0.4601
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.246,
+        "median": 0.21585,
+        "p95": 0.4878
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3147.00333,
+        "median": 2024.79,
+        "p95": 6912.73
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "verbatim",
+      "codec": "amr_nb_4750",
+      "snr": "10dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.15955,
+        "median": 0.1177,
+        "p95": 0.4433
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.21033,
+        "median": 0.18615,
+        "p95": 0.4878
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3127.15333,
+        "median": 2041.565,
+        "p95": 7278.63
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "verbatim",
+      "codec": "amr_nb_4750",
+      "snr": "5dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.16109,
+        "median": 0.1319,
+        "p95": 0.456
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.21341,
+        "median": 0.19335,
+        "p95": 0.4878
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3237.74225,
+        "median": 1993.16,
+        "p95": 7776.1
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "verbatim",
+      "codec": "amr_nb_4750",
+      "snr": "clean",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.16075,
+        "median": 0.1217,
+        "p95": 0.456
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.21288,
+        "median": 0.18785,
+        "p95": 0.5366
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3137.53892,
+        "median": 2030.725,
+        "p95": 7441.54
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "verbatim",
+      "codec": "g711",
+      "snr": "0dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.15297,
+        "median": 0.11785,
+        "p95": 0.4384
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.19971,
+        "median": 0.1703,
+        "p95": 0.4571
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3215.4955,
+        "median": 1974.025,
+        "p95": 6975.04
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "verbatim",
+      "codec": "g711",
+      "snr": "10dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.14969,
+        "median": 0.11475,
+        "p95": 0.4384
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.19827,
+        "median": 0.1667,
+        "p95": 0.4571
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3202.71017,
+        "median": 1955.895,
+        "p95": 7242.37
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "verbatim",
+      "codec": "g711",
+      "snr": "5dB",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.15028,
+        "median": 0.1158,
+        "p95": 0.4384
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.19691,
+        "median": 0.1667,
+        "p95": 0.4571
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3194.95633,
+        "median": 1983.215,
+        "p95": 7151.01
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "open_dataset",
+      "reference_type": "dataset_reference",
+      "stt_mode": "verbatim",
+      "codec": "g711",
+      "snr": "clean",
+      "conditions": 120,
+      "cer": {
+        "count": 120,
+        "mean": 0.1488,
+        "median": 0.109,
+        "p95": 0.4384
+      },
+      "wer": {
+        "count": 120,
+        "mean": 0.19813,
+        "median": 0.16845,
+        "p95": 0.4571
+      },
+      "latency_ms": {
+        "count": 120,
+        "mean": 3338.07958,
+        "median": 2126.27,
+        "p95": 8140.06
+      },
+      "estimated_credits": 295.444,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "transcribe",
+      "codec": "amr_nb_4750",
+      "snr": "0dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.72152,
+        "median": 0.7199,
+        "p95": 0.8224
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.80508,
+        "median": 0.7727,
+        "p95": 0.9157
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1515.606,
+        "median": 1515.18,
+        "p95": 1584.56
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "transcribe",
+      "codec": "amr_nb_4750",
+      "snr": "10dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.69568,
+        "median": 0.718,
+        "p95": 0.7444
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.78766,
+        "median": 0.7841,
+        "p95": 0.8554
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1475.404,
+        "median": 1503.71,
+        "p95": 1532.25
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "transcribe",
+      "codec": "amr_nb_4750",
+      "snr": "5dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.69388,
+        "median": 0.7102,
+        "p95": 0.7393
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.7839,
+        "median": 0.7614,
+        "p95": 0.8494
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1491.916,
+        "median": 1455.97,
+        "p95": 1658.61
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "transcribe",
+      "codec": "amr_nb_4750",
+      "snr": "clean",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.7013,
+        "median": 0.7143,
+        "p95": 0.7486
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.78572,
+        "median": 0.7614,
+        "p95": 0.8855
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1592.292,
+        "median": 1600.85,
+        "p95": 1688.81
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "transcribe",
+      "codec": "g711",
+      "snr": "0dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.70876,
+        "median": 0.718,
+        "p95": 0.7812
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.79006,
+        "median": 0.7568,
+        "p95": 0.8916
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1498.882,
+        "median": 1450.5,
+        "p95": 1750.82
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "transcribe",
+      "codec": "g711",
+      "snr": "10dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.70186,
+        "median": 0.7143,
+        "p95": 0.7472
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.78212,
+        "median": 0.7614,
+        "p95": 0.8675
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1558.026,
+        "median": 1593.23,
+        "p95": 1624.85
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "transcribe",
+      "codec": "g711",
+      "snr": "5dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.70498,
+        "median": 0.7143,
+        "p95": 0.7528
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.78756,
+        "median": 0.7727,
+        "p95": 0.8735
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1507.592,
+        "median": 1513.4,
+        "p95": 1671.21
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "transcribe",
+      "codec": "g711",
+      "snr": "clean",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.69818,
+        "median": 0.7143,
+        "p95": 0.7386
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.77862,
+        "median": 0.7568,
+        "p95": 0.8614
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1531.256,
+        "median": 1468.03,
+        "p95": 1738.64
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "verbatim",
+      "codec": "amr_nb_4750",
+      "snr": "0dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.69932,
+        "median": 0.6823,
+        "p95": 0.8224
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.80478,
+        "median": 0.7727,
+        "p95": 0.9398
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1452.246,
+        "median": 1404.39,
+        "p95": 1599.16
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "verbatim",
+      "codec": "amr_nb_4750",
+      "snr": "10dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.6736,
+        "median": 0.6786,
+        "p95": 0.7188
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.78906,
+        "median": 0.7841,
+        "p95": 0.8795
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1664.046,
+        "median": 1550.29,
+        "p95": 2056.71
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "verbatim",
+      "codec": "amr_nb_4750",
+      "snr": "5dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.67162,
+        "median": 0.6786,
+        "p95": 0.7118
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.7853,
+        "median": 0.7614,
+        "p95": 0.8735
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1454.45,
+        "median": 1389.28,
+        "p95": 1690.06
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "verbatim",
+      "codec": "amr_nb_4750",
+      "snr": "clean",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.68128,
+        "median": 0.6729,
+        "p95": 0.7628
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.78782,
+        "median": 0.7614,
+        "p95": 0.9217
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1479.662,
+        "median": 1464.25,
+        "p95": 1590.8
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "verbatim",
+      "codec": "g711",
+      "snr": "0dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.68474,
+        "median": 0.6786,
+        "p95": 0.7784
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.79146,
+        "median": 0.7568,
+        "p95": 0.9157
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1503.452,
+        "median": 1599.82,
+        "p95": 1685.08
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "verbatim",
+      "codec": "g711",
+      "snr": "10dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.6758,
+        "median": 0.6748,
+        "p95": 0.7386
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.7823,
+        "median": 0.7614,
+        "p95": 0.8855
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1573.198,
+        "median": 1535.54,
+        "p95": 1752.41
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "verbatim",
+      "codec": "g711",
+      "snr": "5dB",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.6791,
+        "median": 0.6729,
+        "p95": 0.7472
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.78604,
+        "median": 0.7727,
+        "p95": 0.8916
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1467.124,
+        "median": 1437.07,
+        "p95": 1807.29
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    },
+    {
+      "source": "user_provided_youtube",
+      "reference_type": "auto_caption",
+      "stt_mode": "verbatim",
+      "codec": "g711",
+      "snr": "clean",
+      "conditions": 5,
+      "cer": {
+        "count": 5,
+        "mean": 0.67206,
+        "median": 0.6729,
+        "p95": 0.7273
+      },
+      "wer": {
+        "count": 5,
+        "mean": 0.7759,
+        "median": 0.7568,
+        "p95": 0.8735
+      },
+      "latency_ms": {
+        "count": 5,
+        "mean": 1739.684,
+        "median": 1542.92,
+        "p95": 2502.21
+      },
+      "estimated_credits": 14.86,
+      "amount_match_labels": 0
+    }
+  ],
+  "failure_condition_keys": [
+    {
+      "clip_id": "i089",
+      "stt_mode": "transcribe",
+      "codec": "amr_nb_4750",
+      "snr": 10.0,
+      "loss": 0.0
+    },
+    {
+      "clip_id": "i108",
+      "stt_mode": "verbatim",
+      "codec": "g711",
+      "snr": null,
+      "loss": 0.0
+    }
+  ],
+  "bundle_notes": {
+    "licensed_dataset_audio_included": 120,
+    "user_youtube_audio_included": 0,
+    "user_youtube_condition_rows_with_content_redacted": 80,
+    "reason": "No source-specific redistribution permission is recorded for the YouTube-derived clips.",
+    "full_unredacted_local_results_remain_under_ignored_var": true
+  },
+  "configuration": {
+    "provider": "Gnani Prisma REST v3",
+    "endpoint_path": "/stt/v3",
+    "language_code": "hi-IN",
+    "served_model_build": "not exposed by the client response",
+    "request_interval_seconds": 1.0,
+    "bias_score": 1.0,
+    "verbatim_bias_words": [
+      "brake",
+      "clutch",
+      "bearing",
+      "pressure",
+      "plate",
+      "gearbox",
+      "engine",
+      "oil",
+      "filter",
+      "labour",
+      "price",
+      "service"
+    ],
+    "noise_source": "recorded_ambient_car_engine_idle",
+    "noise_sha256": "5c242df5ce220437a07f4274e1b051bf809aabf1098c2e9741bcc4202a9ce3a3",
+    "frame_loss_percent": 0.0,
+    "impulse_profiles": [
+      "none"
+    ]
+  }
+}

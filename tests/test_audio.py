@@ -57,11 +57,14 @@ def test_clean_target_db_returns_original_audio():
     assert measured == float("inf")
 
 
-def test_noise_mix_clipped_raises_audio_error():
+def test_noise_mix_attenuates_clipped_combination_and_preserves_snr():
     speech = wav_bytes(np.full(8000, 30000, dtype=np.int16))
     noise = wav_bytes(np.full(8000, 30000, dtype=np.int16))
-    with pytest.raises(AudioError, match="noise mix clipped; lower level and rerun"):
-        mix_at_snr(speech, noise, 0.0)
+    mixed, measured = mix_at_snr(speech, noise, 0.0)
+    from parcha.audio import _read_pcm
+
+    assert measured == pytest.approx(0.0)
+    assert int(np.max(np.abs(_read_pcm(mixed).astype(np.int32)))) < 32767
 
 
 def test_unknown_codec_raises_value_error():
