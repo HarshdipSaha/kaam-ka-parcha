@@ -35,17 +35,43 @@ def test_clear_acceptance():
         "haan",
         "han",
         "haan theek hai",
+        "haan, theek hai",
         "han theek hai",
+        "haan theek hai ji",
+        "haan ji theek hai",
+        "haan bilkul theek hai",
+        "theek hai haan",
+        "theek hai, haan",
+        "theek hai haan ji",
+        "haan manzoor hai",
+        "manzoor hai",
+        "haan ji manzoor hai",
+        "manzoor hai ji",
+        "haan sahi hai",
+        "haan ji",
         "हाँ",
         "हां",
         "हाँ ठीक है",
+        "हाँ, ठीक है",
         "हां ठीक है",
+        "हाँ ठीक है जी",
+        "हाँ जी ठीक है",
+        "हाँ बिल्कुल ठीक है",
+        "हाँ मंज़ूर है",
+        "हाँ मंजूर है",
+        "मंज़ूर है",
+        "मंजूर है",
+        "हाँ जी मंज़ूर है",
+        "हाँ जी मंजूर है",
+        "हाँ सही है",
+        "हाँ जी",
         "Haan",
         "HAAN THEEK HAI",
         "haan   theek   hai",
     ]
     for phrase in accept_phrases:
         assert classify_reply(phrase) == "accept", f"Expected accept for {phrase!r}"
+
 
 
 def test_uncertain_or_correction_never_accepts():

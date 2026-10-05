@@ -18,31 +18,16 @@ from .vocabulary import AUTOMOTIVE_BIAS_WORDS
 
 REASK_FIELD_PATTERN = re.compile(r"^items\.[a-z]+-[0-9]+\.(label|amount_paise)$")
 
-ReplyClass = Literal["accept", "correction", "reject", "unclear"]
-YES = {"haan", "han", "हाँ", "हां"}
-NO = {"nahi", "nahin", "नहीं", "ना"}
-DATE_WORDS = {
-    "kal", "somvaar", "mangalvaar", "budhvaar", "guruvaar",
-    "shukravaar", "shanivaar", "ravivaar", "shaam", "subah",
-    "monday", "tuesday", "बुधवार", "मंगलवार", "सोमवार",
-    "शाम", "सुबह", "तारीख", "कल",
-}
-
-
-def classify_reply(text: str) -> ReplyClass:
-    normalized = unicodedata.normalize("NFKC", text).casefold()
-    words = re.findall(r"[a-z0-9\u0900-\u097f]+", normalized)
-    if not words:
-        return "unclear"
-    if any(word in NO for word in words):
-        remaining = [word for word in words if word not in NO]
-        return "correction" if remaining else "reject"
-    if words[0] not in YES:
-        return "unclear"
-    tail = words[1:]
-    if tail in ([], ["theek", "hai"], ["ठीक", "है"]):
-        return "accept"
-    return "unclear"
+from .readback import (
+    DATE_WORDS,
+    NO,
+    PHRASAL_AFFIRMATION_PROMPT,
+    YES,
+    ReplyClass,
+    classify_reply,
+    format_rupees,
+    make_readback,
+)
 
 
 def _item_matches_transcript(item: LineItem, norm_transcript: str, transcript_words: set[str]) -> bool:
@@ -59,22 +44,6 @@ def _item_matches_transcript(item: LineItem, norm_transcript: str, transcript_wo
         if any(w in transcript_words for w in label_words):
             return True
     return False
-
-
-def format_rupees(paise: int) -> str:
-    if paise % 100 == 0:
-        return f"₹{paise // 100}"
-    else:
-        return f"₹{paise / 100:.2f}"
-
-
-def make_readback(card: JobCard) -> str:
-    items_str = ", ".join(
-        f"{item.label}: {format_rupees(item.amount_paise if item.amount_paise is not None else 0)}"
-        for item in card.items
-    )
-    delivery_str = f"डिलीवरी {card.delivery.spoken if card.delivery else ''}"
-    return f"{items_str}. कुल {format_rupees(card.total_paise)}. {delivery_str}. ठीक है? हाँ कहें, या सुधार बताएं।"
 
 
 @dataclass(frozen=True)

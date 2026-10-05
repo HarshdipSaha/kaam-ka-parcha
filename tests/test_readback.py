@@ -29,7 +29,8 @@ def test_make_readback_formats_card_and_total():
         "front brake pad: ₹450, labour: ₹200. "
         "कुल ₹650. "
         "डिलीवरी Somvaar shaam tak. "
-        "ठीक है? हाँ कहें, या सुधार बताएं।"
+        "Agar aapko yeh manzoor hai, toh boliye: 'Haan, theek hai'. "
+        "Koi badlaav chahiye toh rate batayein."
     )
     assert text == expected
 
@@ -44,6 +45,52 @@ def test_make_readback_formats_card_and_total():
     fractional_text = make_readback(fractional_card)
     assert "spark plug: ₹150.50" in fractional_text
     assert "कुल ₹150.50" in fractional_text
+    assert "Agar aapko yeh manzoor hai, toh boliye: 'Haan, theek hai'." in fractional_text
+
+
+def test_phrasal_readback_prompt_single_item_and_multi_item():
+    from parcha.readback import PHRASAL_AFFIRMATION_PROMPT, make_readback
+    from parcha.schema import Delivery
+
+    # Single-item job card without delivery
+    single_card = JobCard(
+        items=[LineItem(id="part-1", label="engine oil", kind="part", amount_paise=120000)],
+        delivery=None,
+        evidence=(),
+    )
+    single_text = make_readback(single_card)
+    assert single_text == f"engine oil: ₹1200. कुल ₹1200. {PHRASAL_AFFIRMATION_PROMPT}"
+
+    from datetime import date
+
+    # Single-item job card with delivery
+    single_with_del = JobCard(
+        items=[LineItem(id="part-1", label="engine oil", kind="part", amount_paise=120000)],
+        delivery=Delivery(date=date(2026, 10, 6), window="afternoon", spoken="Kal dopehar tak"),
+        evidence=(),
+    )
+    single_del_text = make_readback(single_with_del)
+    assert single_del_text == f"engine oil: ₹1200. कुल ₹1200. डिलीवरी Kal dopehar tak. {PHRASAL_AFFIRMATION_PROMPT}"
+
+    # Multi-item job card (3 items)
+    multi_card = JobCard(
+        items=[
+            LineItem(id="part-1", label="clutch plate", kind="part", amount_paise=185000),
+            LineItem(id="part-2", label="mobil oil", kind="part", amount_paise=45000),
+            LineItem(id="labour-1", label="service labour", kind="labour", amount_paise=35000),
+        ],
+        delivery=Delivery(date=date(2026, 10, 7), window="evening", spoken="Budhvaar shaam tak"),
+        evidence=(),
+    )
+    multi_text = make_readback(multi_card)
+    expected_multi = (
+        "clutch plate: ₹1850, mobil oil: ₹450, service labour: ₹350. "
+        "कुल ₹2650. "
+        "डिलीवरी Budhvaar shaam tak. "
+        f"{PHRASAL_AFFIRMATION_PROMPT}"
+    )
+    assert multi_text == expected_multi
+
 
 
 def test_readback_uses_derived_total_and_marks_revision():
