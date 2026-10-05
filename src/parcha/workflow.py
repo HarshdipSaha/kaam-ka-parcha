@@ -12,7 +12,7 @@ import unicodedata
 from .audio import codec_round_trip, mix_at_snr, mulaw_to_wav, normalize_upload
 from .extract import Extractor
 from .gnani import GnaniError, PrismaClient, TimbreClient
-from .money import AbstainReason, decide_amounts, settle_card_amounts
+from .money import AbstainReason, AmountDecision, decide_amounts, settle_card_amounts
 from .schema import Evidence, JobCard, LineItem, TranscriptLog
 from .session import Conflict, Session, SessionStore
 from .vocabulary import AUTOMOTIVE_BIAS_WORDS
@@ -166,6 +166,57 @@ class Workflow:
             raise RepeatRequest(reason) from exc
         return normalized, verbatim
 
+    def _reask_amount(
+        self,
+        session: Session,
+        field: str,
+        wav: bytes,
+        audio_sha256: str,
+        expected_revision: int,
+        recorded_at_utc: datetime,
+    ) -> Session:
+        try:
+            normalized, verbatim = self._two_passes(wav)
+            if not normalized.strip() and not verbatim.strip():
+                raise RepeatRequest("empty_transcript")
+        except RepeatRequest as exc:
+            decision = AmountDecision(None, exc.reason, "")
+            logs = abstain_logs({field: exc.reason}, recorded_at_utc)
+        else:
+            reask_log = TranscriptLog(
+                role="mechanic",
+                mode=f"reask:{field}",
+                text=verbatim,
+                recorded_at_utc=recorded_at_utc,
+                audio_sha256=audio_sha256,
+            )
+            decision = decide_amounts(verbatim, normalized, expected_count=1)[0]
+            if decision.reason is None:
+                logs = (reask_log,)
+            else:
+                logs = (reask_log,) + abstain_logs({field: decision.reason}, recorded_at_utc)
+
+        item_id = field.split(".")[1]
+        items = tuple(
+            LineItem(
+                id=it.id,
+                label=it.label,
+                kind=it.kind,
+                amount_paise=decision.paise if it.id == item_id else it.amount_paise,
+            )
+            for it in session.card.items
+        )
+        evidence = [ev for ev in session.card.evidence if ev.field != field]
+        if decision.reason is None:
+            evidence.append(Evidence(field=field, quote=decision.quote, review_score=1.0))
+        new_card = JobCard(items=items, delivery=session.card.delivery, evidence=tuple(evidence))
+        return self.store.set_card(
+            session.id,
+            expected_revision=expected_revision,
+            card=new_card,
+            logs=logs,
+        )
+
     def reask(
         self,
         session_id: str,
@@ -194,6 +245,10 @@ class Workflow:
 
         wav = self.normalize_audio(blob, mime)
         audio_sha256 = hashlib.sha256(wav).hexdigest()
+
+        if field.endswith(".amount_paise"):
+            return self._reask_amount(session, field, wav, audio_sha256, expected_revision, recorded_at_utc)
+
         transcript = self.prisma.transcribe(wav, mode="transcribe")
 
         sig = inspect.signature(self.extractor.extract_field)

@@ -12,6 +12,7 @@ from parcha.audio import AudioError, normalize_upload
 from parcha.schema import Delivery, Evidence, JobCard, LineItem
 from parcha.session import Conflict, SessionStore
 from parcha.workflow import Workflow
+from tests.fakes import INTAKE_T, INTAKE_V, ScriptedPrisma
 from tests.test_schema import sample_card
 
 
@@ -259,7 +260,7 @@ def test_reask_updates_single_field_and_increments_revision():
     session = store.create()
     service = Workflow(
         store=store,
-        prisma=FakePrisma(),
+        prisma=ScriptedPrisma([INTAKE_T, INTAKE_V, "₹500", "paanch sau", "Mangalvaar subah", "rear brake pad"]),
         extractor=FakeExtractor(),
         normalize_audio=lambda blob, mime: b"RIFFpcm",
     )

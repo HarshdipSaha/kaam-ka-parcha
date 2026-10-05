@@ -41,6 +41,8 @@ class FakePrisma:
         score: float = 1.0,
     ) -> str:
         self.calls.append((wav, mode, bias, score))
+        if len(self.calls) > 2:
+            return "₹500" if mode == "transcribe" else "paanch sau"
         return (
             "front brake pad ₹450, labour ₹200, Somvaar shaam tak"
             if mode == "transcribe"

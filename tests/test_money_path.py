@@ -135,3 +135,31 @@ def test_abstained_card_cannot_be_read_back_and_reason_is_in_audit_manifest():
     with pytest.raises(Conflict, match="card needs review"):
         store.start_readback(sid, expected_revision=s.revision)
     assert "abstain:items.part-1.amount_paise" in [e["mode"] for e in audit_manifest(store.get(sid))["logs"]]
+
+
+def test_amount_reask_uses_grammar_and_keeps_other_fields():
+    prisma = ScriptedPrisma([T_W2, V_W2, "₹350", "साढ़े तीन सौ"])
+    wf, _, sid = service(prisma, CardExtractor(card(labels=("फ्रंट ब्रेक पैड", "लेबर"))))
+    s1 = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
+    s2 = wf.reask(sid, "items.part-1.amount_paise", b"r", "audio/webm", expected_revision=s1.revision)
+    assert [it.amount_paise for it in s2.card.items] == [35000, 20000]
+    assert s2.card.delivery == s1.card.delivery and review_fields(s2.card) == []
+    assert s2.logs[-1].mode == "reask:items.part-1.amount_paise"
+    assert [c[1] for c in prisma.calls[2:]] == ["transcribe", "verbatim"]
+
+
+def test_amount_reask_with_provider_429_leaves_field_unset_and_logs_reason():
+    wf, _, sid = service(ScriptedPrisma([T_EN, V_EN, GnaniError("HTTP 429", status=429)]), CardExtractor(card()))
+    s1 = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
+    s2 = wf.reask(sid, "items.part-1.amount_paise", b"r", "audio/webm", expected_revision=s1.revision)
+    assert [it.amount_paise for it in s2.card.items] == [None, 20000]
+    assert abstentions(s2)["items.part-1.amount_paise"] == "provider_429"
+
+
+def test_correction_with_two_numbers_abstains():
+    wf, _, sid = service(ScriptedPrisma([T_EN, V_EN, "₹300 ₹350", "teen sau nahi saade teen sau"]), CardExtractor(card()))
+    s1 = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
+    s2 = wf.reask(sid, "items.part-1.amount_paise", b"r", "audio/webm", expected_revision=s1.revision)
+    assert s2.card.items[0].amount_paise is None
+    assert abstentions(s2)["items.part-1.amount_paise"] == "ambiguous_attachment"
+
