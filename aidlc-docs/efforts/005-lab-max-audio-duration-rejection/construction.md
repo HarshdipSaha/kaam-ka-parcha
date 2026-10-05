@@ -17,8 +17,8 @@ All 24 calls in that earlier matrix used the same over-limit recording, so all 2
 
 - Added a 29-second REST chunk ceiling for normalized mono 8 kHz PCM in `src/parcha/lab/runner.py`.
 - Split degraded audio into chunks after applying noise, impulse, codec, and packet-loss conditions; submit chunks in order and concatenate non-empty transcript pieces.
-- Record `api_chunks` for each row and count chunks in the preflight request forecast. Credit forecast continues to use original clip duration times grid conditions.
-- If any chunk raises `GnaniError`, set the aggregate transcript to `null` and retain the provider error. This prevents a partial clip from being scored as complete.
+- Record attempted `api_chunks` for each row and count chunks in the preflight request forecast, including conservative AMR-NB frame-padding allowance. Credit forecast continues to use original clip duration times grid conditions.
+- If any chunk raises `GnaniError`, stop submitting later chunks, set the aggregate transcript to `null`, and retain the provider error. This avoids compounding spend or throttling for an already rejected row and prevents partial audio from being scored as complete.
 - Added offline regression coverage for a 32.6-second clip and for one chunk failing with HTTP 429.
 
 ## Validation
@@ -26,23 +26,23 @@ All 24 calls in that earlier matrix used the same over-limit recording, so all 2
 ### Offline
 
 - Before implementation, the new 32.6-second regression failed because forecast reported one REST call rather than two.
-- Focused runner tests after implementation: **6 passed**.
-- Full suite after both regressions: **195 passed**, with one existing Starlette/httpx deprecation warning.
+- Focused runner tests after implementation: **7 passed**, with one existing Starlette/httpx deprecation warning.
+- Full suite: **196 passed**, with one existing Starlette/httpx deprecation warning.
 
 ### Live original failure replay
 
 - Audio: `car_engine_idle_16k.wav`, 32.6 seconds.
 - Grid: one G.711 clean condition; forecast was two REST calls and 6.52 credits.
-- Result: two chunks, no provider error, empty transcript, zero recognized words for this stationary-noise sample; recorded spend: 6.5201 credits.
+- Result: two chunks, no provider error, empty transcript, zero recognized words for this stationary-noise sample; runner-calculated credit estimate: 6.5201 credits. Provider billing was not inspected.
 - This confirms the original 400 was caused by exceeding the REST duration ceiling. It does not test recognition quality on speech.
 
 ### Noisy speech spot check
 
 - Audio: `mechanic_in_garage_noise.wav`, 4.8 seconds (existing synthesized mechanic speech mixed with recorded Volvo engine rumble).
-- Four G.711 calls: clean, `impact_wrench`, `metal_spanner`, and `compressor_exhaust`; forecast cost 3.84 credits.
+- Four G.711 calls: clean, `impact_wrench`, `metal_spanner`, and `compressor_exhaust`; forecast credit estimate 3.84 credits. Provider billing was not inspected.
 - Clean and `impact_wrench` returned: `फ्रंट ब्रेक पैड 04:30 100 लेबर 200 मंगलवार शाम तक`.
 - The intended amount in this demonstration phrase is ₹450 and labour is ₹200. The returned `100` is wrong for the brake-pad item. This is an observed real failure of estimate accuracy; duration chunking does not fix recognition or money extraction.
-- `metal_spanner` and `compressor_exhaust` returned HTTP 429; they are rejected calls, not zero hallucinations. The generic client stores only the status and does not expose the response body or rate-limit headers, so the precise 429 cause (burst limit versus account quota or provider-side policy) remains undetermined. Two of four calls succeeding shows the service was not wholly down during the probe.
+- `metal_spanner` and `compressor_exhaust` returned HTTP 429; they are rejected calls, not zero hallucinations. HTTP 429 means the server is rate limiting requests ([RFC 6585, section 4](https://www.rfc-editor.org/rfc/rfc6585.html#section-4)); the generic client stores only the status and does not expose the response body or `Retry-After` header, so the provider-specific policy and wait time remain undetermined. Two of four calls succeeding shows the service was not wholly down during the probe.
 - Public web search found the Vachana STT overview but no primary endpoint reference documenting 30-second limits or 429 semantics. The duration limit above is based on the direct API response.
 
 Live outputs are ignored under `var/lab/`. No key or authorization header was logged.

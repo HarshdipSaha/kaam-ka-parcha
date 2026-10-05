@@ -23,6 +23,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_ENGINE_NOISE_PATH = PROJECT_ROOT / "data" / "real_world_samples" / "car_engine_idle_16k.wav"
 REST_MAX_AUDIO_SECONDS = 29.0  # leave margin under Gnani REST's 30-second limit
 SAMPLE_RATE = 8000
+# FFmpeg's AMR-NB frame round-trip can pad the clip by 20 ms at its tail.
+FORECAST_CODEC_PADDING_SECONDS = {"amr_nb_4750": 0.05}
 
 __all__ = [
     "BudgetExceeded",
@@ -232,10 +234,20 @@ class Runner:
         total_duration = 0.0
         for clip in clips:
             clip_snrs, clip_profiles = self._conditions_for_clip(clip, snr_dbs, impulse_profiles)
-            conditions = len(codecs) * len(clip_snrs) * len(loss_percents) * len(clip_profiles)
+            conditions_per_codec = len(clip_snrs) * len(loss_percents) * len(clip_profiles)
+            conditions = len(codecs) * conditions_per_codec
             duration = get_clip_duration(clip, self.config.audio_root)
-            chunks_per_condition = max(1, int(np.ceil(duration / REST_MAX_AUDIO_SECONDS)))
-            total_calls += conditions * chunks_per_condition
+            chunks_per_codec = sum(
+                max(
+                    1,
+                    int(np.ceil(
+                        (duration + FORECAST_CODEC_PADDING_SECONDS.get(codec, 0.0))
+                        / REST_MAX_AUDIO_SECONDS
+                    )),
+                )
+                for codec in codecs
+            )
+            total_calls += conditions_per_codec * chunks_per_codec
             total_duration += duration * conditions
         projected_credits = total_duration * self.config.credits_per_second
 
@@ -313,7 +325,9 @@ class Runner:
                             chunk_transcripts: list[str] = []
                             audio_chunks = self._split_for_rest(degraded_wav)
                             chunk_errors: list[str] = []
+                            attempted_chunks = 0
                             for audio_chunk in audio_chunks:
+                                attempted_chunks += 1
                                 try:
                                     try:
                                         chunk_transcripts.append(prisma.transcribe(audio_chunk, mode="transcribe"))
@@ -321,6 +335,7 @@ class Runner:
                                         chunk_transcripts.append(prisma.transcribe(audio_chunk))
                                 except GnaniError as exc:
                                     chunk_errors.append(str(exc))
+                                    break
                             if chunk_errors:
                                 transcript = None
                                 transcription_error = "; ".join(chunk_errors)
@@ -359,7 +374,7 @@ class Runner:
                                 "variant": variant,
                                 "transcript": transcript,
                                 "transcription_error": transcription_error,
-                                "api_chunks": len(audio_chunks),
+                                "api_chunks": attempted_chunks,
                                 "reference": reference,
                                 "cer": cer_score,
                                 "amount_matched": amt_match,

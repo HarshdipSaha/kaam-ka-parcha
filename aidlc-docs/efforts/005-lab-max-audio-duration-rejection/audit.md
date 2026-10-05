@@ -6,8 +6,8 @@
 | Requirement | Evidence | Audit result |
 |---|---|---|
 | REST requests at or below provider limit | 32.6-second offline fixture is submitted as 29.0s + 3.6s; live 32.6-second recording returned without duration rejection | Pass |
-| Request forecast accounts for chunks | Regression expects two calls and unchanged 6.52-credit estimate | Pass |
-| Any chunk rejection fails the full row closed | Regression raises HTTP 429 on second chunk and asserts null transcript / null hallucination count | Pass |
+| Request forecast accounts for chunks, including AMR-NB frame padding | 29-second AMR regression verifies forecast and actual runner both make two requests | Pass |
+| Any chunk rejection fails the full row closed and stops later calls | 70-second regression rejects the first chunk and verifies no later chunks are sent; transcript and hallucination count remain null | Pass |
 | Real noisy condition is evaluated honestly | Two variants returned a wrong spoken amount; two later calls were API rejected with HTTP 429 | Partial; estimate quality gate not met |
 | No claims of broad model accuracy | Effort-state and construction log explicitly constrain conclusions to the probed clips | Pass |
 

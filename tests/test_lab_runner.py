@@ -327,10 +327,46 @@ def test_runner_splits_audio_longer_than_gnani_rest_limit(tmp_path):
     assert results[0]["api_chunks"] == 2
 
 
+def test_forecast_accounts_for_amr_padding_at_chunk_boundary(tmp_path):
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    (audio_dir / "s001.wav").write_bytes(make_test_wav(29 * 8000))
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(json.dumps({
+        "id": "s001", "text": "idle", "reference_transcribe": "",
+        "entities": {}, "audio": "s001.wav", "kind": "engine_only",
+        "seed": 1, "source": "recorded_ambient",
+    }) + "\n", encoding="utf-8")
+
+    class CountingPrisma(FakePrisma):
+        def __init__(self):
+            super().__init__(reply="")
+            self.durations = []
+
+        def transcribe(self, wav: bytes, *, mode: str = "transcribe") -> str:
+            self.durations.append(len(_read_pcm(wav)) / 8000)
+            return super().transcribe(wav, mode=mode)
+
+    client = CountingPrisma()
+    runner = Runner(RunnerConfig(
+        manifest_path=manifest, audio_root=audio_dir, output_path=tmp_path / "out.jsonl",
+        codecs=["amr_nb_4750"], snr_dbs=[None], loss_percents=[0],
+        impulse_profiles=[None], max_credits=10, remaining_credits=10,
+    ), client=client)
+
+    forecast = runner.forecast()
+    result = runner.run()[0]
+
+    assert forecast["total_calls"] == 2
+    assert client.call_count == 2
+    assert result["api_chunks"] == 2
+    assert max(client.durations) <= 29
+
+
 def test_runner_marks_long_clip_rejected_if_any_chunk_fails(tmp_path):
     audio_dir = tmp_path / "audio"
     audio_dir.mkdir()
-    (audio_dir / "s001.wav").write_bytes(make_test_wav(32 * 8000 + 4800))
+    (audio_dir / "s001.wav").write_bytes(make_test_wav(70 * 8000))
     manifest = tmp_path / "manifest.jsonl"
     manifest.write_text(json.dumps({
         "id": "s001", "text": "idle", "reference_transcribe": "",
@@ -344,9 +380,7 @@ def test_runner_marks_long_clip_rejected_if_any_chunk_fails(tmp_path):
 
         def transcribe(self, wav: bytes, *, mode: str = "transcribe") -> str:
             self.call_count += 1
-            if self.call_count == 2:
-                raise GnaniError("Gnani request failed: HTTP 429")
-            return "unexpected words"
+            raise GnaniError("Gnani request failed: HTTP 429")
 
     client = PartlyRejectedPrisma()
     config = RunnerConfig(
@@ -356,8 +390,8 @@ def test_runner_marks_long_clip_rejected_if_any_chunk_fails(tmp_path):
     )
     result = Runner(config, client=client).run()[0]
 
-    assert client.call_count == 2
-    assert result["api_chunks"] == 2
+    assert client.call_count == 1
+    assert result["api_chunks"] == 1
     assert result["transcript"] is None
     assert result["transcription_error"] == "Gnani request failed: HTTP 429"
     assert result["hallucinated_word_count"] is None
