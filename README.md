@@ -5,6 +5,7 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
 [![Pytest Passed](https://img.shields.io/badge/tests-139%20passed%20(100%25%20offline)-brightgreen.svg)](tests/)
+[![Playwright E2E](https://img.shields.io/badge/playwright-E2E%20Passed%20(4%20Viewports)-purple.svg)](scripts/run_webattack_suite.py)
 [![Gnani AI](https://img.shields.io/badge/Gnani%20AI-Prisma%20%7C%20Timbre-orange.svg)](https://vachana.ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -70,6 +71,18 @@ flowchart TD
 3. **The Artefact (Confirmed Parcha):**
    - **Tamper-Evident PDF**: Contains an itemized paise-accurate breakdown, promised delivery timestamp, verbatim Hinglish transcripts, audio SHA-256 signatures, and an embedded `transcripts.json` stream for automated auditing.
    - **WhatsApp Plain-Text Summary**: Pre-formatted for instant one-click copying to send to the vehicle owner.
+
+### Visual Interface Walkthrough
+
+| Leg 1: Mechanic Workshop Portal (`/workshop`) | Leg 2: Customer Telephony Review (`/customer/{id}`) |
+|:---:|:---:|
+| ![Workshop Parsed Card](docs/webattack_artifacts/workshop_parsed_card.png) | ![Customer Telephony Review](docs/webattack_artifacts/customer_awaiting_reply.png) |
+| *Real-time Hinglish dictation parsed into paise-accurate items & delivery date* | *Narrowband 8 kHz telephony read-back with simulated line disclosure* |
+
+| Customer Sealed State | Mobile Telephony Viewport (iPhone 14) |
+|:---:|:---:|
+| ![Customer Sealed State](docs/webattack_artifacts/customer_sealed_state.png) | ![Customer Mobile Viewport](docs/webattack_artifacts/customer_Mobile_iPhone14.png) |
+| *Cryptographically sealed job card with tamper-evident PDF & WhatsApp copy* | *Tested responsive layout across desktop, tablet, and mobile viewports* |
 
 ---
 
@@ -308,6 +321,16 @@ Output:
 - `tests/test_audio.py`: Tests FFmpeg audio degradation, G.711 / AMR-NB encoding, and SNR mixing.
 - `tests/test_lab_report.py`: Validates fail-closed consent guards, competitor bans, and paired delta math.
 - `tests/test_ws_frames.py`: Verifies 1024-byte PCM packetization, 8-frame silence flush padding, and VAD headers.
+
+### E2E Playwright WebAttack & Security Suite
+In addition to the unit tests, an end-to-end browser automation and security probing suite tests live application performance:
+```powershell
+.\.venv\Scripts\python.exe scripts/run_webattack_suite.py
+```
+- **Responsive Viewport Audit**: Validates `/workshop` and `/customer/{id}` across 4 form factors (1080p Desktop, 1440w Ultra-wide, 768w Tablet, 390w iPhone 14) with **0 horizontal scroll overflows** and high contrast visibility.
+- **Dual-Leg E2E Driving**: Automates mechanic intake -> telephony read-back -> voice correction delta -> customer affirmation -> PDF & WhatsApp sealing.
+- **Negative Security Probes**: Verifies 404 on invalid session, 409 on unconfirmed PDF download, 404 on path traversal attempts (`/customer/../../etc/passwd`), 422 on empty audio payloads, and 409 on stale session revision tampering.
+- Full verification logs and screenshot proofs saved in [`docs/webattack_artifacts/`](docs/webattack_artifacts/).
 
 ---
 
