@@ -72,6 +72,162 @@ def test_duplicate_item_from_corrupted_transcribe_pass_prefers_verbatim_evidence
     assert card.delivery.spoken == "मंगलवार शाम तक"
     assert not card.needs_review
 
+def test_semantic_duplicate_label_variant_prefers_verbatim_evidence():
+    """A partial or punctuated label from one STT pass must not create a second part."""
+    payload = {
+        "items": [
+            {"id": "part-1", "label": "brake-pad", "kind": "part", "amount_paise": 10000},
+            {"id": "part-2", "label": "front brake pad", "kind": "part", "amount_paise": 45000},
+        ],
+        "delivery": None,
+        "evidence": [
+            {"field": "items.part-1.label", "quote": "brake-pad 100", "review_score": 1.0},
+            {"field": "items.part-1.amount_paise", "quote": "brake-pad 100", "review_score": 1.0},
+            {"field": "items.part-2.label", "quote": "front brake pad saade chaar sau", "review_score": 1.0},
+            {"field": "items.part-2.amount_paise", "quote": "front brake pad saade chaar sau", "review_score": 1.0},
+        ],
+    }
+    http = httpx.Client(transport=httpx.MockTransport(lambda _: fake_chat(payload)))
+    card = Extractor("http://test/v1", "key", "model", http).extract_card(
+        "brake-pad 100",
+        "front brake pad saade chaar sau",
+        WHEN,
+    )
+    assert [(item.label, item.amount_paise) for item in card.items] == [("front brake pad", 45000)]
+
+
+@pytest.mark.parametrize("bad_amount", [True, False, "750", 450.5, -10])
+def test_malformed_amount_is_rejected_before_it_can_change_a_total(bad_amount):
+    payload = {
+        "items": [{"id": "part-1", "label": "brake pad", "kind": "part", "amount_paise": bad_amount}],
+        "delivery": None,
+        "evidence": [],
+    }
+    http = httpx.Client(transport=httpx.MockTransport(lambda _: fake_chat(payload)))
+    with pytest.raises(ExtractionError, match="(amount_paise must be an integer|greater than or equal to 0)"):
+        Extractor("http://test/v1", "key", "model", http).extract_card("brake pad", "brake pad", WHEN)
+
+
+@pytest.mark.parametrize("bad_amount", [True, False, "750", 450.5, -10])
+def test_malformed_amount_in_extract_field_is_rejected(bad_amount):
+    old_card = JobCard(
+        items=[LineItem(id="part-1", label="brake pad", kind="part", amount_paise=None)],
+        delivery=None,
+        evidence=[],
+    )
+    payload = {
+        "value": bad_amount,
+        "evidence_quote": "750",
+        "review_score": 0.9,
+    }
+    http = httpx.Client(transport=httpx.MockTransport(lambda _: fake_chat(payload)))
+    with pytest.raises(ExtractionError, match="Invalid item update"):
+        Extractor("http://test/v1", "key", "model", http).extract_field(
+            "items.part-1.amount_paise", "750 rupaye", old_card, WHEN
+        )
+
+
+def test_semantic_duplicate_word_order_and_punctuation():
+    payload = {
+        "items": [
+            {"id": "part-1", "label": "brake pad, front", "kind": "part", "amount_paise": 45000},
+            {"id": "part-2", "label": "front brake pad", "kind": "part", "amount_paise": 45000},
+        ],
+        "delivery": None,
+        "evidence": [
+            {"field": "items.part-1.label", "quote": "front brake pad", "review_score": 0.95},
+            {"field": "items.part-1.amount_paise", "quote": "450", "review_score": 0.95},
+            {"field": "items.part-2.label", "quote": "front brake pad", "review_score": 0.95},
+            {"field": "items.part-2.amount_paise", "quote": "450", "review_score": 0.95},
+        ],
+    }
+    http = httpx.Client(transport=httpx.MockTransport(lambda _: fake_chat(payload)))
+    card = Extractor("http://test/v1", "key", "model", http).extract_card(
+        "front brake pad 450", "front brake pad 450", WHEN
+    )
+    assert len(card.items) == 1
+    assert card.items[0].label in {"front brake pad", "brake pad, front"}
+
+
+def test_negative_front_vs_rear_brake_pad_retained_as_separate_parts():
+    payload = {
+        "items": [
+            {"id": "part-1", "label": "front brake pad", "kind": "part", "amount_paise": 45000},
+            {"id": "part-2", "label": "rear brake pad", "kind": "part", "amount_paise": 35000},
+        ],
+        "delivery": None,
+        "evidence": [
+            {"field": "items.part-1.label", "quote": "front brake pad", "review_score": 1.0},
+            {"field": "items.part-1.amount_paise", "quote": "450", "review_score": 1.0},
+            {"field": "items.part-2.label", "quote": "rear brake pad", "review_score": 1.0},
+            {"field": "items.part-2.amount_paise", "quote": "350", "review_score": 1.0},
+        ],
+    }
+    http = httpx.Client(transport=httpx.MockTransport(lambda _: fake_chat(payload)))
+    card = Extractor("http://test/v1", "key", "model", http).extract_card(
+        "front brake pad 450, rear brake pad 350",
+        "front brake pad 450, rear brake pad 350",
+        WHEN,
+    )
+    assert len(card.items) == 2
+    labels = {it.label for it in card.items}
+    assert labels == {"front brake pad", "rear brake pad"}
+    assert card.total_paise == 80000
+
+
+def test_negative_brake_pad_vs_brake_disc_retained_as_separate_parts():
+    payload = {
+        "items": [
+            {"id": "part-1", "label": "brake pad", "kind": "part", "amount_paise": 45000},
+            {"id": "part-2", "label": "brake disc", "kind": "part", "amount_paise": 120000},
+        ],
+        "delivery": None,
+        "evidence": [
+            {"field": "items.part-1.label", "quote": "brake pad", "review_score": 1.0},
+            {"field": "items.part-1.amount_paise", "quote": "450", "review_score": 1.0},
+            {"field": "items.part-2.label", "quote": "brake disc", "review_score": 1.0},
+            {"field": "items.part-2.amount_paise", "quote": "1200", "review_score": 1.0},
+        ],
+    }
+    http = httpx.Client(transport=httpx.MockTransport(lambda _: fake_chat(payload)))
+    card = Extractor("http://test/v1", "key", "model", http).extract_card(
+        "brake pad 450, brake disc 1200",
+        "brake pad 450, brake disc 1200",
+        WHEN,
+    )
+    assert len(card.items) == 2
+    labels = {it.label for it in card.items}
+    assert labels == {"brake pad", "brake disc"}
+    assert card.total_paise == 165000
+
+
+def test_tie_candidate_removes_total_and_requires_review():
+    payload = {
+        "items": [
+            {"id": "part-1", "label": "front brake pad", "kind": "part", "amount_paise": 45000},
+            {"id": "part-2", "label": "brake-pad", "kind": "part", "amount_paise": 10000},
+        ],
+        "delivery": None,
+        "evidence": [
+            {"field": "items.part-1.label", "quote": "unmentioned phrase", "review_score": 0.5},
+            {"field": "items.part-1.amount_paise", "quote": "unmentioned 450", "review_score": 0.5},
+            {"field": "items.part-2.label", "quote": "unmentioned phrase", "review_score": 0.5},
+            {"field": "items.part-2.amount_paise", "quote": "unmentioned 100", "review_score": 0.5},
+        ],
+    }
+    http = httpx.Client(transport=httpx.MockTransport(lambda _: fake_chat(payload)))
+    card = Extractor("http://test/v1", "key", "model", http).extract_card(
+        "verbatim something else",
+        "verbatim something else",
+        WHEN,
+    )
+    assert len(card.items) == 1
+    assert card.items[0].amount_paise is None
+    assert card.needs_review is True
+    assert card.maybe_total_paise is None
+
+
+
 def test_missing_amount_is_a_reaskable_draft():
     payload = {"items": [{"id":"part-1","label":"front brake pad","kind":"part",
                           "amount_paise":None}], "delivery":None,

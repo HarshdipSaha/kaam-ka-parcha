@@ -4,7 +4,7 @@
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
-[![Pytest Passed](https://img.shields.io/badge/tests-141%20passed%20(100%25%20offline)-brightgreen.svg)](tests/)
+[![Pytest Passed](https://img.shields.io/badge/tests-170%20passed%20(100%25%20offline)-brightgreen.svg)](tests/)
 [![Playwright E2E](https://img.shields.io/badge/playwright-E2E%20Passed%20(4%20Viewports)-purple.svg)](scripts/run_webattack_suite.py)
 [![Gnani AI](https://img.shields.io/badge/Gnani%20AI-Prisma%20%7C%20Timbre-orange.svg)](https://vachana.ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -135,7 +135,7 @@ Rather than relying on best-case clean audio demos, Kaam Ka Parcha includes a de
 │           ├── metrics.py       # Levenshtein distance, CER, WER, and hallucination scoring
 │           ├── report.py        # Private analysis report & guarded public delta exporter
 │           └── runner.py        # Matrix evaluation runner across codecs and SNRs
-└── tests/                       # 100% offline unit & integration test suite (139 tests)
+└── tests/                       # 100% offline unit & integration test suite (170 tests)
 ```
 
 ---
@@ -311,7 +311,7 @@ The test suite runs **100% offline** using mock fixtures and synthetic audio buf
 
 Output:
 ```
-141 passed, 1 warning in 19.12s
+170 passed, 2 warnings in 24.31s
 ```
 
 ### Test Coverage Highlights

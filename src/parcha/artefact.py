@@ -10,8 +10,9 @@ from .session import Conflict, Session
 from .workflow import format_rupees
 
 
-def attach_transcripts(pdf_bytes: bytes, session: Session) -> bytes:
-    evidence = {
+def audit_manifest(session: Session) -> dict:
+    """Return the exact evidence covered by the PDF and attachment digest."""
+    return {
         "session_id": session.id,
         "revision": session.revision,
         "confirmed_at_utc": session.confirmed_at_utc.isoformat() if session.confirmed_at_utc else None,
@@ -26,10 +27,18 @@ def attach_transcripts(pdf_bytes: bytes, session: Session) -> bytes:
             for log in session.logs
         ],
     }
-    canonical_evidence = json.dumps(
-        evidence, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+
+
+def audit_manifest_sha256(session: Session) -> str:
+    canonical_manifest = json.dumps(
+        audit_manifest(session), ensure_ascii=False, separators=(",", ":"), sort_keys=True
     ).encode("utf-8")
-    evidence["audit_manifest_sha256"] = hashlib.sha256(canonical_evidence).hexdigest()
+    return hashlib.sha256(canonical_manifest).hexdigest()
+
+
+def attach_transcripts(pdf_bytes: bytes, session: Session) -> bytes:
+    evidence = audit_manifest(session)
+    evidence["audit_manifest_sha256"] = audit_manifest_sha256(session)
 
     writer = PdfWriter()
     writer.append_pages_from_reader(PdfReader(BytesIO(pdf_bytes)))
@@ -67,24 +76,7 @@ def render_pdf(session: Session) -> bytes:
     c.drawString(50, 775, "Vehicle: KA-01-AB-1234 (Synthetic Demo)")
     c.drawString(50, 760, f"Session: {session.id} | Revision: {session.revision}")
     c.drawString(50, 745, f"Confirmed (UTC): {session.confirmed_at_utc.isoformat()}")
-    audit_evidence = {
-        "session_id": session.id,
-        "revision": session.revision,
-        "confirmed_at_utc": session.confirmed_at_utc.isoformat(),
-        "logs": [
-            {
-                "role": log.role,
-                "mode": log.mode,
-                "text": log.text,
-                "recorded_at_utc": log.recorded_at_utc.isoformat(),
-                "audio_sha256": log.audio_sha256,
-            }
-            for log in session.logs
-        ],
-    }
-    audit_digest = hashlib.sha256(
-        json.dumps(audit_evidence, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
-    ).hexdigest()
+    audit_digest = audit_manifest_sha256(session)
     c.setFont("Helvetica", 7)
     c.drawString(50, 733, f"Audit manifest SHA-256: {audit_digest}")
 

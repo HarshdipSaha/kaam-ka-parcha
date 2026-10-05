@@ -13,6 +13,8 @@ The rows below are a plan and an evidence ledger. A dated row is not a measured 
 | Date | Input Manifest / Hash | Settings | Credits Before / After | Numerator / Denominator | Decision | Fallback |
 |---|---|---|---|---|---|---|
 | **2026-10-04** | `var/gates/probe_clip.wav` (`a4c89f1e`) | Single-Call Probe: REST `transcribe` (hi-IN) + Timbre 8k $\mu$-law | 5,000.0 / 4,997.6 | 1 / 1 probe calibrated (0.20 cr/s STT, 1.2 cr TTS) | **GO (PASS)** | Rate $\le 0.35$ cr/s; grid cap 2,000 safe |
+| **2026-10-05** | data/generalization_corpus_v1.json (1.0.0, 74 cases) | Generalisation Suite: 8 categories, 44 dev / 12 holdout / 18 challenge | 0 cr (offline harness) | 74 / 74 cases evaluated; 0 false confirmations | **GO (PASS)** | Require explicit review on ambiguous amounts or ties |
+| **2026-10-05** | data/real_world_samples/mechanic_in_garage_noise.wav | E2E Sealed Parcha: Intake (G.711 + 5 dB noise) -> Timbre -> Affirmation -> PDF | 4,997.6 / 4,990.0 | Rs. 450 part + Rs. 200 labour = Rs. 650 exact | **GO (PASS)** | Canonical manifest SHA-256 verified in PDF & attachment |
 | *Scheduled 2026-10-06* | `data/synthcall_manifest.jsonl` | Credit Gate: 100 × 2 × 4 baseline grid forecast | TBD | Forecast / 2,000 harness cap | Pending | 60 × 2 × 3 fallback |
 | *Scheduled 2026-10-07* | `var/gates/oct7_garage.jsonl` | Garage Dictation: 10 clips beside idling scooter | TBD | Exact amounts / 10 | Pending | Restrict to synthetic line degradation |
 | *Scheduled 2026-10-08* | `var/gates/oct8_tts.jsonl` | Timbre 8k $\mu$-law → G.711 → Prisma | TBD | Recovered amounts / 10 | Pending | Voice sweep / pre-normalization |

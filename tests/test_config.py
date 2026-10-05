@@ -1,7 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 from parcha.app import create_app
-from parcha.config import Settings
+from parcha.config import DEFAULT_TELEPHONY_NOISE_PATH, Settings
+
 
 
 def test_offline_health_does_not_need_credentials(monkeypatch):
@@ -63,3 +64,24 @@ def test_settings_secrets_not_in_repr():
     as_str = repr(settings)
     assert "super-secret-gnani" not in as_str
     assert "super-secret-groq" not in as_str
+
+
+def test_default_noise_asset_path_is_independent_of_current_directory(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    settings = Settings.from_mapping({})
+    assert settings.telephony_noise_path == DEFAULT_TELEPHONY_NOISE_PATH
+    assert settings.telephony_noise_path.is_file()
+
+
+def test_default_services_loads_from_temporary_directory(monkeypatch, tmp_path):
+    from parcha.app import default_services
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("API_KEY", "test-key")
+    monkeypatch.setenv("EXTRACTOR_BASE_URL", "https://api.groq.com/openai/v1")
+    monkeypatch.setenv("EXTRACTOR_API_KEY", "test-key")
+    monkeypatch.setenv("EXTRACTOR_MODEL", "llama-3.3-70b-versatile")
+    services = default_services()
+    assert services.settings.telephony_noise_path.is_file()
+    assert services.workflow.use_bias is True
+    assert services.workflow.noise_source == "recorded_engine_idle"

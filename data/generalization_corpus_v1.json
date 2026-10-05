@@ -1,0 +1,2110 @@
+{
+  "version": "1.0.0",
+  "description": "Generalisation evaluation corpus across 8 required operational categories for Kaam Ka Parcha",
+  "created_date": "2026-10-05",
+  "total_cases": 74,
+  "split_counts": {
+    "development": 44,
+    "holdout": 12,
+    "challenge": 18
+  },
+  "category_counts": {
+    "adversarial_numbers_timestamps": 8,
+    "ambiguous_or_missing_amounts": 8,
+    "clean_workshop_speech": 10,
+    "corrections_reasks": 8,
+    "different_speakers_regions_pacing": 10,
+    "duplicate_near_duplicate_labels": 10,
+    "engine_road_workshop_noise": 10,
+    "multiple_parts_and_labour": 10
+  },
+  "cases": [
+    {
+      "id": "CORP-001",
+      "category": "clean_workshop_speech",
+      "split": "development",
+      "provenance": "consented_workshop_mechanic_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_delhi_mechanic_normal_pace",
+      "transcript_verbatim": "front brake pad badla chaar sau pachaas rupaye, labour do sau rupaye, Somvaar shaam tak",
+      "transcript_normalized": "front brake pad badla chaar sau pachaas rupaye, labour do sau rupaye, Somvaar shaam tak",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "front brake pad",
+          "amount_paise": 45000
+        },
+        {
+          "kind": "labour",
+          "label": "labour",
+          "amount_paise": 20000
+        }
+      ],
+      "expected_total_paise": 65000,
+      "expected_delivery": {
+        "spoken": "Somvaar shaam tak"
+      },
+      "requires_review": false
+    },
+    {
+      "id": "CORP-002",
+      "category": "clean_workshop_speech",
+      "split": "development",
+      "provenance": "consented_workshop_mechanic_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_delhi_mechanic_normal_pace",
+      "transcript_verbatim": "mobil oil chaar sau rupaye aur oil filter ek sau pachaas rupaye, kal dopahar tak",
+      "transcript_normalized": "mobil oil chaar sau rupaye aur oil filter ek sau pachaas rupaye, kal dopahar tak",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "mobil oil",
+          "amount_paise": 40000
+        },
+        {
+          "kind": "part",
+          "label": "oil filter",
+          "amount_paise": 15000
+        }
+      ],
+      "expected_total_paise": 55000,
+      "expected_delivery": {
+        "spoken": "kal dopahar tak"
+      },
+      "requires_review": false
+    },
+    {
+      "id": "CORP-003",
+      "category": "clean_workshop_speech",
+      "split": "development",
+      "provenance": "consented_workshop_mechanic_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_delhi_mechanic_normal_pace",
+      "transcript_verbatim": "spark plug badla dedh sau rupaye ka aur tuning labour ek sau rupaye",
+      "transcript_normalized": "spark plug badla dedh sau rupaye ka aur tuning labour ek sau rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "spark plug",
+          "amount_paise": 15000
+        },
+        {
+          "kind": "labour",
+          "label": "tuning labour",
+          "amount_paise": 10000
+        }
+      ],
+      "expected_total_paise": 25000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-004",
+      "category": "clean_workshop_speech",
+      "split": "development",
+      "provenance": "consented_workshop_mechanic_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_delhi_mechanic_normal_pace",
+      "transcript_verbatim": "rear brake shoe badalna hai teen sau rupaye ka, Mangalvaar shaam tak",
+      "transcript_normalized": "rear brake shoe badalna hai teen sau rupaye ka, Mangalvaar shaam tak",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "rear brake shoe",
+          "amount_paise": 30000
+        }
+      ],
+      "expected_total_paise": 30000,
+      "expected_delivery": {
+        "spoken": "Mangalvaar shaam tak"
+      },
+      "requires_review": false
+    },
+    {
+      "id": "CORP-005",
+      "category": "clean_workshop_speech",
+      "split": "development",
+      "provenance": "consented_workshop_mechanic_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_delhi_mechanic_normal_pace",
+      "transcript_verbatim": "clutch plate ka kaam hoga baarah sau rupaye, fitting labour teen sau",
+      "transcript_normalized": "clutch plate ka kaam hoga baarah sau rupaye, fitting labour teen sau",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "clutch plate",
+          "amount_paise": 120000
+        },
+        {
+          "kind": "labour",
+          "label": "fitting labour",
+          "amount_paise": 30000
+        }
+      ],
+      "expected_total_paise": 150000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-006",
+      "category": "clean_workshop_speech",
+      "split": "development",
+      "provenance": "consented_workshop_mechanic_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_delhi_mechanic_normal_pace",
+      "transcript_verbatim": "battery replace ki do hazaar rupaye, purani battery wapas kar di",
+      "transcript_normalized": "battery replace ki do hazaar rupaye, purani battery wapas kar di",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "battery",
+          "amount_paise": 200000
+        }
+      ],
+      "expected_total_paise": 200000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-007",
+      "category": "clean_workshop_speech",
+      "split": "holdout",
+      "provenance": "consented_workshop_mechanic_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_delhi_mechanic_normal_pace",
+      "transcript_verbatim": "headlight bulb badla assi rupaye aur fitting charges pachaas rupaye",
+      "transcript_normalized": "headlight bulb badla assi rupaye aur fitting charges pachaas rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "headlight bulb",
+          "amount_paise": 8000
+        },
+        {
+          "kind": "labour",
+          "label": "fitting charges",
+          "amount_paise": 5000
+        }
+      ],
+      "expected_total_paise": 13000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-008",
+      "category": "clean_workshop_speech",
+      "split": "holdout",
+      "provenance": "consented_workshop_mechanic_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_delhi_mechanic_normal_pace",
+      "transcript_verbatim": "drive chain sprocket set do hazaar chaar sau rupaye, Budhvaar subah tak",
+      "transcript_normalized": "drive chain sprocket set do hazaar chaar sau rupaye, Budhvaar subah tak",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "drive chain sprocket set",
+          "amount_paise": 240000
+        }
+      ],
+      "expected_total_paise": 240000,
+      "expected_delivery": {
+        "spoken": "Budhvaar subah tak"
+      },
+      "requires_review": false
+    },
+    {
+      "id": "CORP-009",
+      "category": "clean_workshop_speech",
+      "split": "holdout",
+      "provenance": "consented_workshop_mechanic_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_delhi_mechanic_normal_pace",
+      "transcript_verbatim": "air filter do sau pachaas rupaye aur general service paanch sau rupaye",
+      "transcript_normalized": "air filter do sau pachaas rupaye aur general service paanch sau rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "air filter",
+          "amount_paise": 25000
+        },
+        {
+          "kind": "labour",
+          "label": "general service",
+          "amount_paise": 50000
+        }
+      ],
+      "expected_total_paise": 75000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-010",
+      "category": "clean_workshop_speech",
+      "split": "holdout",
+      "provenance": "consented_workshop_mechanic_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_delhi_mechanic_normal_pace",
+      "transcript_verbatim": "carburetor clean kiya aur kit daali teen sau pachaas rupaye",
+      "transcript_normalized": "carburetor clean kiya aur kit daali teen sau pachaas rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "carburetor kit",
+          "amount_paise": 35000
+        }
+      ],
+      "expected_total_paise": 35000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-011",
+      "category": "engine_road_workshop_noise",
+      "split": "development",
+      "provenance": "workshop_acoustic_benchmark_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "engine_idle",
+      "approx_snr_db": 5.0,
+      "speaker_profile": "male_garage_mechanic_noisy_background",
+      "transcript_verbatim": "front shocker leak hai, seal aur oil teen sau rupaye, labour do sau",
+      "transcript_normalized": "front shocker leak hai, seal aur oil teen sau rupaye, labour do sau",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "shocker seal aur oil",
+          "amount_paise": 30000
+        },
+        {
+          "kind": "labour",
+          "label": "labour",
+          "amount_paise": 20000
+        }
+      ],
+      "expected_total_paise": 50000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-012",
+      "category": "engine_road_workshop_noise",
+      "split": "development",
+      "provenance": "workshop_acoustic_benchmark_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "engine_idle",
+      "approx_snr_db": 5.0,
+      "speaker_profile": "male_garage_mechanic_noisy_background",
+      "transcript_verbatim": "accelerator wire tuti hai ek sau assi rupaye aur fitting pachaas rupaye",
+      "transcript_normalized": "accelerator wire tuti hai ek sau assi rupaye aur fitting pachaas rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "accelerator wire",
+          "amount_paise": 18000
+        },
+        {
+          "kind": "labour",
+          "label": "fitting",
+          "amount_paise": 5000
+        }
+      ],
+      "expected_total_paise": 23000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-013",
+      "category": "engine_road_workshop_noise",
+      "split": "development",
+      "provenance": "workshop_acoustic_benchmark_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "workshop_ambient",
+      "approx_snr_db": 6.0,
+      "speaker_profile": "male_garage_mechanic_noisy_background",
+      "transcript_verbatim": "coolant change kiya teen sau rupaye, flushing labour ek sau rupaye",
+      "transcript_normalized": "coolant change kiya teen sau rupaye, flushing labour ek sau rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "coolant",
+          "amount_paise": 30000
+        },
+        {
+          "kind": "labour",
+          "label": "flushing labour",
+          "amount_paise": 10000
+        }
+      ],
+      "expected_total_paise": 40000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-014",
+      "category": "engine_road_workshop_noise",
+      "split": "development",
+      "provenance": "workshop_acoustic_benchmark_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "workshop_ambient",
+      "approx_snr_db": 6.0,
+      "speaker_profile": "male_garage_mechanic_noisy_background",
+      "transcript_verbatim": "rear tyre tube badla teen sau pachaas rupaye ka",
+      "transcript_normalized": "rear tyre tube badla teen sau pachaas rupaye ka",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "rear tyre tube",
+          "amount_paise": 35000
+        }
+      ],
+      "expected_total_paise": 35000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-015",
+      "category": "engine_road_workshop_noise",
+      "split": "development",
+      "provenance": "workshop_acoustic_benchmark_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "pneumatic_tool",
+      "approx_snr_db": 4.0,
+      "speaker_profile": "male_garage_mechanic_noisy_background",
+      "transcript_verbatim": "wheel bearing dono side ka badla chaar sau rupaye",
+      "transcript_normalized": "wheel bearing dono side ka badla chaar sau rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "wheel bearing",
+          "amount_paise": 40000
+        }
+      ],
+      "expected_total_paise": 40000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-016",
+      "category": "engine_road_workshop_noise",
+      "split": "development",
+      "provenance": "workshop_acoustic_benchmark_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "pneumatic_tool",
+      "approx_snr_db": 4.0,
+      "speaker_profile": "male_garage_mechanic_noisy_background",
+      "transcript_verbatim": "disc brake pad baarah sau rupaye, lathe work teen sau rupaye",
+      "transcript_normalized": "disc brake pad baarah sau rupaye, lathe work teen sau rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "disc brake pad",
+          "amount_paise": 120000
+        },
+        {
+          "kind": "labour",
+          "label": "lathe work",
+          "amount_paise": 30000
+        }
+      ],
+      "expected_total_paise": 150000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-017",
+      "category": "engine_road_workshop_noise",
+      "split": "holdout",
+      "provenance": "workshop_acoustic_benchmark_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "engine_rev",
+      "approx_snr_db": 5.0,
+      "speaker_profile": "male_garage_mechanic_noisy_background",
+      "transcript_verbatim": "silencer packing phat gayi thi assi rupaye, fitting labour ek sau rupaye",
+      "transcript_normalized": "silencer packing phat gayi thi assi rupaye, fitting labour ek sau rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "silencer packing",
+          "amount_paise": 8000
+        },
+        {
+          "kind": "labour",
+          "label": "fitting labour",
+          "amount_paise": 10000
+        }
+      ],
+      "expected_total_paise": 18000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-018",
+      "category": "engine_road_workshop_noise",
+      "split": "holdout",
+      "provenance": "workshop_acoustic_benchmark_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "engine_idle",
+      "approx_snr_db": 5.0,
+      "speaker_profile": "male_garage_mechanic_noisy_background",
+      "transcript_verbatim": "clutch cable naya daala ek sau bees rupaye",
+      "transcript_normalized": "clutch cable naya daala ek sau bees rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "clutch cable",
+          "amount_paise": 12000
+        }
+      ],
+      "expected_total_paise": 12000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-019",
+      "category": "engine_road_workshop_noise",
+      "split": "holdout",
+      "provenance": "workshop_acoustic_benchmark_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "workshop_ambient",
+      "approx_snr_db": 7.0,
+      "speaker_profile": "male_garage_mechanic_noisy_background",
+      "transcript_verbatim": "starter relay switch badal diya do sau pachaas rupaye",
+      "transcript_normalized": "starter relay switch badal diya do sau pachaas rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "starter relay switch",
+          "amount_paise": 25000
+        }
+      ],
+      "expected_total_paise": 25000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-020",
+      "category": "engine_road_workshop_noise",
+      "split": "holdout",
+      "provenance": "workshop_acoustic_benchmark_recording",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "pneumatic_tool",
+      "approx_snr_db": 5.0,
+      "speaker_profile": "male_garage_mechanic_noisy_background",
+      "transcript_verbatim": "front fork bend seedha kiya chaar sau rupaye",
+      "transcript_normalized": "front fork bend seedha kiya chaar sau rupaye",
+      "expected_items": [
+        {
+          "kind": "labour",
+          "label": "front fork repair",
+          "amount_paise": 40000
+        }
+      ],
+      "expected_total_paise": 40000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-021",
+      "category": "different_speakers_regions_pacing",
+      "split": "development",
+      "provenance": "multi_regional_indic_speaker_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Regional_Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 22.0,
+      "speaker_profile": "male_haryanvi_fast",
+      "transcript_verbatim": "bhai brake shoe lagwaya saade teen sau ka, dho sau mazdoori le li",
+      "transcript_normalized": "bhai brake shoe lagwaya saade teen sau ka, dho sau mazdoori le li",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "brake shoe",
+          "amount_paise": 35000
+        },
+        {
+          "kind": "labour",
+          "label": "mazdoori",
+          "amount_paise": 20000
+        }
+      ],
+      "expected_total_paise": 55000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-022",
+      "category": "different_speakers_regions_pacing",
+      "split": "development",
+      "provenance": "multi_regional_indic_speaker_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Regional_Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 22.0,
+      "speaker_profile": "female_punjabi_normal",
+      "transcript_verbatim": "activa da horn badal ditta do sau rupaye te service paanch sau",
+      "transcript_normalized": "activa da horn badal ditta do sau rupaye te service paanch sau",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "horn",
+          "amount_paise": 20000
+        },
+        {
+          "kind": "labour",
+          "label": "service",
+          "amount_paise": 50000
+        }
+      ],
+      "expected_total_paise": 70000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-023",
+      "category": "different_speakers_regions_pacing",
+      "split": "development",
+      "provenance": "multi_regional_indic_speaker_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Regional_Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 22.0,
+      "speaker_profile": "male_bihari_slow",
+      "transcript_verbatim": "bhaiya mobil tel chaar sau rupiya aur filter sau rupiya",
+      "transcript_normalized": "bhaiya mobil tel chaar sau rupiya aur filter sau rupiya",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "mobil tel",
+          "amount_paise": 40000
+        },
+        {
+          "kind": "part",
+          "label": "filter",
+          "amount_paise": 10000
+        }
+      ],
+      "expected_total_paise": 50000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-024",
+      "category": "different_speakers_regions_pacing",
+      "split": "development",
+      "provenance": "multi_regional_indic_speaker_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Regional_Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 22.0,
+      "speaker_profile": "male_mumbai_slang",
+      "transcript_verbatim": "boss side mirror dedh sau ka aur indicator batti assi ka",
+      "transcript_normalized": "boss side mirror dedh sau ka aur indicator batti assi ka",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "side mirror",
+          "amount_paise": 15000
+        },
+        {
+          "kind": "part",
+          "label": "indicator batti",
+          "amount_paise": 8000
+        }
+      ],
+      "expected_total_paise": 23000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-025",
+      "category": "different_speakers_regions_pacing",
+      "split": "development",
+      "provenance": "multi_regional_indic_speaker_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Regional_Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 22.0,
+      "speaker_profile": "male_rajasthani_cadence",
+      "transcript_verbatim": "gaadi ro clutch wire badliyo ek sau bees ro, labour pachaas",
+      "transcript_normalized": "gaadi ro clutch wire badliyo ek sau bees ro, labour pachaas",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "clutch wire",
+          "amount_paise": 12000
+        },
+        {
+          "kind": "labour",
+          "label": "labour",
+          "amount_paise": 5000
+        }
+      ],
+      "expected_total_paise": 17000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-026",
+      "category": "different_speakers_regions_pacing",
+      "split": "development",
+      "provenance": "multi_regional_indic_speaker_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Regional_Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 22.0,
+      "speaker_profile": "male_bengali_accent",
+      "transcript_verbatim": "front brake pad chaar sau rupaye r labour charge dedh sau rupaye",
+      "transcript_normalized": "front brake pad chaar sau rupaye r labour charge dedh sau rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "front brake pad",
+          "amount_paise": 40000
+        },
+        {
+          "kind": "labour",
+          "label": "labour charge",
+          "amount_paise": 15000
+        }
+      ],
+      "expected_total_paise": 55000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-027",
+      "category": "different_speakers_regions_pacing",
+      "split": "challenge",
+      "provenance": "multi_regional_indic_speaker_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Regional_Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 22.0,
+      "speaker_profile": "male_south_accent_fast",
+      "transcript_verbatim": "plug change made do sau rupaye, chain lube ek sau rupaye",
+      "transcript_normalized": "plug change made do sau rupaye, chain lube ek sau rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "plug",
+          "amount_paise": 20000
+        },
+        {
+          "kind": "labour",
+          "label": "chain lube",
+          "amount_paise": 10000
+        }
+      ],
+      "expected_total_paise": 30000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-028",
+      "category": "different_speakers_regions_pacing",
+      "split": "challenge",
+      "provenance": "multi_regional_indic_speaker_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Regional_Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 22.0,
+      "speaker_profile": "male_fast_clipped",
+      "transcript_verbatim": "filter sau plug dedh sau labour do sau",
+      "transcript_normalized": "filter sau plug dedh sau labour do sau",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "filter",
+          "amount_paise": 10000
+        },
+        {
+          "kind": "part",
+          "label": "plug",
+          "amount_paise": 15000
+        },
+        {
+          "kind": "labour",
+          "label": "labour",
+          "amount_paise": 20000
+        }
+      ],
+      "expected_total_paise": 45000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-029",
+      "category": "different_speakers_regions_pacing",
+      "split": "challenge",
+      "provenance": "multi_regional_indic_speaker_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Regional_Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 22.0,
+      "speaker_profile": "male_drawl_slow",
+      "transcript_verbatim": "bata rahe hain ji... shocker ka kaam hua hai... saat sau rupaye ka",
+      "transcript_normalized": "bata rahe hain ji... shocker ka kaam hua hai... saat sau rupaye ka",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "shocker",
+          "amount_paise": 70000
+        }
+      ],
+      "expected_total_paise": 70000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-030",
+      "category": "different_speakers_regions_pacing",
+      "split": "challenge",
+      "provenance": "multi_regional_indic_speaker_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Regional_Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 22.0,
+      "speaker_profile": "female_urban_hinglish",
+      "transcript_verbatim": "battery checking ke dedh sau rupaye and new fuse पचास rupaye",
+      "transcript_normalized": "battery checking ke dedh sau rupaye and new fuse पचास rupaye",
+      "expected_items": [
+        {
+          "kind": "labour",
+          "label": "battery checking",
+          "amount_paise": 15000
+        },
+        {
+          "kind": "part",
+          "label": "fuse",
+          "amount_paise": 5000
+        }
+      ],
+      "expected_total_paise": 20000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-031",
+      "category": "multiple_parts_and_labour",
+      "split": "development",
+      "provenance": "comprehensive_workshop_invoice_dictation",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 28.0,
+      "speaker_profile": "male_senior_service_advisor",
+      "transcript_verbatim": "engine oil 400, oil filter 150, air filter 250, spark plug 180, labour 300",
+      "transcript_normalized": "engine oil 400, oil filter 150, air filter 250, spark plug 180, labour 300",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "engine oil",
+          "amount_paise": 40000
+        },
+        {
+          "kind": "part",
+          "label": "oil filter",
+          "amount_paise": 15000
+        },
+        {
+          "kind": "part",
+          "label": "air filter",
+          "amount_paise": 25000
+        },
+        {
+          "kind": "part",
+          "label": "spark plug",
+          "amount_paise": 18000
+        },
+        {
+          "kind": "labour",
+          "label": "labour",
+          "amount_paise": 30000
+        }
+      ],
+      "expected_total_paise": 128000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-032",
+      "category": "multiple_parts_and_labour",
+      "split": "development",
+      "provenance": "comprehensive_workshop_invoice_dictation",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 28.0,
+      "speaker_profile": "male_senior_service_advisor",
+      "transcript_verbatim": "front disc pad 650, rear brake shoe 350, brake oil 120, labour 250",
+      "transcript_normalized": "front disc pad 650, rear brake shoe 350, brake oil 120, labour 250",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "front disc pad",
+          "amount_paise": 65000
+        },
+        {
+          "kind": "part",
+          "label": "rear brake shoe",
+          "amount_paise": 35000
+        },
+        {
+          "kind": "part",
+          "label": "brake oil",
+          "amount_paise": 12000
+        },
+        {
+          "kind": "labour",
+          "label": "labour",
+          "amount_paise": 25000
+        }
+      ],
+      "expected_total_paise": 137000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-033",
+      "category": "multiple_parts_and_labour",
+      "split": "development",
+      "provenance": "comprehensive_workshop_invoice_dictation",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 28.0,
+      "speaker_profile": "male_senior_service_advisor",
+      "transcript_verbatim": "clutch plate 1100, pressure plate 700, clutch cable 150, fitting 400",
+      "transcript_normalized": "clutch plate 1100, pressure plate 700, clutch cable 150, fitting 400",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "clutch plate",
+          "amount_paise": 110000
+        },
+        {
+          "kind": "part",
+          "label": "pressure plate",
+          "amount_paise": 70000
+        },
+        {
+          "kind": "part",
+          "label": "clutch cable",
+          "amount_paise": 15000
+        },
+        {
+          "kind": "labour",
+          "label": "fitting",
+          "amount_paise": 40000
+        }
+      ],
+      "expected_total_paise": 235000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-034",
+      "category": "multiple_parts_and_labour",
+      "split": "development",
+      "provenance": "comprehensive_workshop_invoice_dictation",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 28.0,
+      "speaker_profile": "male_senior_service_advisor",
+      "transcript_verbatim": "headlight bulb 120, indicator bulb 40, horn 220, wiring labour 180",
+      "transcript_normalized": "headlight bulb 120, indicator bulb 40, horn 220, wiring labour 180",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "headlight bulb",
+          "amount_paise": 12000
+        },
+        {
+          "kind": "part",
+          "label": "indicator bulb",
+          "amount_paise": 4000
+        },
+        {
+          "kind": "part",
+          "label": "horn",
+          "amount_paise": 22000
+        },
+        {
+          "kind": "labour",
+          "label": "wiring labour",
+          "amount_paise": 18000
+        }
+      ],
+      "expected_total_paise": 56000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-035",
+      "category": "multiple_parts_and_labour",
+      "split": "development",
+      "provenance": "comprehensive_workshop_invoice_dictation",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 28.0,
+      "speaker_profile": "male_senior_service_advisor",
+      "transcript_verbatim": "drive chain 850, rear sprocket 450, front sprocket 200, fitting labour 200",
+      "transcript_normalized": "drive chain 850, rear sprocket 450, front sprocket 200, fitting labour 200",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "drive chain",
+          "amount_paise": 85000
+        },
+        {
+          "kind": "part",
+          "label": "rear sprocket",
+          "amount_paise": 45000
+        },
+        {
+          "kind": "part",
+          "label": "front sprocket",
+          "amount_paise": 20000
+        },
+        {
+          "kind": "labour",
+          "label": "fitting labour",
+          "amount_paise": 20000
+        }
+      ],
+      "expected_total_paise": 170000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-036",
+      "category": "multiple_parts_and_labour",
+      "split": "development",
+      "provenance": "comprehensive_workshop_invoice_dictation",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 28.0,
+      "speaker_profile": "male_senior_service_advisor",
+      "transcript_verbatim": "tyre tube 320, puncture repair 80, rim alignment 150",
+      "transcript_normalized": "tyre tube 320, puncture repair 80, rim alignment 150",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "tyre tube",
+          "amount_paise": 32000
+        },
+        {
+          "kind": "labour",
+          "label": "puncture repair",
+          "amount_paise": 8000
+        },
+        {
+          "kind": "labour",
+          "label": "rim alignment",
+          "amount_paise": 15000
+        }
+      ],
+      "expected_total_paise": 55000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-037",
+      "category": "multiple_parts_and_labour",
+      "split": "holdout",
+      "provenance": "comprehensive_workshop_invoice_dictation",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 28.0,
+      "speaker_profile": "male_senior_service_advisor",
+      "transcript_verbatim": "timing chain 600, tensioner 250, valve seal 180, labour 500",
+      "transcript_normalized": "timing chain 600, tensioner 250, valve seal 180, labour 500",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "timing chain",
+          "amount_paise": 60000
+        },
+        {
+          "kind": "part",
+          "label": "tensioner",
+          "amount_paise": 25000
+        },
+        {
+          "kind": "part",
+          "label": "valve seal",
+          "amount_paise": 18000
+        },
+        {
+          "kind": "labour",
+          "label": "labour",
+          "amount_paise": 50000
+        }
+      ],
+      "expected_total_paise": 153000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-038",
+      "category": "multiple_parts_and_labour",
+      "split": "holdout",
+      "provenance": "comprehensive_workshop_invoice_dictation",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 28.0,
+      "speaker_profile": "male_senior_service_advisor",
+      "transcript_verbatim": "carburetor repair kit 280, jet 90, intake manifold o-ring 40, tuning 150",
+      "transcript_normalized": "carburetor repair kit 280, jet 90, intake manifold o-ring 40, tuning 150",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "carburetor repair kit",
+          "amount_paise": 28000
+        },
+        {
+          "kind": "part",
+          "label": "jet",
+          "amount_paise": 9000
+        },
+        {
+          "kind": "part",
+          "label": "intake manifold o-ring",
+          "amount_paise": 4000
+        },
+        {
+          "kind": "labour",
+          "label": "tuning",
+          "amount_paise": 15000
+        }
+      ],
+      "expected_total_paise": 56000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-039",
+      "category": "multiple_parts_and_labour",
+      "split": "holdout",
+      "provenance": "comprehensive_workshop_invoice_dictation",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 28.0,
+      "speaker_profile": "male_senior_service_advisor",
+      "transcript_verbatim": "battery 1800, terminal clamp 60, distilled water 30, installation 100",
+      "transcript_normalized": "battery 1800, terminal clamp 60, distilled water 30, installation 100",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "battery",
+          "amount_paise": 180000
+        },
+        {
+          "kind": "part",
+          "label": "terminal clamp",
+          "amount_paise": 6000
+        },
+        {
+          "kind": "part",
+          "label": "distilled water",
+          "amount_paise": 3000
+        },
+        {
+          "kind": "labour",
+          "label": "installation",
+          "amount_paise": 10000
+        }
+      ],
+      "expected_total_paise": 199000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-040",
+      "category": "multiple_parts_and_labour",
+      "split": "holdout",
+      "provenance": "comprehensive_workshop_invoice_dictation",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 28.0,
+      "speaker_profile": "male_senior_service_advisor",
+      "transcript_verbatim": "front shocker bush 140, rear shocker bush 140, fork oil 180, overhaul labour 350",
+      "transcript_normalized": "front shocker bush 140, rear shocker bush 140, fork oil 180, overhaul labour 350",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "front shocker bush",
+          "amount_paise": 14000
+        },
+        {
+          "kind": "part",
+          "label": "rear shocker bush",
+          "amount_paise": 14000
+        },
+        {
+          "kind": "part",
+          "label": "fork oil",
+          "amount_paise": 18000
+        },
+        {
+          "kind": "labour",
+          "label": "overhaul labour",
+          "amount_paise": 35000
+        }
+      ],
+      "expected_total_paise": 81000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-041",
+      "category": "corrections_reasks",
+      "split": "development",
+      "provenance": "verbal_revision_audit_samples",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_correcting_estimate",
+      "transcript_verbatim": "brake pad 450 rupaye nahi 500 rupaye kar do",
+      "transcript_normalized": "brake pad 450 rupaye nahi 500 rupaye kar do",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "brake pad",
+          "amount_paise": 50000
+        }
+      ],
+      "expected_total_paise": 50000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "is_correction": true
+    },
+    {
+      "id": "CORP-042",
+      "category": "corrections_reasks",
+      "split": "development",
+      "provenance": "verbal_revision_audit_samples",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_correcting_estimate",
+      "transcript_verbatim": "pehle bola tha labour 300 par actual labour 250 hi lagega",
+      "transcript_normalized": "pehle bola tha labour 300 par actual labour 250 hi lagega",
+      "expected_items": [
+        {
+          "kind": "labour",
+          "label": "labour",
+          "amount_paise": 25000
+        }
+      ],
+      "expected_total_paise": 25000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "is_correction": true
+    },
+    {
+      "id": "CORP-043",
+      "category": "corrections_reasks",
+      "split": "development",
+      "provenance": "verbal_revision_audit_samples",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_correcting_estimate",
+      "transcript_verbatim": "oil filter 120 nahi galat bol diya tha 160 rupaye ka hai",
+      "transcript_normalized": "oil filter 120 nahi galat bol diya tha 160 rupaye ka hai",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "oil filter",
+          "amount_paise": 16000
+        }
+      ],
+      "expected_total_paise": 16000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "is_correction": true
+    },
+    {
+      "id": "CORP-044",
+      "category": "corrections_reasks",
+      "split": "development",
+      "provenance": "verbal_revision_audit_samples",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_correcting_estimate",
+      "transcript_verbatim": "battery 2000 nahi discount ke baad 1800 rupaye",
+      "transcript_normalized": "battery 2000 nahi discount ke baad 1800 rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "battery",
+          "amount_paise": 180000
+        }
+      ],
+      "expected_total_paise": 180000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "is_correction": true
+    },
+    {
+      "id": "CORP-045",
+      "category": "corrections_reasks",
+      "split": "development",
+      "provenance": "verbal_revision_audit_samples",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_correcting_estimate",
+      "transcript_verbatim": "delivery Somvaar nahi Mangalvaar shaam tak ready hogi",
+      "transcript_normalized": "delivery Somvaar nahi Mangalvaar shaam tak ready hogi",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "brake pad",
+          "amount_paise": 45000
+        }
+      ],
+      "expected_total_paise": 45000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "is_correction": true
+    },
+    {
+      "id": "CORP-046",
+      "category": "corrections_reasks",
+      "split": "challenge",
+      "provenance": "verbal_revision_audit_samples",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_correcting_estimate",
+      "transcript_verbatim": "clutch plate ka rate 1200 tha par discount me 1050 hoga",
+      "transcript_normalized": "clutch plate ka rate 1200 tha par discount me 1050 hoga",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "clutch plate",
+          "amount_paise": 105000
+        }
+      ],
+      "expected_total_paise": 105000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "is_correction": true
+    },
+    {
+      "id": "CORP-047",
+      "category": "corrections_reasks",
+      "split": "challenge",
+      "provenance": "verbal_revision_audit_samples",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_correcting_estimate",
+      "transcript_verbatim": "rear tyre puncher labour 50 rupaye nahi 70 rupaye",
+      "transcript_normalized": "rear tyre puncher labour 50 rupaye nahi 70 rupaye",
+      "expected_items": [
+        {
+          "kind": "labour",
+          "label": "rear tyre puncher labour",
+          "amount_paise": 7000
+        }
+      ],
+      "expected_total_paise": 7000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "is_correction": true
+    },
+    {
+      "id": "CORP-048",
+      "category": "corrections_reasks",
+      "split": "challenge",
+      "provenance": "verbal_revision_audit_samples",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_correcting_estimate",
+      "transcript_verbatim": "spark plug 150 ka tha par Bosch wala 220 ka lagaya",
+      "transcript_normalized": "spark plug 150 ka tha par Bosch wala 220 ka lagaya",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "spark plug",
+          "amount_paise": 22000
+        }
+      ],
+      "expected_total_paise": 22000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "is_correction": true
+    },
+    {
+      "id": "CORP-049",
+      "category": "ambiguous_or_missing_amounts",
+      "split": "development",
+      "provenance": "incomplete_mechanic_intake_trials",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_uncertain_pricing",
+      "transcript_verbatim": "front brake pad badla hai lekin rate dukan se pata karke batayenge",
+      "transcript_normalized": "front brake pad badla hai lekin rate dukan se pata karke batayenge",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "front brake pad",
+          "amount_paise": null
+        }
+      ],
+      "expected_total_paise": null,
+      "expected_delivery": null,
+      "requires_review": true
+    },
+    {
+      "id": "CORP-050",
+      "category": "ambiguous_or_missing_amounts",
+      "split": "development",
+      "provenance": "incomplete_mechanic_intake_trials",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_uncertain_pricing",
+      "transcript_verbatim": "engine kholna padega labour charges baad me fix hoga",
+      "transcript_normalized": "engine kholna padega labour charges baad me fix hoga",
+      "expected_items": [
+        {
+          "kind": "labour",
+          "label": "engine overhaul labour",
+          "amount_paise": null
+        }
+      ],
+      "expected_total_paise": null,
+      "expected_delivery": null,
+      "requires_review": true
+    },
+    {
+      "id": "CORP-051",
+      "category": "ambiguous_or_missing_amounts",
+      "split": "development",
+      "provenance": "incomplete_mechanic_intake_trials",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_uncertain_pricing",
+      "transcript_verbatim": "wiring short hai check karke rate batayenge",
+      "transcript_normalized": "wiring short hai check karke rate batayenge",
+      "expected_items": [
+        {
+          "kind": "labour",
+          "label": "wiring check",
+          "amount_paise": null
+        }
+      ],
+      "expected_total_paise": null,
+      "expected_delivery": null,
+      "requires_review": true
+    },
+    {
+      "id": "CORP-052",
+      "category": "ambiguous_or_missing_amounts",
+      "split": "development",
+      "provenance": "incomplete_mechanic_intake_trials",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_uncertain_pricing",
+      "transcript_verbatim": "carburetor kit lagegi rate yaad nahi bill dekhna hoga",
+      "transcript_normalized": "carburetor kit lagegi rate yaad nahi bill dekhna hoga",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "carburetor kit",
+          "amount_paise": null
+        }
+      ],
+      "expected_total_paise": null,
+      "expected_delivery": null,
+      "requires_review": true
+    },
+    {
+      "id": "CORP-053",
+      "category": "ambiguous_or_missing_amounts",
+      "split": "development",
+      "provenance": "incomplete_mechanic_intake_trials",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_uncertain_pricing",
+      "transcript_verbatim": "clutch plate 1200 rupaye aur ek extra part bhi lagega",
+      "transcript_normalized": "clutch plate 1200 rupaye aur ek extra part bhi lagega",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "clutch plate",
+          "amount_paise": 120000
+        },
+        {
+          "kind": "part",
+          "label": "extra part",
+          "amount_paise": null
+        }
+      ],
+      "expected_total_paise": null,
+      "expected_delivery": null,
+      "requires_review": true
+    },
+    {
+      "id": "CORP-054",
+      "category": "ambiguous_or_missing_amounts",
+      "split": "challenge",
+      "provenance": "incomplete_mechanic_intake_trials",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_uncertain_pricing",
+      "transcript_verbatim": "head gasket change hoga price distributor se aayega",
+      "transcript_normalized": "head gasket change hoga price distributor se aayega",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "head gasket",
+          "amount_paise": null
+        }
+      ],
+      "expected_total_paise": null,
+      "expected_delivery": null,
+      "requires_review": true
+    },
+    {
+      "id": "CORP-055",
+      "category": "ambiguous_or_missing_amounts",
+      "split": "challenge",
+      "provenance": "incomplete_mechanic_intake_trials",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_uncertain_pricing",
+      "transcript_verbatim": "suspension Bush dalega kitne ka aayega confirmation chahiye",
+      "transcript_normalized": "suspension Bush dalega kitne ka aayega confirmation chahiye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "suspension bush",
+          "amount_paise": null
+        }
+      ],
+      "expected_total_paise": null,
+      "expected_delivery": null,
+      "requires_review": true
+    },
+    {
+      "id": "CORP-056",
+      "category": "ambiguous_or_missing_amounts",
+      "split": "challenge",
+      "provenance": "incomplete_mechanic_intake_trials",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_uncertain_pricing",
+      "transcript_verbatim": "brake oil top up kiya uska koi hisaab dekhna padega",
+      "transcript_normalized": "brake oil top up kiya uska koi hisaab dekhna padega",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "brake oil",
+          "amount_paise": null
+        }
+      ],
+      "expected_total_paise": null,
+      "expected_delivery": null,
+      "requires_review": true
+    },
+    {
+      "id": "CORP-057",
+      "category": "adversarial_numbers_timestamps",
+      "split": "development",
+      "provenance": "adversarial_colloquial_stress_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish_with_numerics",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_dense_numbers",
+      "transcript_verbatim": "gaadi 4 baje aayi thi activa 125 model hai servicing chaar sau rupaye",
+      "transcript_normalized": "gaadi 4 baje aayi thi activa 125 model hai servicing chaar sau rupaye",
+      "expected_items": [
+        {
+          "kind": "labour",
+          "label": "servicing",
+          "amount_paise": 40000
+        }
+      ],
+      "expected_total_paise": 40000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-058",
+      "category": "adversarial_numbers_timestamps",
+      "split": "development",
+      "provenance": "adversarial_colloquial_stress_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish_with_numerics",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_dense_numbers",
+      "transcript_verbatim": "shaam ko 6 baje le jaana 2021 model pulsar ka brake shoe teen sau rupaye",
+      "transcript_normalized": "shaam ko 6 baje le jaana 2021 model pulsar ka brake shoe teen sau rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "pulsar brake shoe",
+          "amount_paise": 30000
+        }
+      ],
+      "expected_total_paise": 30000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-059",
+      "category": "adversarial_numbers_timestamps",
+      "split": "development",
+      "provenance": "adversarial_colloquial_stress_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish_with_numerics",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_dense_numbers",
+      "transcript_verbatim": "subah 10 baje bola tha 2 wheeler ka engine oil chaar sau pachaas rupaye",
+      "transcript_normalized": "subah 10 baje bola tha 2 wheeler ka engine oil chaar sau pachaas rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "engine oil",
+          "amount_paise": 45000
+        }
+      ],
+      "expected_total_paise": 45000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-060",
+      "category": "adversarial_numbers_timestamps",
+      "split": "development",
+      "provenance": "adversarial_colloquial_stress_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish_with_numerics",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_dense_numbers",
+      "transcript_verbatim": "vehicle number 4421 me 2 tyre tube daale saat sau rupaye",
+      "transcript_normalized": "vehicle number 4421 me 2 tyre tube daale saat sau rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "tyre tube",
+          "amount_paise": 70000
+        }
+      ],
+      "expected_total_paise": 70000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-061",
+      "category": "adversarial_numbers_timestamps",
+      "split": "development",
+      "provenance": "adversarial_colloquial_stress_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish_with_numerics",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_dense_numbers",
+      "transcript_verbatim": "october 5 tareekh ko 11 baje headlight repair do sau rupaye",
+      "transcript_normalized": "october 5 tareekh ko 11 baje headlight repair do sau rupaye",
+      "expected_items": [
+        {
+          "kind": "labour",
+          "label": "headlight repair",
+          "amount_paise": 20000
+        }
+      ],
+      "expected_total_paise": 20000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-062",
+      "category": "adversarial_numbers_timestamps",
+      "split": "challenge",
+      "provenance": "adversarial_colloquial_stress_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish_with_numerics",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_dense_numbers",
+      "transcript_verbatim": "bill number 1045 me mobil oil chaar sau rupaye aur labour dedh sau",
+      "transcript_normalized": "bill number 1045 me mobil oil chaar sau rupaye aur labour dedh sau",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "mobil oil",
+          "amount_paise": 40000
+        },
+        {
+          "kind": "labour",
+          "label": "labour",
+          "amount_paise": 15000
+        }
+      ],
+      "expected_total_paise": 55000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-063",
+      "category": "adversarial_numbers_timestamps",
+      "split": "challenge",
+      "provenance": "adversarial_colloquial_stress_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish_with_numerics",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_dense_numbers",
+      "transcript_verbatim": "counter 3 pe 15 number gaddi ka spark plug do sau rupaye",
+      "transcript_normalized": "counter 3 pe 15 number gaddi ka spark plug do sau rupaye",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "spark plug",
+          "amount_paise": 20000
+        }
+      ],
+      "expected_total_paise": 20000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-064",
+      "category": "adversarial_numbers_timestamps",
+      "split": "challenge",
+      "provenance": "adversarial_colloquial_stress_corpus",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish_with_numerics",
+      "noise_type": "low_room",
+      "approx_snr_db": 25.0,
+      "speaker_profile": "male_mechanic_dense_numbers",
+      "transcript_verbatim": "2018 model swift ka disc pad baarah sau rupaye 5 baje delivery",
+      "transcript_normalized": "2018 model swift ka disc pad baarah sau rupaye 5 baje delivery",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "disc pad",
+          "amount_paise": 120000
+        }
+      ],
+      "expected_total_paise": 120000,
+      "expected_delivery": null,
+      "requires_review": false
+    },
+    {
+      "id": "CORP-065",
+      "category": "duplicate_near_duplicate_labels",
+      "split": "development",
+      "provenance": "deduplication_collision_suite",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_mechanic_near_duplicate_dictation",
+      "transcript_verbatim": "front brake pad 450, brake-pad 450",
+      "transcript_normalized": "front brake pad 450, brake-pad 450",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "front brake pad",
+          "amount_paise": 45000
+        }
+      ],
+      "expected_total_paise": 45000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "dedupe_scenario": "semantic_collapse"
+    },
+    {
+      "id": "CORP-066",
+      "category": "duplicate_near_duplicate_labels",
+      "split": "development",
+      "provenance": "deduplication_collision_suite",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_mechanic_near_duplicate_dictation",
+      "transcript_verbatim": "brake pad, front 450 aur front brake pad 450",
+      "transcript_normalized": "brake pad, front 450 aur front brake pad 450",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "front brake pad",
+          "amount_paise": 45000
+        }
+      ],
+      "expected_total_paise": 45000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "dedupe_scenario": "word_order_collapse"
+    },
+    {
+      "id": "CORP-067",
+      "category": "duplicate_near_duplicate_labels",
+      "split": "development",
+      "provenance": "deduplication_collision_suite",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_mechanic_near_duplicate_dictation",
+      "transcript_verbatim": "front brake pad 450 aur rear brake pad 350",
+      "transcript_normalized": "front brake pad 450 aur rear brake pad 350",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "front brake pad",
+          "amount_paise": 45000
+        },
+        {
+          "kind": "part",
+          "label": "rear brake pad",
+          "amount_paise": 35000
+        }
+      ],
+      "expected_total_paise": 80000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "dedupe_scenario": "negative_distinct_parts"
+    },
+    {
+      "id": "CORP-068",
+      "category": "duplicate_near_duplicate_labels",
+      "split": "development",
+      "provenance": "deduplication_collision_suite",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_mechanic_near_duplicate_dictation",
+      "transcript_verbatim": "brake pad 450 aur brake disc 1200",
+      "transcript_normalized": "brake pad 450 aur brake disc 1200",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "brake pad",
+          "amount_paise": 45000
+        },
+        {
+          "kind": "part",
+          "label": "brake disc",
+          "amount_paise": 120000
+        }
+      ],
+      "expected_total_paise": 165000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "dedupe_scenario": "negative_distinct_parts"
+    },
+    {
+      "id": "CORP-069",
+      "category": "duplicate_near_duplicate_labels",
+      "split": "development",
+      "provenance": "deduplication_collision_suite",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_mechanic_near_duplicate_dictation",
+      "transcript_verbatim": "front brake pad 450 aur front brake pad 100",
+      "transcript_normalized": "front brake pad 450 aur front brake pad 100",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "front brake pad",
+          "amount_paise": null
+        }
+      ],
+      "expected_total_paise": null,
+      "expected_delivery": null,
+      "requires_review": true,
+      "dedupe_scenario": "tie_unresolvable_requires_review"
+    },
+    {
+      "id": "CORP-070",
+      "category": "duplicate_near_duplicate_labels",
+      "split": "challenge",
+      "provenance": "deduplication_collision_suite",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_mechanic_near_duplicate_dictation",
+      "transcript_verbatim": "shocker oil 180 aur front shocker oil 180",
+      "transcript_normalized": "shocker oil 180 aur front shocker oil 180",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "front shocker oil",
+          "amount_paise": 18000
+        }
+      ],
+      "expected_total_paise": 18000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "dedupe_scenario": "semantic_collapse"
+    },
+    {
+      "id": "CORP-071",
+      "category": "duplicate_near_duplicate_labels",
+      "split": "challenge",
+      "provenance": "deduplication_collision_suite",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_mechanic_near_duplicate_dictation",
+      "transcript_verbatim": "clutch plate 1100 aur clutch plate assembly 1100",
+      "transcript_normalized": "clutch plate 1100 aur clutch plate assembly 1100",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "clutch plate assembly",
+          "amount_paise": 110000
+        }
+      ],
+      "expected_total_paise": 110000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "dedupe_scenario": "semantic_collapse"
+    },
+    {
+      "id": "CORP-072",
+      "category": "duplicate_near_duplicate_labels",
+      "split": "challenge",
+      "provenance": "deduplication_collision_suite",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_mechanic_near_duplicate_dictation",
+      "transcript_verbatim": "left mirror 150 aur right mirror 150",
+      "transcript_normalized": "left mirror 150 aur right mirror 150",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "left mirror",
+          "amount_paise": 15000
+        },
+        {
+          "kind": "part",
+          "label": "right mirror",
+          "amount_paise": 15000
+        }
+      ],
+      "expected_total_paise": 30000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "dedupe_scenario": "negative_distinct_parts"
+    },
+    {
+      "id": "CORP-073",
+      "category": "duplicate_near_duplicate_labels",
+      "split": "challenge",
+      "provenance": "deduplication_collision_suite",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_mechanic_near_duplicate_dictation",
+      "transcript_verbatim": "spark plug 180 aur plug wire 120",
+      "transcript_normalized": "spark plug 180 aur plug wire 120",
+      "expected_items": [
+        {
+          "kind": "part",
+          "label": "spark plug",
+          "amount_paise": 18000
+        },
+        {
+          "kind": "part",
+          "label": "plug wire",
+          "amount_paise": 12000
+        }
+      ],
+      "expected_total_paise": 30000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "dedupe_scenario": "negative_distinct_parts"
+    },
+    {
+      "id": "CORP-074",
+      "category": "duplicate_near_duplicate_labels",
+      "split": "challenge",
+      "provenance": "deduplication_collision_suite",
+      "permission_status": "open_evaluation_consented",
+      "anonymisation_status": "synthetic_customer_identifiers",
+      "language_mix": "Hinglish",
+      "noise_type": "none",
+      "approx_snr_db": 30.0,
+      "speaker_profile": "male_mechanic_near_duplicate_dictation",
+      "transcript_verbatim": "engine tuning labour 200 aur tuning labour 200",
+      "transcript_normalized": "engine tuning labour 200 aur tuning labour 200",
+      "expected_items": [
+        {
+          "kind": "labour",
+          "label": "engine tuning labour",
+          "amount_paise": 20000
+        }
+      ],
+      "expected_total_paise": 20000,
+      "expected_delivery": null,
+      "requires_review": false,
+      "dedupe_scenario": "labour_semantic_collapse"
+    }
+  ]
+}

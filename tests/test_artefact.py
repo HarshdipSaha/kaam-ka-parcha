@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from pypdf import PdfReader
 
 from parcha.app import AppServices
-from parcha.artefact import render_pdf, whatsapp_text
+from parcha.artefact import audit_manifest_sha256, render_pdf, whatsapp_text
 from parcha.schema import TranscriptLog
 from parcha.session import Conflict, Session
 from tests.conftest import make_test_card
@@ -131,6 +131,8 @@ def test_pdf_embeds_exact_transcripts():
             sort_keys=True,
         ).encode("utf-8")
     ).hexdigest()
+    assert payload["audit_manifest_sha256"] == audit_manifest_sha256(session)
+    assert payload["audit_manifest_sha256"] in page_text
 
 
 def test_whatsapp_text_has_derived_total_and_no_delivery_claim():

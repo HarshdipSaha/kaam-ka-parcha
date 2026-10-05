@@ -214,7 +214,25 @@ def _canonical_label(label: str | None) -> str:
     if not label:
         return ""
     normalized = unicodedata.normalize("NFKC", label).casefold()
-    return " ".join(normalized.split())
+    return " ".join(re.findall(r"[\w]+", normalized, re.UNICODE))
+
+
+def _labels_describe_same_item(first: str | None, second: str | None) -> bool:
+    """Recognise safe label variants such as ``front brake pad`` / ``brake-pad``.
+
+    Deduplication only applies within one item kind. For non-identical labels we
+    require every token of the shorter label to occur in the longer label and at
+    least two tokens to overlap. This avoids collapsing broad single-word labels
+    such as ``brake`` into a distinct brake component.
+    """
+    first_tokens = set(_canonical_label(first).split())
+    second_tokens = set(_canonical_label(second).split())
+    if not first_tokens or not second_tokens:
+        return False
+    if first_tokens == second_tokens:
+        return True
+    shorter, longer = sorted((first_tokens, second_tokens), key=len)
+    return len(shorter) >= 2 and shorter.issubset(longer)
 
 
 def _deduplicate_items(
@@ -227,13 +245,25 @@ def _deduplicate_items(
     safer source. Tied duplicate candidates become an incomplete field that must be
     re-asked instead of being silently added to the total.
     """
-    groups: dict[tuple[str, str], list[LineItem]] = {}
+    groups: list[list[LineItem]] = []
     for item in items:
-        groups.setdefault((item.kind, _canonical_label(item.label)), []).append(item)
+        matching_group = next(
+            (
+                group
+                for group in groups
+                if group[0].kind == item.kind
+                and _labels_describe_same_item(group[0].label, item.label)
+            ),
+            None,
+        )
+        if matching_group is None:
+            groups.append([item])
+        else:
+            matching_group.append(item)
 
     selected: list[LineItem] = []
     ambiguous_ids: set[str] = set()
-    for group in groups.values():
+    for group in groups:
         if len(group) == 1:
             selected.append(group[0])
             continue
@@ -608,29 +638,25 @@ class Extractor:
 
         # Handling line item field update
         target_item = next(it for it in old_card.items if it.id == target_item_id)
-        if target_attr == "amount_paise":
-            if isinstance(value, str):
-                digits = re.sub(r"[^\d]", "", value)
-                amount = int(digits) if digits else None
-            elif value is not None:
-                amount = int(value)
+        try:
+            if target_attr == "amount_paise":
+                new_item = LineItem(
+                    id=target_item.id,
+                    label=target_item.label,
+                    kind=target_item.kind,
+                    amount_paise=value,
+                )
+            elif target_attr == "label":
+                new_item = LineItem(
+                    id=target_item.id,
+                    label=str(value) if value is not None else None,
+                    kind=target_item.kind,
+                    amount_paise=target_item.amount_paise,
+                )
             else:
-                amount = None
-            new_item = LineItem(
-                id=target_item.id,
-                label=target_item.label,
-                kind=target_item.kind,
-                amount_paise=amount,
-            )
-        elif target_attr == "label":
-            new_item = LineItem(
-                id=target_item.id,
-                label=str(value) if value is not None else None,
-                kind=target_item.kind,
-                amount_paise=target_item.amount_paise,
-            )
-        else:
-            raise ExtractionError(f"Unsupported item attribute: {target_attr}")
+                raise ExtractionError(f"Unsupported item attribute: {target_attr}")
+        except Exception as e:
+            raise ExtractionError(f"Invalid item update: {e}") from e
 
         new_items = tuple(
             new_item if it.id == target_item_id else it
