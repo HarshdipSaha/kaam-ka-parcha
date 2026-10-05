@@ -21,6 +21,8 @@ from parcha.lab.noise import IMPULSE_PROFILES, inject_impulses
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_ENGINE_NOISE_PATH = PROJECT_ROOT / "data" / "real_world_samples" / "car_engine_idle_16k.wav"
+REST_MAX_AUDIO_SECONDS = 29.0  # leave margin under Gnani REST's 30-second limit
+SAMPLE_RATE = 8000
 
 __all__ = [
     "BudgetExceeded",
@@ -150,6 +152,16 @@ class Runner:
         scaled = np.rint(samples.astype(np.float64) * (peak_limit / peak)).astype("<i2")
         return _write_pcm(scaled)
 
+    @staticmethod
+    def _split_for_rest(wav: bytes) -> list[bytes]:
+        """Split mono 8 kHz PCM WAVs into REST-safe chunks without resampling."""
+        samples = _read_pcm(wav)
+        max_samples = int(REST_MAX_AUDIO_SECONDS * SAMPLE_RATE)
+        return [
+            _write_pcm(samples[start : start + max_samples])
+            for start in range(0, len(samples), max_samples)
+        ] or [_write_pcm(np.asarray([], dtype="<i2"))]
+
     def _resolve_grid(self) -> tuple[list[str], list[float | None], list[float], list[str | None]]:
         codecs = list(self.config.codecs)
         snr_dbs = list(self.config.snr_dbs)
@@ -221,8 +233,10 @@ class Runner:
         for clip in clips:
             clip_snrs, clip_profiles = self._conditions_for_clip(clip, snr_dbs, impulse_profiles)
             conditions = len(codecs) * len(clip_snrs) * len(loss_percents) * len(clip_profiles)
-            total_calls += conditions
-            total_duration += get_clip_duration(clip, self.config.audio_root) * conditions
+            duration = get_clip_duration(clip, self.config.audio_root)
+            chunks_per_condition = max(1, int(np.ceil(duration / REST_MAX_AUDIO_SECONDS)))
+            total_calls += conditions * chunks_per_condition
+            total_duration += duration * conditions
         projected_credits = total_duration * self.config.credits_per_second
 
         cap = min(self.config.max_credits, self.config.remaining_credits)
@@ -296,14 +310,22 @@ class Runner:
                             degraded_wav = self.degrade_audio(source_wav, codec, snr, loss, impulse_profile)
                             t0 = time.perf_counter()
                             transcription_error = None
-                            try:
+                            chunk_transcripts: list[str] = []
+                            audio_chunks = self._split_for_rest(degraded_wav)
+                            chunk_errors: list[str] = []
+                            for audio_chunk in audio_chunks:
                                 try:
-                                    transcript = prisma.transcribe(degraded_wav, mode="transcribe")
-                                except TypeError:
-                                    transcript = prisma.transcribe(degraded_wav)
-                            except GnaniError as exc:
+                                    try:
+                                        chunk_transcripts.append(prisma.transcribe(audio_chunk, mode="transcribe"))
+                                    except TypeError:
+                                        chunk_transcripts.append(prisma.transcribe(audio_chunk))
+                                except GnaniError as exc:
+                                    chunk_errors.append(str(exc))
+                            if chunk_errors:
                                 transcript = None
-                                transcription_error = str(exc)
+                                transcription_error = "; ".join(chunk_errors)
+                            else:
+                                transcript = " ".join(part.strip() for part in chunk_transcripts if part.strip())
                             latency_ms = round((time.perf_counter() - t0) * 1000.0, 2)
 
                             reference = clip.reference_transcribe
@@ -337,6 +359,7 @@ class Runner:
                                 "variant": variant,
                                 "transcript": transcript,
                                 "transcription_error": transcription_error,
+                                "api_chunks": len(audio_chunks),
                                 "reference": reference,
                                 "cer": cer_score,
                                 "amount_matched": amt_match,

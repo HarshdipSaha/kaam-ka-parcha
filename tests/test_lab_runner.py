@@ -5,6 +5,7 @@ import pytest
 
 from parcha.audio import _read_pcm, _write_pcm, erase_frames
 from parcha.credits import BudgetExceeded
+from parcha.gnani import GnaniError
 from parcha.lab.runner import Runner, RunnerConfig, main
 
 
@@ -283,3 +284,80 @@ def test_runner_executes_with_fake_prisma(tmp_path):
     # Verify caching: cached WAV files were generated in cache_dir
     cached_files = list(cache_dir.glob("*.wav"))
     assert len(cached_files) == 4
+
+
+def test_runner_splits_audio_longer_than_gnani_rest_limit(tmp_path):
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    source = make_test_wav(32 * 8000 + 4800)  # 32.6 seconds
+    (audio_dir / "s001.wav").write_bytes(source)
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(json.dumps({
+        "id": "s001", "text": "idle", "reference_transcribe": "",
+        "entities": {}, "audio": "s001.wav", "kind": "engine_only",
+        "seed": 1, "source": "recorded_ambient",
+    }) + "\n", encoding="utf-8")
+
+    class LengthCheckingPrisma:
+        def __init__(self):
+            self.durations = []
+
+        def transcribe(self, wav: bytes, *, mode: str = "transcribe") -> str:
+            self.durations.append(len(_read_pcm(wav)) / 8000)
+            return ""
+
+    client = LengthCheckingPrisma()
+    config = RunnerConfig(
+        manifest_path=manifest, audio_root=audio_dir, output_path=tmp_path / "out.jsonl",
+        codecs=["g711"], snr_dbs=[None], loss_percents=[0], max_credits=20,
+        remaining_credits=20,
+    )
+    runner = Runner(config, client=client)
+
+    forecast = runner.forecast()
+    results = runner.run()
+
+    assert forecast["total_calls"] == 2
+    assert forecast["projected_credits"] == pytest.approx(32.6 * 0.2)
+    assert client.durations == pytest.approx([29.0, 3.6])
+    assert all(duration <= 30 for duration in client.durations)
+    assert len(results) == 1
+    assert results[0]["transcript"] == ""
+    assert results[0]["transcription_error"] is None
+    assert results[0]["api_chunks"] == 2
+
+
+def test_runner_marks_long_clip_rejected_if_any_chunk_fails(tmp_path):
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    (audio_dir / "s001.wav").write_bytes(make_test_wav(32 * 8000 + 4800))
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(json.dumps({
+        "id": "s001", "text": "idle", "reference_transcribe": "",
+        "entities": {}, "audio": "s001.wav", "kind": "engine_only",
+        "seed": 1, "source": "recorded_ambient",
+    }) + "\n", encoding="utf-8")
+
+    class PartlyRejectedPrisma:
+        def __init__(self):
+            self.call_count = 0
+
+        def transcribe(self, wav: bytes, *, mode: str = "transcribe") -> str:
+            self.call_count += 1
+            if self.call_count == 2:
+                raise GnaniError("Gnani request failed: HTTP 429")
+            return "unexpected words"
+
+    client = PartlyRejectedPrisma()
+    config = RunnerConfig(
+        manifest_path=manifest, audio_root=audio_dir, output_path=tmp_path / "out.jsonl",
+        codecs=["g711"], snr_dbs=[None], loss_percents=[0], max_credits=20,
+        remaining_credits=20,
+    )
+    result = Runner(config, client=client).run()[0]
+
+    assert client.call_count == 2
+    assert result["api_chunks"] == 2
+    assert result["transcript"] is None
+    assert result["transcription_error"] == "Gnani request failed: HTTP 429"
+    assert result["hallucinated_word_count"] is None
