@@ -1,7 +1,7 @@
 # Effort 010: Audit
 
 **Audit date:** 2026-10-05
-**Status:** Complete. Plan and records not committed (left for owner review).
+**Status:** Complete. Committed and pushed to `main` in `a31dd29`.
 
 | Requirement | Evidence | Result |
 |---|---|---|

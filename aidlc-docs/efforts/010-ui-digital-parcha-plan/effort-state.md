@@ -27,4 +27,4 @@
 - Confirm the two testing seams: Playwright on in-process fakes, and `TestClient`.
 - Choose an execution method for the plan.
 - Publish the spec as a GitHub issue once `gh` is signed in as HarshdipSaha.
-- Commit this effort and the spec edit; they are left uncommitted for review.
+- Committed and pushed to `main` in `a31dd29` (2026-10-05).
