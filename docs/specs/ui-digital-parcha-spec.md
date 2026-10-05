@@ -8,7 +8,7 @@
 > - [R14 Indian visual language](../research/R14-ui-indian-visual-language.md)
 > - the current templates and browser script
 >
-> Triage label: `ready-for-agent`. Publication to GitHub Issues is pending because `gh` is not installed on this machine (see Further Notes). AIDLC effort [`009`](../../aidlc-docs/efforts/009-ui-digital-parcha-redesign/effort-state.md). Vocabulary follows [`CONTEXT.md`](../../CONTEXT.md) and `AGENTS.md`; state names are the code's (`draft`, `review`, `awaiting_reply`, `fallback_ready`, `confirmed`). Implementation plan: [`2026-10-05-ui-digital-parcha.md`](../superpowers/plans/2026-10-05-ui-digital-parcha.md).
+> Triage label: `ready-for-agent`. Publication to GitHub Issues is pending because `gh` is not installed on this machine (see Further Notes). AIDLC effort [`010`](../../aidlc-docs/efforts/010-ui-digital-parcha-plan/effort-state.md). **Runs after the money-path plan** ([`2026-10-05-money-path-safety.md`](../superpowers/plans/2026-10-05-money-path-safety.md), effort 009); see "Dependency on the money-path plan" below. Vocabulary follows [`CONTEXT.md`](../../CONTEXT.md) and `AGENTS.md`; state names are the code's (`draft`, `review`, `awaiting_reply`, `fallback_ready`, `confirmed`). Implementation plan: [`2026-10-05-ui-digital-parcha.md`](../superpowers/plans/2026-10-05-ui-digital-parcha.md).
 
 ## Testing seams
 
@@ -295,6 +295,14 @@ A sticky bottom dock holds one big mic labelled "बोलकर जवाब �
 - The read-back response is always valid JSON: non-finite numbers in the manifest become null.
 - New `GET /stage`: an HTML page that creates a session and embeds `/workshop?session_id=…` and `/customer/{id}`.
 - No other route changes. State transitions, revision checks, consent logging, fallback rules and artefact sealing are untouched.
+
+### Dependency on the money-path plan (implemented first)
+The money-path plan lands before this redesign. The redesign consumes its contracts unchanged and must not weaken them:
+- Intake and amount re-ask return **HTTP 422 with `detail == {"repeat": true, "reason": …}`** when Prisma gives nothing usable. The redesign shows the money plan's Hindi repeat message as a friendly state, with the mic ready again; it is never shown as an error.
+- The session payload's **`abstentions`** map (field → reason) is shown **on the flagged row**, under its question, using the money plan's Hindi abstain labels verbatim. That way the mechanic sees *why* an amount is being re-asked ("अधूरी रकम — फिर से पूछेंगे").
+- Amounts come only from the numeral grammar. The UI never offers typed or tapped amount entry: re-asking is by voice only, as today.
+- Every intake makes two Prisma passes. Browser-test fakes must answer by pass mode, not by call order.
+- The money plan's Task 5 restyled `.abstain-reason` and edited the old workshop markup. This redesign replaces that markup, but keeps the class name, the messages and `describeHttpError`'s behaviour.
 
 ### Behaviour rules
 - Voice is the only sealing path, apart from the existing digital fallback, which appears only in `fallback_ready`. Hint chips never act.

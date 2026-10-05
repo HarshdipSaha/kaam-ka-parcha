@@ -19,6 +19,7 @@
 | **007** | `gpu-sprint-multilingual-council` | A100 GPU Sprint Research (R7), Multilingual-Model Literature Review (R8) & LLM Council Verdict | **complete** (docs) | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/007-gpu-sprint-multilingual-council/`](efforts/007-gpu-sprint-multilingual-council/effort-state.md) |
 | **008** | `real-audio-analysis-council-spec` | Real-Audio Benchmark Analysis (R9), Council Re-run & Money-Path Safety Spec | **complete** (docs; spec committed, GitHub issue pending) | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/008-real-audio-analysis-council-spec/`](efforts/008-real-audio-analysis-council-spec/effort-state.md) |
 | **009** | `money-path-plan` | Money-Path Safety & Benchmark v2 Implementation Plan (writing-plans) | **complete** (plan; implementation not started) | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/009-money-path-plan/`](efforts/009-money-path-plan/effort-state.md) |
+| **010** | `ui-digital-parcha-plan` | UI Research (R10–R14), "Digital Parcha" Spec & Implementation Plan (runs after 009) | **complete** (plan; implementation not started) | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/010-ui-digital-parcha-plan/`](efforts/010-ui-digital-parcha-plan/effort-state.md) |
 
 ---
 
