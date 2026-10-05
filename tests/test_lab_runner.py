@@ -6,7 +6,7 @@ import pytest
 from parcha.audio import _read_pcm, _write_pcm, erase_frames
 from parcha.credits import BudgetExceeded
 from parcha.gnani import GnaniError
-from parcha.lab.runner import Runner, RunnerConfig, main
+from parcha.lab.runner import Runner, RunnerConfig, get_clip_duration, main
 
 
 def make_test_wav(num_samples: int = 8000, amplitude: int = 4000) -> bytes:
@@ -251,6 +251,7 @@ def test_runner_executes_with_fake_prisma(tmp_path):
 
     expected_keys = {
         "clip_id",
+        "stt_mode",
         "codec",
         "snr",
         "loss",
@@ -269,6 +270,7 @@ def test_runner_executes_with_fake_prisma(tmp_path):
         assert res["transcript"] == "brake ka part ₹450, Somvaar shaam tak"
         assert res["reference"] == "brake ka part ₹450, Somvaar shaam tak"
         assert res["cer"] == 0.0
+        assert res["wer"] == 0.0
         assert res["amount_matched"] is True
         assert res["latency_ms"] >= 0.0
         assert res["credits_spent"] == pytest.approx(1.0)
@@ -395,3 +397,244 @@ def test_runner_marks_long_clip_rejected_if_any_chunk_fails(tmp_path):
     assert result["transcript"] is None
     assert result["transcription_error"] == "Gnani request failed: HTTP 429"
     assert result["hallucinated_word_count"] is None
+
+
+def test_runner_runs_configured_formats_and_bias_with_correct_forecast(tmp_path):
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    (audio_dir / "s001.wav").write_bytes(make_test_wav(8000))
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(json.dumps({
+        "id": "s001", "text": "brake pad", "reference_transcribe": "brake pad",
+        "entities": {}, "audio": "s001.wav", "kind": "speech", "seed": 1,
+        "source": "timbre",
+    }) + "\n", encoding="utf-8")
+
+    class FormatCheckingPrisma:
+        def __init__(self):
+            self.calls = []
+
+        def transcribe(self, wav: bytes, *, mode: str, bias=None) -> str:
+            self.calls.append((mode, bias))
+            return mode
+
+    client = FormatCheckingPrisma()
+    config = RunnerConfig(
+        manifest_path=manifest,
+        audio_root=audio_dir,
+        output_path=tmp_path / "out.jsonl",
+        codecs=["g711"],
+        snr_dbs=[None],
+        loss_percents=[0.0],
+        stt_modes=["transcribe", "verbatim"],
+        bias_words=["brake", "clutch"],
+        max_credits=10,
+        remaining_credits=10,
+    )
+    runner = Runner(config, client=client)
+
+    forecast = runner.forecast()
+    results = runner.run()
+
+    assert forecast["total_calls"] == 2
+    assert forecast["projected_credits"] == pytest.approx(0.4)
+    assert client.calls == [("transcribe", None), ("verbatim", ["brake", "clutch"])]
+    assert [row["stt_mode"] for row in results] == ["transcribe", "verbatim"]
+    assert [row["transcript"] for row in results] == ["transcribe", "verbatim"]
+
+
+def test_runner_writes_source_stratum_and_word_error_rate(tmp_path):
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    (audio_dir / "i001.wav").write_bytes(make_test_wav(8000))
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(json.dumps({
+        "id": "i001", "text": "clutch pad", "reference_transcribe": "Clutch, pad!",
+        "entities": {}, "audio": "i001.wav", "kind": "speech", "seed": 1,
+        "source": "open_dataset", "source_dataset": "IndicContextEval",
+        "source_row": "row-1", "stratum": "Engineering|Read|mixed",
+    }) + "\n", encoding="utf-8")
+
+    class PunctuationOnlyDifference:
+        def transcribe(self, wav: bytes, *, mode: str = "transcribe") -> str:
+            return "clutch pad"
+
+    result = Runner(RunnerConfig(
+        manifest_path=manifest, audio_root=audio_dir, output_path=tmp_path / "out.jsonl",
+        codecs=["g711"], snr_dbs=[None], loss_percents=[0], max_credits=10,
+        remaining_credits=10,
+    ), client=PunctuationOnlyDifference()).run()[0]
+
+    assert result["source"] == "open_dataset"
+    assert result["source_dataset"] == "IndicContextEval"
+    assert result["source_row"] == "row-1"
+    assert result["stratum"] == "Engineering|Read|mixed"
+    assert result["wer"] == 0.0
+
+
+def test_runner_cli_exposes_modes_bias_and_spacing():
+    from parcha.lab.runner import parse_args
+
+    args = parse_args([
+        "--stt-modes", "transcribe,verbatim", "--bias-words", "brake,clutch",
+        "--request-interval-seconds", "2", "--codecs", "g711",
+        "--snr-dbs", "clean,10,5,0",
+    ])
+
+    assert args.stt_modes == "transcribe,verbatim"
+    assert args.bias_words == "brake,clutch"
+    assert args.request_interval_seconds == 2
+    assert args.codecs == "g711"
+    assert args.snr_dbs == "clean,10,5,0"
+
+
+def test_forecast_duration_uses_available_frames_from_streamed_wav(tmp_path):
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    wav = bytearray(make_test_wav(8000))
+    wav[40:44] = (2**31 - 1).to_bytes(4, "little")
+    (audio_dir / "i001.wav").write_bytes(wav)
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(json.dumps({
+        "id": "i001", "text": "sample", "reference_transcribe": "sample",
+        "entities": {}, "audio": "i001.wav", "kind": "speech", "seed": 1,
+    }) + "\n", encoding="utf-8")
+
+    row = json.loads(manifest.read_text(encoding="utf-8"))
+    from parcha.lab.dataset import Clip
+
+    assert get_clip_duration(Clip.model_validate(row), audio_dir) == 1.0
+
+
+def test_live_cli_reports_provider_error_as_aborted_sweep(monkeypatch, capsys):
+    class ErrorResultRunner:
+        def __init__(self, config):
+            self.config = config
+
+        def forecast(self):
+            return {
+                "manifest_path": self.config.manifest_path, "total_clips": 1,
+                "codecs": ["g711"], "snr_dbs": [None], "loss_percents": [0],
+                "impulse_profiles": [None], "stt_modes": ["transcribe"],
+                "total_calls": 1, "total_duration_seconds": 1,
+                "projected_credits": 0.2, "remaining_credits": 5000,
+                "max_credits": 5000, "is_under_budget": True,
+            }
+
+        def run(self):
+            return [{"api_chunks": 1, "transcription_error": "Gnani request failed: HTTP 429"}]
+
+    monkeypatch.setattr("parcha.lab.runner.Runner", ErrorResultRunner)
+
+    rc = main(["--live", "--manifest", "manifest.jsonl"])
+
+    assert rc == 1
+    assert "aborted after provider error" in capsys.readouterr().out
+
+
+def test_runner_stops_the_sweep_after_rate_limit(tmp_path):
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    (audio_dir / "s001.wav").write_bytes(make_test_wav(8000))
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(json.dumps({
+        "id": "s001", "text": "test", "reference_transcribe": "test",
+        "entities": {}, "audio": "s001.wav", "kind": "speech", "seed": 1,
+        "source": "timbre",
+    }) + "\n", encoding="utf-8")
+
+    class RateLimitedPrisma:
+        def __init__(self):
+            self.call_count = 0
+
+        def transcribe(self, wav: bytes, *, mode: str = "transcribe") -> str:
+            self.call_count += 1
+            raise GnaniError("Gnani request failed: HTTP 429")
+
+    client = RateLimitedPrisma()
+    runner = Runner(RunnerConfig(
+        manifest_path=manifest,
+        audio_root=audio_dir,
+        output_path=tmp_path / "out.jsonl",
+        codecs=["g711", "amr_nb_4750"],
+        snr_dbs=[None, 10.0],
+        loss_percents=[0.0],
+        max_credits=10,
+        remaining_credits=10,
+    ), client=client)
+
+    results = runner.run()
+
+    assert client.call_count == 1
+    assert len(results) == 1
+    assert results[0]["transcription_error"] == "Gnani request failed: HTTP 429"
+
+
+def test_runner_resume_skips_completed_calls_after_local_preparation_failure(tmp_path, monkeypatch):
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    (audio_dir / "s001.wav").write_bytes(make_test_wav(40000))
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(json.dumps({
+        "id": "s001", "text": "test", "reference_transcribe": "test",
+        "entities": {}, "audio": "s001.wav", "kind": "speech", "seed": 1,
+    }) + "\n", encoding="utf-8")
+    output = tmp_path / "results.jsonl"
+    config = RunnerConfig(
+        manifest_path=manifest, audio_root=audio_dir, output_path=output,
+        codecs=["g711"], snr_dbs=[None, 10.0], loss_percents=[0],
+        noise_path=None, max_credits=10, remaining_credits=10,
+    )
+    first_client = FakePrisma()
+    first_runner = Runner(config, client=first_client)
+    original_degrade = first_runner.degrade_audio
+
+    def fail_on_noisy_condition(source_wav, codec, snr, loss, impulse_profile=None):
+        if snr == 10.0:
+            raise ValueError("local mix failed before request")
+        return original_degrade(source_wav, codec, snr, loss, impulse_profile)
+
+    monkeypatch.setattr(first_runner, "degrade_audio", fail_on_noisy_condition)
+    with pytest.raises(ValueError, match="local mix failed"):
+        first_runner.run()
+    assert first_client.call_count == 1
+    assert output.exists()
+    assert output.with_suffix(output.suffix + ".meta.json").exists()
+
+    resume_config = RunnerConfig(
+        manifest_path=manifest, audio_root=audio_dir, output_path=output,
+        codecs=["g711"], snr_dbs=[None, 10.0], loss_percents=[0],
+        noise_path=None, max_credits=10.0, remaining_credits=10.0,
+        request_interval_seconds=0.0, resume=True,
+    )
+    resumed_client = FakePrisma()
+    resumed = Runner(resume_config, client=resumed_client).run()
+
+    assert resumed_client.call_count == 1
+    assert len(resumed) == 1
+    assert resumed[0]["snr"] == 10.0
+    assert len(output.read_text(encoding="utf-8").splitlines()) == 2
+
+
+def test_runner_resume_rejects_grid_changes(tmp_path):
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    (audio_dir / "s001.wav").write_bytes(make_test_wav(8000))
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(json.dumps({
+        "id": "s001", "text": "test", "reference_transcribe": "test",
+        "entities": {}, "audio": "s001.wav", "kind": "speech", "seed": 1,
+    }) + "\n", encoding="utf-8")
+    output = tmp_path / "results.jsonl"
+    Runner(RunnerConfig(
+        manifest_path=manifest, audio_root=audio_dir, output_path=output,
+        codecs=["g711"], snr_dbs=[None], max_credits=10, remaining_credits=10,
+    ), client=FakePrisma()).run()
+
+    changed = Runner(RunnerConfig(
+        manifest_path=manifest, audio_root=audio_dir, output_path=output,
+        codecs=["g711"], snr_dbs=[None, 10], max_credits=10,
+        remaining_credits=10, resume=True,
+    ), client=FakePrisma())
+    with pytest.raises(ValueError, match="configuration does not match"):
+        changed.run()

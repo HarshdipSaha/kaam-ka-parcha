@@ -17,7 +17,16 @@ class Clip(BaseModel):
     audio: str
     kind: Literal["speech", "reply", "engine_only"]
     seed: int
-    source: Literal["timbre", "consented_script", "synthetic_noise", "recorded_ambient"] = "timbre"
+    source: Literal[
+        "timbre", "consented_script", "synthetic_noise", "recorded_ambient",
+        "open_dataset", "user_provided_youtube",
+    ] = "timbre"
+    source_dataset: str | None = None
+    source_license: str | None = None
+    source_row: str | None = None
+    speaker_hash: str | None = None
+    stratum: str | None = None
+    reference_type: Literal["dataset_reference", "auto_caption", "other"] | None = None
 
 
 PART_WORDS = (

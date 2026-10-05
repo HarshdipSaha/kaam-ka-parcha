@@ -172,12 +172,14 @@ def mix_at_snr(speech_wav: bytes, noise_wav: bytes, target_db: float | None) -> 
 
     scaled = noise_f * (speech_rms / (noise_rms * (10.0 ** (target_db / 20.0))))
     mixed = speech_f + scaled
-
-    if np.max(np.abs(mixed)) >= 32767:
-        raise AudioError("noise mix clipped; lower level and rerun")
-
     scaled_rms = float(np.sqrt(np.mean(scaled ** 2)))
     measured_snr = 20.0 * math.log10(speech_rms / scaled_rms)
+
+    peak = float(np.max(np.abs(mixed)))
+    if peak >= 32767:
+        # Apply common gain to the complete mixture. This preserves the target
+        # SNR while avoiding integer clipping at the PCM boundary.
+        mixed *= 32766.0 / peak
 
     mixed_pcm = np.rint(mixed).astype("<i2")
     return _write_pcm(mixed_pcm), measured_snr
@@ -210,4 +212,3 @@ def erase_frames(wav_bytes: bytes, loss_percent: float, seed: int = 0) -> tuple[
         samples[idx * 160 : (idx + 1) * 160] = 0
 
     return _write_pcm(samples), num_erased / total_frames
-

@@ -7,8 +7,7 @@ import json
 from pathlib import Path
 import sys
 import time
-from typing import Any
-import wave
+from typing import Any, Literal
 
 import numpy as np
 
@@ -16,7 +15,7 @@ from parcha.audio import _read_pcm, _write_pcm, codec_round_trip, erase_frames, 
 from parcha.credits import BudgetExceeded
 from parcha.gnani import GnaniError
 from parcha.lab.dataset import Clip, load_manifest
-from parcha.lab.metrics import amount_match, cer, hallucinated_words
+from parcha.lab.metrics import amount_match, cer, hallucinated_words, word_error_rate
 from parcha.lab.noise import IMPULSE_PROFILES, inject_impulses
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -51,6 +50,10 @@ class RunnerConfig:
     impulse_profiles: list[str | None] = field(default_factory=list)
     cache_dir: Path = field(default_factory=lambda: Path("var/lab/cache"))
     ablation: str | None = None
+    stt_modes: list[Literal["transcribe", "verbatim"]] = field(default_factory=lambda: ["transcribe"])
+    bias_words: list[str] | None = None
+    request_interval_seconds: float = 0.0
+    resume: bool = False
 
     def __post_init__(self) -> None:
         self.manifest_path = Path(self.manifest_path)
@@ -59,6 +62,14 @@ class RunnerConfig:
         self.cache_dir = Path(self.cache_dir)
         if self.noise_path is not None:
             self.noise_path = Path(self.noise_path)
+        if not self.stt_modes:
+            raise ValueError("at least one STT mode is required")
+        if any(mode not in {"transcribe", "verbatim"} for mode in self.stt_modes):
+            raise ValueError("STT modes must be transcribe or verbatim")
+        if self.bias_words and "verbatim" not in self.stt_modes:
+            raise ValueError("bias words require verbatim mode")
+        if self.request_interval_seconds < 0:
+            raise ValueError("request interval cannot be negative")
         unknown = {profile for profile in self.impulse_profiles if profile is not None} - set(IMPULSE_PROFILES)
         if unknown:
             raise ValueError(f"Unknown impulse profiles: {', '.join(sorted(unknown))}")
@@ -69,8 +80,7 @@ def get_clip_duration(clip: Clip, audio_root: Path) -> float:
     audio_path = (audio_root / clip.audio).resolve()
     if audio_path.is_file():
         try:
-            with wave.open(str(audio_path), "rb") as wf:
-                return wf.getnframes() / float(wf.getframerate())
+            return len(_read_pcm(audio_path.read_bytes())) / float(SAMPLE_RATE)
         except Exception:
             pass
     return 6.0
@@ -90,6 +100,7 @@ def print_forecast(fc: dict[str, Any]) -> None:
     print(f"Losses ({len(fc['loss_percents'])}):       {', '.join(f'{l}%' for l in fc['loss_percents'])}")
     profiles = [profile or "none" for profile in fc["impulse_profiles"]]
     print(f"Impulse profiles ({len(profiles)}): {', '.join(profiles)}")
+    print(f"STT modes ({len(fc['stt_modes'])}):  {', '.join(fc['stt_modes'])}")
     print(f"Total Grid Calls:  {fc['total_calls']}")
     print(f"Est Total Seconds: {fc['total_duration_seconds']:.1f}s")
     print(f"Projected Credits: {fc['projected_credits']:.2f}")
@@ -110,6 +121,109 @@ class Runner:
         self._noise_wav_cached: bytes | None = None
         self._noise_source = "not_mixed"
         self._noise_sha256: str | None = None
+
+    @property
+    def _metadata_path(self) -> Path:
+        return self.config.output_path.with_suffix(self.config.output_path.suffix + ".meta.json")
+
+    @staticmethod
+    def _condition_key(
+        clip_id: str,
+        stt_mode: str,
+        codec: str,
+        snr: float | None,
+        loss: float,
+        impulse_profile: str | None,
+    ) -> tuple[str, str, str, float | None, float, str | None]:
+        return (
+            clip_id, stt_mode, codec,
+            None if snr is None else float(snr), float(loss), impulse_profile,
+        )
+
+    def _run_signature(self, clips: list[Clip]) -> str:
+        audio_hashes = {}
+        for clip in clips:
+            path = (self.config.audio_root / clip.audio).resolve()
+            audio_hashes[clip.id] = hashlib.sha256(path.read_bytes()).hexdigest()
+        manifest_hash = hashlib.sha256(self.config.manifest_path.read_bytes()).hexdigest()
+        noise_hash = None
+        if self.config.noise_path is not None and self.config.noise_path.is_file():
+            noise_hash = hashlib.sha256(self.config.noise_path.read_bytes()).hexdigest()
+        payload = {
+            "manifest_sha256": manifest_hash,
+            "audio_sha256": audio_hashes,
+            "noise_file_sha256": noise_hash,
+            "codecs": self.config.codecs,
+            "snr_dbs": [None if value is None else float(value) for value in self.config.snr_dbs],
+            "loss_percents": [float(value) for value in self.config.loss_percents],
+            "seed": self.config.seed,
+            "credits_per_second": float(self.config.credits_per_second),
+            "remaining_credits": float(self.config.remaining_credits),
+            "max_credits": float(self.config.max_credits),
+            "impulse_profiles": self.config.impulse_profiles,
+            "ablation": self.config.ablation,
+            "stt_modes": self.config.stt_modes,
+            "bias_words": self.config.bias_words,
+            "request_interval_seconds": float(self.config.request_interval_seconds),
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+    def _load_resume_state(
+        self, clips: list[Clip], codecs: list[str], snr_dbs: list[float | None],
+        loss_percents: list[float], impulse_profiles: list[str | None],
+    ) -> tuple[list[dict[str, Any]], set[tuple[str, str, str, float | None, float, str | None]], float]:
+        if not self.config.output_path.is_file() or not self._metadata_path.is_file():
+            raise ValueError("resume requires an existing result file and matching metadata sidecar")
+        metadata = json.loads(self._metadata_path.read_text(encoding="utf-8"))
+        if metadata.get("signature") != self._run_signature(clips):
+            raise ValueError("resume configuration does not match the saved run")
+
+        allowed: set[tuple[str, str, str, float | None, float, str | None]] = set()
+        for clip in clips:
+            clip_snrs, clip_profiles = self._conditions_for_clip(clip, snr_dbs, impulse_profiles)
+            for codec in codecs:
+                for snr in clip_snrs:
+                    for loss in loss_percents:
+                        for profile in clip_profiles:
+                            for mode in self.config.stt_modes:
+                                allowed.add(self._condition_key(clip.id, mode, codec, snr, loss, profile))
+
+        clips_by_id = {clip.id: clip for clip in clips}
+        prior_rows: list[dict[str, Any]] = []
+        completed: set[tuple[str, str, str, float | None, float, str | None]] = set()
+        total_spent = 0.0
+        for line_number, line in enumerate(self.config.output_path.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if row.get("transcription_error"):
+                raise ValueError("cannot resume after a provider error; start a new run after resolving it")
+            key = self._condition_key(
+                row["clip_id"], row["stt_mode"], row["codec"], row.get("snr"),
+                row["loss"], row.get("impulse_profile"),
+            )
+            clip = clips_by_id.get(key[0])
+            if key not in allowed or clip is None:
+                raise ValueError(f"saved result line {line_number} is outside the configured run")
+            if key in completed:
+                raise ValueError(f"duplicate saved result condition on line {line_number}")
+            if (
+                row.get("seed") != self.config.seed
+                or row.get("reference") != clip.reference_transcribe
+                or row.get("source") != clip.source
+                or row.get("source_row") != clip.source_row
+            ):
+                raise ValueError(f"saved result line {line_number} does not match the manifest")
+            if row.get("snr") is None:
+                if row.get("noise_sha256") is not None:
+                    raise ValueError(f"saved result line {line_number} has an unexpected noise hash")
+            elif row.get("noise_sha256") != hashlib.sha256(self._get_noise_wav()).hexdigest():
+                raise ValueError(f"saved result line {line_number} uses different background noise")
+            completed.add(key)
+            prior_rows.append(row)
+            total_spent += float(row.get("credits_spent", 0.0))
+        return prior_rows, completed, total_spent
 
     def _get_noise_wav(self) -> bytes:
         if self._noise_wav_cached is not None:
@@ -234,7 +348,12 @@ class Runner:
         total_duration = 0.0
         for clip in clips:
             clip_snrs, clip_profiles = self._conditions_for_clip(clip, snr_dbs, impulse_profiles)
-            conditions_per_codec = len(clip_snrs) * len(loss_percents) * len(clip_profiles)
+            conditions_per_codec = (
+                len(clip_snrs)
+                * len(loss_percents)
+                * len(clip_profiles)
+                * len(self.config.stt_modes)
+            )
             conditions = len(codecs) * conditions_per_codec
             duration = get_clip_duration(clip, self.config.audio_root)
             chunks_per_codec = sum(
@@ -261,6 +380,7 @@ class Runner:
             "snr_dbs": snr_dbs,
             "loss_percents": loss_percents,
             "impulse_profiles": impulse_profiles,
+            "stt_modes": list(self.config.stt_modes),
             "conditions_count": total_calls / len(clips) if clips else 0,
             "total_calls": total_calls,
             "total_duration_seconds": round(total_duration, 2),
@@ -289,14 +409,24 @@ class Runner:
         codecs, snr_dbs, loss_percents, impulse_profiles = self._resolve_grid()
 
         self.config.output_path.parent.mkdir(parents=True, exist_ok=True)
-        # Each invocation is one bounded experiment. Do not silently mix a failed
-        # partial run into a later rerun with a different implementation/config.
-        self.config.output_path.write_text("", encoding="utf-8")
-
         results: list[dict[str, Any]] = []
-        total_spent = 0.0
+        if self.config.resume:
+            _, completed_conditions, total_spent = self._load_resume_state(
+                clips, codecs, snr_dbs, loss_percents, impulse_profiles
+            )
+        else:
+            self.config.output_path.write_text("", encoding="utf-8")
+            signature = self._run_signature(clips)
+            self._metadata_path.write_text(
+                json.dumps({"signature": signature}, indent=2), encoding="utf-8"
+            )
+            completed_conditions = set()
+            total_spent = 0.0
+        halt_after_error = False
 
         for clip in clips:
+            if halt_after_error:
+                break
             audio_path = (self.config.audio_root / clip.audio).resolve()
             source_wav = audio_path.read_bytes()
             try:
@@ -306,85 +436,130 @@ class Runner:
             clip_dur = len(_read_pcm(source_wav)) / 8000.0
 
             for codec in codecs:
+                if halt_after_error:
+                    break
                 clip_snrs, clip_profiles = self._conditions_for_clip(clip, snr_dbs, impulse_profiles)
                 for snr in clip_snrs:
+                    if halt_after_error:
+                        break
                     for loss in loss_percents:
+                        if halt_after_error:
+                            break
                         for impulse_profile in clip_profiles:
-                            projected_call_cost = clip_dur * self.config.credits_per_second
-                            if (
-                                total_spent + projected_call_cost > self.config.max_credits
-                                or total_spent + projected_call_cost > self.config.remaining_credits
-                            ):
-                                raise BudgetExceeded(
-                                    f"Budget limit reached: spent {total_spent:.2f} + projected {projected_call_cost:.2f} "
-                                    f"exceeds limit (max: {self.config.max_credits:.2f}, remaining: {self.config.remaining_credits:.2f})"
-                                )
-                            degraded_wav = self.degrade_audio(source_wav, codec, snr, loss, impulse_profile)
-                            t0 = time.perf_counter()
-                            transcription_error = None
-                            chunk_transcripts: list[str] = []
-                            audio_chunks = self._split_for_rest(degraded_wav)
-                            chunk_errors: list[str] = []
-                            attempted_chunks = 0
-                            for audio_chunk in audio_chunks:
-                                attempted_chunks += 1
-                                try:
-                                    try:
-                                        chunk_transcripts.append(prisma.transcribe(audio_chunk, mode="transcribe"))
-                                    except TypeError:
-                                        chunk_transcripts.append(prisma.transcribe(audio_chunk))
-                                except GnaniError as exc:
-                                    chunk_errors.append(str(exc))
+                            if halt_after_error:
+                                break
+                            for stt_mode in self.config.stt_modes:
+                                if halt_after_error:
                                     break
-                            if chunk_errors:
-                                transcript = None
-                                transcription_error = "; ".join(chunk_errors)
-                            else:
-                                transcript = " ".join(part.strip() for part in chunk_transcripts if part.strip())
-                            latency_ms = round((time.perf_counter() - t0) * 1000.0, 2)
+                                condition_key = self._condition_key(
+                                    clip.id, stt_mode, codec, snr, loss, impulse_profile
+                                )
+                                if condition_key in completed_conditions:
+                                    continue
+                                projected_call_cost = clip_dur * self.config.credits_per_second
+                                if (
+                                    total_spent + projected_call_cost > self.config.max_credits
+                                    or total_spent + projected_call_cost > self.config.remaining_credits
+                                ):
+                                    raise BudgetExceeded(
+                                        f"Budget limit reached: spent {total_spent:.2f} + projected {projected_call_cost:.2f} "
+                                        f"exceeds limit (max: {self.config.max_credits:.2f}, remaining: {self.config.remaining_credits:.2f})"
+                                    )
+                                degraded_wav = self.degrade_audio(source_wav, codec, snr, loss, impulse_profile)
+                                t0 = time.perf_counter()
+                                transcription_error = None
+                                chunk_transcripts: list[str] = []
+                                audio_chunks = self._split_for_rest(degraded_wav)
+                                chunk_errors: list[str] = []
+                                attempted_chunks = 0
+                                for audio_chunk in audio_chunks:
+                                    attempted_chunks += 1
+                                    try:
+                                        bias = self.config.bias_words if stt_mode == "verbatim" else None
+                                        if bias:
+                                            chunk_transcripts.append(
+                                                prisma.transcribe(audio_chunk, mode=stt_mode, bias=bias)
+                                            )
+                                        else:
+                                            chunk_transcripts.append(
+                                                prisma.transcribe(audio_chunk, mode=stt_mode)
+                                            )
+                                    except GnaniError as exc:
+                                        chunk_errors.append(str(exc))
+                                        break
+                                    except Exception as exc:
+                                        chunk_errors.append(f"{type(exc).__name__}: {exc}")
+                                        break
+                                    finally:
+                                        if self.config.request_interval_seconds:
+                                            time.sleep(self.config.request_interval_seconds)
+                                if chunk_errors:
+                                    transcript = None
+                                    transcription_error = "; ".join(chunk_errors)
+                                    # A paid sweep stops on its first provider error (including 429).
+                                    halt_after_error = True
+                                else:
+                                    transcript = " ".join(part.strip() for part in chunk_transcripts if part.strip())
+                                latency_ms = round((time.perf_counter() - t0) * 1000.0, 2)
 
-                            reference = clip.reference_transcribe
-                            cer_score = round(cer(reference, transcript), 4) if transcript is not None else None
-                            expected_paise = clip.entities.get("amount_paise") if clip.entities else None
-                            amt_match = amount_match(int(expected_paise), transcript) if expected_paise is not None and transcript is not None else False
-                            call_credits = round(projected_call_cost, 4)
-                            total_spent += call_credits
-                            var_prefix = self.config.ablation or "sweep"
-                            snr_label = (
-                                "clean"
-                                if snr is None
-                                else f"{int(snr) if isinstance(snr, (int, float)) and snr.is_integer() else snr}db"
-                            )
-                            loss_label = (
-                                f"{int(loss) if isinstance(loss, (int, float)) and loss.is_integer() else loss}loss"
-                            )
-                            profile_label = impulse_profile or "no_impulse"
-                            variant = f"{var_prefix}_{codec}_{snr_label}_{loss_label}_{profile_label}"
-                            row = {
-                                "clip_id": clip.id,
-                                "codec": codec,
-                                "snr": snr,
-                                "loss": loss,
-                                "impulse_profile": impulse_profile,
-                                "seed": self.config.seed,
-                                "noise_source": self._noise_source if snr is not None else "none",
-                                "noise_sha256": self._noise_sha256 if snr is not None else None,
-                                "measured_snr_db": snr,
-                                "clip_type": clip.kind,
-                                "variant": variant,
-                                "transcript": transcript,
-                                "transcription_error": transcription_error,
-                                "api_chunks": attempted_chunks,
-                                "reference": reference,
-                                "cer": cer_score,
-                                "amount_matched": amt_match,
-                                "latency_ms": latency_ms,
-                                "credits_spent": call_credits,
-                                "hallucinated_word_count": hallucinated_words(transcript) if clip.kind == "engine_only" and transcript is not None else None,
-                            }
-                            with self.config.output_path.open("a", encoding="utf-8") as f:
-                                f.write(json.dumps(row, ensure_ascii=False) + "\n")
-                            results.append(row)
+                                reference = clip.reference_transcribe
+                                cer_score = round(cer(reference, transcript), 4) if transcript is not None else None
+                                wer_score = round(word_error_rate(reference, transcript), 4) if transcript is not None else None
+                                expected_paise = clip.entities.get("amount_paise") if clip.entities else None
+                                amt_match = (
+                                    amount_match(int(expected_paise), transcript)
+                                    if expected_paise is not None and transcript is not None
+                                    else None
+                                )
+                                call_credits = round(projected_call_cost, 4)
+                                total_spent += call_credits
+                                var_prefix = self.config.ablation or "sweep"
+                                snr_label = (
+                                    "clean"
+                                    if snr is None
+                                    else f"{int(snr) if isinstance(snr, (int, float)) and snr.is_integer() else snr}db"
+                                )
+                                loss_label = (
+                                    f"{int(loss) if isinstance(loss, (int, float)) and loss.is_integer() else loss}loss"
+                                )
+                                profile_label = impulse_profile or "no_impulse"
+                                variant = f"{var_prefix}_{stt_mode}_{codec}_{snr_label}_{loss_label}_{profile_label}"
+                                row = {
+                                    "clip_id": clip.id,
+                                    "source": clip.source,
+                                    "source_dataset": clip.source_dataset,
+                                    "source_license": clip.source_license,
+                                    "source_row": clip.source_row,
+                                    "speaker_hash": clip.speaker_hash,
+                                    "stratum": clip.stratum,
+                                    "reference_type": clip.reference_type,
+                                    "stt_mode": stt_mode,
+                                    "bias_words": self.config.bias_words if stt_mode == "verbatim" else None,
+                                    "codec": codec,
+                                    "snr": snr,
+                                    "loss": loss,
+                                    "impulse_profile": impulse_profile,
+                                    "seed": self.config.seed,
+                                    "noise_source": self._noise_source if snr is not None else "none",
+                                    "noise_sha256": self._noise_sha256 if snr is not None else None,
+                                    "measured_snr_db": snr,
+                                    "clip_type": clip.kind,
+                                    "variant": variant,
+                                    "transcript": transcript,
+                                    "transcription_error": transcription_error,
+                                    "api_chunks": attempted_chunks,
+                                    "reference": reference,
+                                    "cer": cer_score,
+                                    "wer": wer_score,
+                                    "amount_matched": amt_match,
+                                    "latency_ms": latency_ms,
+                                    "credits_spent": call_credits,
+                                    "hallucinated_word_count": hallucinated_words(transcript) if clip.kind == "engine_only" and transcript is not None else None,
+                                }
+                                with self.config.output_path.open("a", encoding="utf-8") as f:
+                                    f.write(json.dumps(row, ensure_ascii=False) + "\n")
+                                results.append(row)
+                                completed_conditions.add(condition_key)
 
         return results
 
@@ -451,6 +626,37 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Ablation mode or identifier",
     )
+    parser.add_argument(
+        "--stt-modes",
+        default="transcribe",
+        help="Comma-separated STT formats: transcribe,verbatim",
+    )
+    parser.add_argument(
+        "--bias-words",
+        default="",
+        help="Comma-separated single-word bias list, sent only to verbatim mode",
+    )
+    parser.add_argument(
+        "--request-interval-seconds",
+        type=float,
+        default=0.0,
+        help="Delay between STT requests (useful for conservative live sweeps)",
+    )
+    parser.add_argument(
+        "--codecs",
+        default="g711,amr_nb_4750",
+        help="Comma-separated audio codecs to evaluate",
+    )
+    parser.add_argument(
+        "--snr-dbs",
+        default="clean,10,5,0",
+        help="Comma-separated SNR values; use clean for un-noised audio",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Continue a partial run only when its saved manifest/configuration signature matches",
+    )
     return parser.parse_args(argv)
 
 
@@ -460,12 +666,22 @@ def main(argv: list[str] | None = None) -> int:
         manifest_path=args.manifest,
         audio_root=args.audio_root,
         output_path=args.output,
+        codecs=[codec.strip() for codec in args.codecs.split(",") if codec.strip()],
+        snr_dbs=[
+            None if snr.strip().lower() in {"clean", "none"} else float(snr.strip())
+            for snr in args.snr_dbs.split(",")
+            if snr.strip()
+        ],
         credits_per_second=args.credits_per_second,
         remaining_credits=args.remaining_credits,
         max_credits=args.max_credits,
         ablation=args.ablation,
         noise_path=args.noise_path,
         impulse_profiles=[None if p.strip().lower() == "none" else p.strip() for p in args.impulse_profiles.split(",") if p.strip()],
+        stt_modes=[mode.strip() for mode in args.stt_modes.split(",") if mode.strip()],
+        bias_words=[word.strip() for word in args.bias_words.split(",") if word.strip()] or None,
+        request_interval_seconds=args.request_interval_seconds,
+        resume=args.resume,
     )
     runner = Runner(config)
     fc = runner.forecast()
@@ -483,7 +699,17 @@ def main(argv: list[str] | None = None) -> int:
     print("Starting live sweep execution...")
     try:
         results = runner.run()
-        print(f"Sweep complete. Evaluated {len(results)} calls.")
+        provider_errors = [row for row in results if row.get("transcription_error")]
+        attempted_requests = sum(int(row.get("api_chunks", 0)) for row in results)
+        if provider_errors:
+            print(
+                f"Sweep aborted after provider error. Recorded {len(results)} conditions "
+                f"across {attempted_requests} attempted requests."
+            )
+            print(f"Provider error: {provider_errors[0]['transcription_error']}")
+            print(f"Partial results written to: {config.output_path}")
+            return 1
+        print(f"Sweep complete. Evaluated {len(results)} conditions across {attempted_requests} requests.")
         print(f"Results written to: {config.output_path}")
         return 0
     except BudgetExceeded as exc:

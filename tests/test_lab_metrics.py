@@ -6,6 +6,7 @@ from parcha.lab.metrics import (
     hallucinated_words,
     normalize,
     short_reply_drop,
+    word_error_rate,
 )
 
 
@@ -108,3 +109,8 @@ def test_reply_and_non_speech_metrics():
     assert hallucinated_words("brake") == 1
     assert hallucinated_words("brake ka part ₹450") == 4
     assert hallucinated_words("ek do teen char paanch") == 5
+
+
+def test_word_error_rate_ignores_punctuation_and_case():
+    assert word_error_rate("Clutch, pad!", "clutch pad") == 0.0
+    assert word_error_rate("clutch pad", "clutch bearing pad") == pytest.approx(1 / 2)

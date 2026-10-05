@@ -12,6 +12,7 @@ __all__ = [
     "hallucinated_words",
     "normalize",
     "short_reply_drop",
+    "word_error_rate",
 ]
 
 AMOUNT_PATTERN = re.compile(
@@ -79,6 +80,29 @@ def cer(reference: str, hypothesis: str) -> float:
                     row[j] + 1,
                     row[j - 1] + (char != other),
                 )
+            )
+        row = next_row
+    return row[-1] / len(ref)
+
+
+def word_error_rate(reference: str, hypothesis: str) -> float:
+    """Calculate WER after NFKC, case folding, whitespace, and punctuation normalization."""
+    def tokens(value: str) -> list[str]:
+        cleaned = "".join(
+            " " if unicodedata.category(char).startswith("P") else char
+            for char in unicodedata.normalize("NFKC", value).casefold()
+        )
+        return cleaned.split()
+
+    ref, hyp = tokens(reference), tokens(hypothesis)
+    if not ref:
+        return 0.0 if not hyp else 1.0
+    row = list(range(len(hyp) + 1))
+    for i, word in enumerate(ref, 1):
+        next_row = [i]
+        for j, other in enumerate(hyp, 1):
+            next_row.append(
+                min(next_row[-1] + 1, row[j] + 1, row[j - 1] + (word != other))
             )
         row = next_row
     return row[-1] / len(ref)
