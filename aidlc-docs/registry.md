@@ -17,6 +17,7 @@
 | **005** | `lab-max-audio-duration-rejection` | Split Long Lab Audio at the Gnani REST Duration Limit | **complete** | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/005-lab-max-audio-duration-rejection/`](efforts/005-lab-max-audio-duration-rejection/effort-state.md) |
 | **006** | `real-api-real-audio-benchmark` | Budgeted Real-API Benchmark Across Hindi Speech and User-Provided Workshop Audio | **active** | 2026-10-05 | Pending | [`aidlc-docs/efforts/006-real-api-real-audio-benchmark/`](efforts/006-real-api-real-audio-benchmark/effort-state.md) |
 | **007** | `gpu-sprint-multilingual-council` | A100 GPU Sprint Research (R7), Multilingual-Model Literature Review (R8) & LLM Council Verdict | **complete** (docs) | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/007-gpu-sprint-multilingual-council/`](efforts/007-gpu-sprint-multilingual-council/effort-state.md) |
+| **008** | `real-audio-analysis-council-spec` | Real-Audio Benchmark Analysis (R9), Council Re-run & Money-Path Safety Spec | **complete** (docs; spec publication pending) | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/008-real-audio-analysis-council-spec/`](efforts/008-real-audio-analysis-council-spec/effort-state.md) |
 
 ---
 
