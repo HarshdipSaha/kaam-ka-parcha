@@ -19,7 +19,7 @@ def test_stale_readback_cannot_confirm_new_revision():
 def test_review_needed_card_cannot_be_read_back():
     store = SessionStore()
     session = store.create()
-    card = sample_card().model_copy(update={"evidence": []})
+    card = sample_card().model_copy(update={"evidence": ()})
     store.set_card(session.id, expected_revision=0, card=card)
     with pytest.raises(Conflict, match="review"):
         store.start_readback(session.id, expected_revision=1)
