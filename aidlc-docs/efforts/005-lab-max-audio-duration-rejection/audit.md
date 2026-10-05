@@ -1,7 +1,7 @@
 # Effort 005: Audit
 
 **Audit date:** 2026-10-05
-**Status:** Pending merge.
+**Status:** Complete; PR [#16](https://github.com/HarshdipSaha/kaam-ka-parcha/pull/16) merged as `39db402`.
 
 | Requirement | Evidence | Audit result |
 |---|---|---|
@@ -15,4 +15,4 @@
 
 The 400 failure is resolved for the lab runner: requests are split below the observed 30-second REST limit, and the same engine-only recording completes. This fix does not make the real noisy estimate amount-correct. The live noisy speech spot check surfaced a ₹450 recognition failure and two HTTP 429 responses; those failures remain visible in the AIDLC record and require separate investigation before claiming reliable real-world estimates.
 
-Mark this effort complete only after the PR passes review and merges.
+The implementation and evidence record are merged. The separate noisy-estimate accuracy and provider HTTP 429 findings remain open product/evaluation risks; they are not acceptance criteria for this request-sizing fix.

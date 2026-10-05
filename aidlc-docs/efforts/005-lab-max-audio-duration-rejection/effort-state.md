@@ -3,8 +3,9 @@
 **Effort ID:** 005
 **Reference:** `lab-max-audio-duration-rejection`
 **Title:** Split Long Lab Audio at the Gnani REST Duration Limit
-**Status:** in progress pending PR merge
-**Started:** 2026-10-05
+**Status:** complete  
+**Started:** 2026-10-05  
+**Completed:** 2026-10-05  
 **Parent Effort:** `004-enterprise-telephony-compliance`
 
 ## Stage Progression
@@ -16,7 +17,7 @@
 | Implementation | Complete pending review | Runner now sends at most 29 seconds per REST request, joins successful chunk transcripts in order, reports attempted `api_chunks`, and stops after the first rejected chunk. Forecast accounts for AMR-NB tail padding and retains source-duration credit estimates. |
 | Live replay | Complete | The original 32.6-second idle recording completed as two chunks with no transcription error; output was an empty transcript and `hallucinated_word_count: 0`. Runner-calculated credit estimate: 6.5201 credits; provider billing was not inspected. |
 | Real noisy speech spot check | Partial; provider throttled | Four calls on the existing 4.8-second mechanic-plus-garage-noise sample: clean and `impact_wrench` returned the same transcript; `metal_spanner` and `compressor_exhaust` were rejected with HTTP 429. See construction log. This is not a general accuracy result. |
-| Audit and merge | Pending | Complete review, CI, publish PR, and update status when merged. |
+| Audit and merge | Complete | PR [#16](https://github.com/HarshdipSaha/kaam-ka-parcha/pull/16) merged as `39db402`; merged `main` suite passed 196 tests. |
 
 ## Evidence and Limitations
 

@@ -14,7 +14,7 @@
 | **002** | `webattack-realworld-validation` | Localhost Surface WebAttack, Deep Real-World Voice Data & Playwright E2E Testing | **complete** | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/002-webattack-realworld-validation/`](efforts/002-webattack-realworld-validation/effort-state.md) |
 | **003** | `sealed-parcha-source-backed-estimates` | Sealed Parcha Evidence Alignment, Monetary Sanitization, Semantic Deduplication & Generalization Evaluation Corpus | **complete** | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/003-sealed-parcha-source-backed-estimates/`](efforts/003-sealed-parcha-source-backed-estimates/effort-state.md) |
 | **004** | `enterprise-telephony-compliance` | Enterprise Voice-Sealed Service Agreement & Telephony Robustness Pipeline (Issues #3-#7, Epic #1) | **active** | 2026-10-05 | Pending | [`aidlc-docs/efforts/004-enterprise-telephony-compliance/`](efforts/004-enterprise-telephony-compliance/effort-state.md) |
-| **005** | `lab-max-audio-duration-rejection` | Split Long Lab Audio at the Gnani REST Duration Limit | **active** | 2026-10-05 | Pending | [`aidlc-docs/efforts/005-lab-max-audio-duration-rejection/`](efforts/005-lab-max-audio-duration-rejection/effort-state.md) |
+| **005** | `lab-max-audio-duration-rejection` | Split Long Lab Audio at the Gnani REST Duration Limit | **complete** | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/005-lab-max-audio-duration-rejection/`](efforts/005-lab-max-audio-duration-rejection/effort-state.md) |
 
 ---
 
