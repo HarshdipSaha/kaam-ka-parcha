@@ -4,6 +4,9 @@ from io import BytesIO
 import json
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen.canvas import Canvas
+from reportlab.graphics.barcode.qr import QrCodeWidget
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics import renderPDF
 from pypdf import PdfReader, PdfWriter
 
 from .session import Conflict, Session
@@ -69,35 +72,58 @@ def render_pdf(session: Session) -> bytes:
 
     # Workshop header
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, 800, "Kaam ka Parcha — Work Estimate & Job Card (Demo)")
+    c.drawString(50, 805, "Kaam ka Parcha — Work Estimate & Job Card (Demo)")
+
+    # Dynamic verification QR code in top right
+    qr_url = f"/verify/{session.id}"
+    qr_widget = QrCodeWidget(qr_url)
+    b = qr_widget.getBounds()
+    w = b[2] - b[0]
+    h = b[3] - b[1]
+    qr_size = 65
+    d = Drawing(qr_size, qr_size, transform=[qr_size / w, 0, 0, qr_size / h, 0, 0])
+    d.add(qr_widget)
+    renderPDF.draw(d, c, 475, 735)
+
+    c.setFont("Helvetica", 6)
+    c.drawRightString(540, 725, "Scan to Verify Audio")
 
     # Synthetic vehicle and metadata
     c.setFont("Helvetica", 10)
-    c.drawString(50, 775, "Vehicle: KA-01-AB-1234 (Synthetic Demo)")
-    c.drawString(50, 760, f"Session: {session.id} | Revision: {session.revision}")
-    c.drawString(50, 745, f"Confirmed (UTC): {session.confirmed_at_utc.isoformat()}")
+    c.drawString(50, 785, "Vehicle: KA-01-AB-1234 (Synthetic Demo)")
+    c.drawString(50, 772, f"Session: {session.id} | Revision: {session.revision}")
+    c.drawString(50, 759, f"Confirmed (UTC): {session.confirmed_at_utc.isoformat()}")
     audit_digest = audit_manifest_sha256(session)
     c.setFont("Helvetica", 7)
-    c.drawString(50, 733, f"Audit manifest SHA-256: {audit_digest}")
+    c.drawString(50, 746, f"Audit manifest SHA-256: {audit_digest}")
+
+    intake_log = next((l for l in session.logs if l.role == "mechanic" and l.audio_sha256), None)
+    customer_log = next((l for l in session.logs if l.role == "customer" and l.audio_sha256), None)
+    if intake_log and intake_log.audio_sha256:
+        c.setFont("Helvetica", 6.5)
+        c.drawString(50, 735, f"Intake Audio SHA-256: {intake_log.audio_sha256}")
+    if customer_log and customer_log.audio_sha256:
+        c.setFont("Helvetica", 6.5)
+        c.drawString(50, 725, f"Confirmation Audio SHA-256: {customer_log.audio_sha256}")
 
     # Simulation notice
-    c.setFont("Helvetica-Oblique", 9)
+    c.setFont("Helvetica-Oblique", 8.5)
     c.drawString(
         50,
-        720,
+        712,
         "Simulated phone line: G.711 + recorded engine ambience at 5 dB. No real call was placed.",
     )
 
     # Separator
     c.setLineWidth(1)
-    c.line(50, 710, 545, 710)
+    c.line(50, 702, 545, 702)
 
     # Items section
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, 690, "Items:")
+    c.drawString(50, 682, "Items:")
 
     c.setFont("Helvetica", 10)
-    y = 670
+    y = 662
     for item in session.card.items:
         label = item.label or "Item"
         amount_paise = item.amount_paise if item.amount_paise is not None else 0

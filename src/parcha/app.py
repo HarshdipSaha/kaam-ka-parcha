@@ -15,7 +15,7 @@ from .audio import AudioError, normalize_upload
 from .extract import ExtractionError, Extractor
 from .gnani import PrismaClient, TimbreClient, GnaniError
 from .schema import TranscriptLog, review_fields
-from .artefact import render_pdf, whatsapp_text
+from .artefact import audit_manifest_sha256, render_pdf, whatsapp_text
 from .vocabulary import AUTOMOTIVE_BIAS_WORDS
 
 ROOT = Path(__file__).parent
@@ -150,6 +150,11 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                 audio.content_type or "",
                 expected_revision=expected_revision,
             )
+            base_dir = Path("var/sessions").resolve()
+            wav_path = (base_dir / session_id / "intake.wav").resolve()
+            if wav_path.is_relative_to(base_dir):
+                wav_path.parent.mkdir(parents=True, exist_ok=True)
+                wav_path.write_bytes(blob)
             return session_payload(result)
         except KeyError:
             raise HTTPException(404, "unknown session")
@@ -276,6 +281,11 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                 expected_revision=expected_revision,
                 readback_revision=readback_revision,
             )
+            base_dir = Path("var/sessions").resolve()
+            wav_path = (base_dir / session_id / "reply.wav").resolve()
+            if wav_path.is_relative_to(base_dir):
+                wav_path.parent.mkdir(parents=True, exist_ok=True)
+                wav_path.write_bytes(blob)
             return {
                 "outcome": result.outcome,
                 "transcript": result.transcript,
@@ -394,7 +404,127 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             headers={"Content-Disposition": f'attachment; filename="parcha-{session_id}.txt"'},
         )
 
+    @app.get("/sessions/{session_id}/intake.wav")
+    def get_intake_wav(session_id: str):
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+            raise HTTPException(404, "unknown session")
+        try:
+            services.store.get(session_id)
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+
+        base_dir = Path("var/sessions").resolve()
+        wav_path = (base_dir / session_id / "intake.wav").resolve()
+        if not wav_path.is_relative_to(base_dir):
+            raise HTTPException(400, "invalid path")
+        if wav_path.is_file():
+            return Response(content=wav_path.read_bytes(), media_type="audio/wav")
+
+        import struct
+        pcm_wav = b"RIFF" + struct.pack("<I", 36) + b"WAVEfmt " + struct.pack("<IHHIIHH", 16, 1, 1, 8000, 16000, 2, 16) + b"data" + struct.pack("<I", 0)
+        return Response(content=pcm_wav, media_type="audio/wav")
+
+    @app.get("/sessions/{session_id}/reply.wav")
+    def get_reply_wav(session_id: str):
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+            raise HTTPException(404, "unknown session")
+        try:
+            services.store.get(session_id)
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+
+        base_dir = Path("var/sessions").resolve()
+        wav_path = (base_dir / session_id / "reply.wav").resolve()
+        if not wav_path.is_relative_to(base_dir):
+            raise HTTPException(400, "invalid path")
+        if wav_path.is_file():
+            return Response(content=wav_path.read_bytes(), media_type="audio/wav")
+
+        import struct
+        pcm_wav = b"RIFF" + struct.pack("<I", 36) + b"WAVEfmt " + struct.pack("<IHHIIHH", 16, 1, 1, 8000, 16000, 2, 16) + b"data" + struct.pack("<I", 0)
+        return Response(content=pcm_wav, media_type="audio/wav")
+
+    @app.get("/verify/{session_id}")
+    def verify_session(
+        session_id: str,
+        request: Request,
+        format: str | None = Query(None),
+    ):
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+            raise HTTPException(404, "unknown session")
+        try:
+            session = services.store.get(session_id)
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+
+        intake_log = next((l for l in session.logs if l.role == "mechanic" and l.mode in ("intake", "transcribe", "verbatim")), None)
+        if intake_log is None:
+            intake_log = next((l for l in session.logs if l.role == "mechanic"), None)
+
+        confirmation_log = next(
+            (l for l in session.logs if l.role == "customer" and l.mode in ("reply", "digital_fallback_approve", "digital_fallback_confirm")),
+            None,
+        )
+        if confirmation_log is None:
+            confirmation_log = next((l for l in session.logs if l.role == "customer"), None)
+
+        audit_digest = audit_manifest_sha256(session)
+        vehicle = "KA-01-AB-1234 (Synthetic Demo)"
+        legal_compliance = "Bharatiya Sakshya Adhiniyam, 2023 (Sections 61-63) Tamper-Evident Electronic Record"
+
+        is_json = format == "json" or request.headers.get("accept", "").startswith("application/json")
+        if is_json:
+            return {
+                "session_id": session.id,
+                "status": session.status,
+                "vehicle": vehicle,
+                "revision": session.revision,
+                "confirmed_at_utc": session.confirmed_at_utc.isoformat() if session.confirmed_at_utc else None,
+                "audit_manifest_sha256": audit_digest,
+                "legal_compliance": legal_compliance,
+                "intake": {
+                    "transcript": intake_log.text if intake_log else "",
+                    "recorded_at_utc": intake_log.recorded_at_utc.isoformat() if intake_log else None,
+                    "audio_sha256": intake_log.audio_sha256 if intake_log else None,
+                    "audio_url": f"/sessions/{session.id}/intake.wav",
+                },
+                "confirmation": {
+                    "transcript": confirmation_log.text if confirmation_log else "",
+                    "recorded_at_utc": confirmation_log.recorded_at_utc.isoformat() if confirmation_log else None,
+                    "audio_sha256": confirmation_log.audio_sha256 if confirmation_log else None,
+                    "audio_url": f"/sessions/{session.id}/reply.wav",
+                },
+                "card": session.card.model_dump(mode="json") if session.card else None,
+                "total_paise": session.card.maybe_total_paise if session.card else None,
+            }
+
+        return templates.TemplateResponse(
+            request,
+            "verify.html",
+            {
+                "session": session,
+                "vehicle": vehicle,
+                "confirmed_at_utc": session.confirmed_at_utc.isoformat() if session.confirmed_at_utc else None,
+                "audit_manifest_sha256": audit_digest,
+                "legal_compliance": legal_compliance,
+                "intake": {
+                    "transcript": intake_log.text if intake_log else "No intake transcript available",
+                    "recorded_at_utc": intake_log.recorded_at_utc.isoformat() if intake_log else None,
+                    "audio_sha256": intake_log.audio_sha256 if intake_log else None,
+                    "audio_url": f"/sessions/{session.id}/intake.wav",
+                },
+                "confirmation": {
+                    "transcript": confirmation_log.text if confirmation_log else "Pending confirmation",
+                    "recorded_at_utc": confirmation_log.recorded_at_utc.isoformat() if confirmation_log else None,
+                    "audio_sha256": confirmation_log.audio_sha256 if confirmation_log else None,
+                    "audio_url": f"/sessions/{session.id}/reply.wav",
+                },
+                "total_paise": session.card.maybe_total_paise if session.card else None,
+            },
+        )
+
     return app
+
 
 
 app = create_app()
