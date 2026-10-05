@@ -7,12 +7,14 @@ __all__ = ["GnaniError", "PrismaClient", "TimbreClient"]
 
 
 class GnaniError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, status: int | None = None):
+        super().__init__(message)
+        self.status = status
 
 
 def _check_response(response: httpx.Response) -> None:
     if response.status_code != 200:
-        raise GnaniError(f"Gnani request failed: HTTP {response.status_code}")
+        raise GnaniError(f"Gnani request failed: HTTP {response.status_code}", status=response.status_code)
 
 
 class PrismaClient:

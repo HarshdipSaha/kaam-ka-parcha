@@ -44,7 +44,7 @@ class FakePrisma:
         return (
             "front brake pad ₹450, labour ₹200, Somvaar shaam tak"
             if mode == "transcribe"
-            else "front brake pad saade chaar sau"
+            else "front brake pad saade chaar sau labour do sau Somvaar shaam tak"
         )
 
 

@@ -36,7 +36,7 @@ class FakePrisma:
         return (
             "front brake pad ₹450, labour ₹200, Somvaar shaam tak"
             if mode == "transcribe"
-            else "front brake pad saade chaar sau"
+            else "front brake pad saade chaar sau labour do sau Somvaar shaam tak"
         )
 
 
@@ -116,7 +116,7 @@ def test_intake_uses_same_recording_for_two_prisma_passes():
     assert result.logs[0].text == "front brake pad ₹450, labour ₹200, Somvaar shaam tak"
     assert result.logs[1].role == "mechanic"
     assert result.logs[1].mode == "verbatim"
-    assert result.logs[1].text == "front brake pad saade chaar sau"
+    assert result.logs[1].text == "front brake pad saade chaar sau labour do sau Somvaar shaam tak"
     assert result.logs[0].recorded_at_utc.tzinfo is not None
 
     # Bias configuration passed to second call when use_bias=True

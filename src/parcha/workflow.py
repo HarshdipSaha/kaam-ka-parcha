@@ -11,12 +11,30 @@ import unicodedata
 
 from .audio import codec_round_trip, mix_at_snr, mulaw_to_wav, normalize_upload
 from .extract import Extractor
-from .gnani import PrismaClient, TimbreClient
-from .schema import JobCard, LineItem, TranscriptLog
+from .gnani import GnaniError, PrismaClient, TimbreClient
+from .money import AbstainReason, decide_amounts, settle_card_amounts
+from .schema import Evidence, JobCard, LineItem, TranscriptLog
 from .session import Conflict, Session, SessionStore
 from .vocabulary import AUTOMOTIVE_BIAS_WORDS
 
 REASK_FIELD_PATTERN = re.compile(r"^items\.[a-z]+-[0-9]+\.(label|amount_paise)$")
+
+
+class RepeatRequest(RuntimeError):
+    """The speaker must say it again; nothing on the card was changed."""
+
+    def __init__(self, reason: AbstainReason):
+        super().__init__(reason)
+        self.reason = reason
+
+
+def provider_reason(exc: GnaniError) -> AbstainReason | None:
+    return {504: "provider_504", 429: "provider_429"}.get(exc.status)
+
+
+def abstain_logs(abstentions: dict[str, AbstainReason], when: datetime) -> tuple[TranscriptLog, ...]:
+    return tuple(TranscriptLog(role="system", mode=f"abstain:{field}", text=reason, recorded_at_utc=when)
+                 for field, reason in sorted(abstentions.items()))
 
 from .readback import (
     DATE_WORDS,
@@ -107,13 +125,11 @@ class Workflow:
 
         wav = self.normalize_audio(blob, mime)
         audio_sha256 = hashlib.sha256(wav).hexdigest()
-        normalized = self.prisma.transcribe(wav, mode="transcribe")
-        verbatim = self.prisma.transcribe(
-            wav,
-            mode="verbatim",
-            bias=list(self.bias_words) if self.use_bias else None,
-        )
+        normalized, verbatim = self._two_passes(wav)
+        if not normalized.strip() and not verbatim.strip():
+            raise RepeatRequest("empty_transcript")
         card = self.extractor.extract_card(normalized, verbatim, recorded_at_utc)
+        card, abstentions = settle_card_amounts(card, verbatim=verbatim, transcribe=normalized)
         logs = (
             TranscriptLog(
                 role="mechanic",
@@ -129,13 +145,26 @@ class Workflow:
                 recorded_at_utc=recorded_at_utc,
                 audio_sha256=audio_sha256,
             ),
-        )
+        ) + abstain_logs(abstentions, recorded_at_utc)
         return self.store.set_card(
             session_id,
             expected_revision=expected_revision,
             card=card,
             logs=logs,
         )
+
+    def _two_passes(self, wav: bytes) -> tuple[str, str]:
+        """Transcribe pass then verbatim pass on the same audio; 504/429 become RepeatRequest."""
+        try:
+            normalized = self.prisma.transcribe(wav, mode="transcribe")
+            verbatim = self.prisma.transcribe(
+                wav, mode="verbatim", bias=list(self.bias_words) if self.use_bias else None)
+        except GnaniError as exc:
+            reason = provider_reason(exc)
+            if reason is None:
+                raise
+            raise RepeatRequest(reason) from exc
+        return normalized, verbatim
 
     def reask(
         self,
