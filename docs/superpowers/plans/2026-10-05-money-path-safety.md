@@ -112,11 +112,11 @@ Live runs need `API_KEY` in `.env`. The Evon endpoint is `EXTRACTOR_BASE_URL` (T
 
 **Files:** Modify `README.md`, `docs/demo.md`, `docs/gates.md`. Create `docs/corrections-2026-10.md`.
 
-- [ ] **Step 1:** In `README.md`, replace "Optional Extractor / LLM API Key (used for delta extraction)" with "Extractor endpoint (required): Evon v3.3 via an OpenAI-compatible server; it structures line items only — amounts are read by deterministic code". Replace the `GROQ_API_KEY` line with the four `EXTRACTOR_*` names from `.env.example` (Task 6).
-- [ ] **Step 2:** In `docs/demo.md`, delete every number not produced by a committed command: "+20.0% part recovery", "96.0% short-reply flush recovery", "800 synthetic telephony turns", "Measured by us, N=800", "garages lose 8% of margins", "139 tests". Replace "legally sealed" with "tamper-evident".
-- [ ] **Step 3:** In `docs/gates.md`, change the "74/74 PASS" row to "Not reproducible: no runner exists (see corrections note)". Note that `data/real_world_samples/mechanic_in_garage_noise.wav` is synthesised speech.
-- [ ] **Step 4:** Write `docs/corrections-2026-10.md` with one dated bullet per change above and the reason for it.
-- [ ] **Step 5:** Verify and commit.
+- [x] **Step 1:** In `README.md`, replace "Optional Extractor / LLM API Key (used for delta extraction)" with "Extractor endpoint (required): Evon v3.3 via an OpenAI-compatible server; it structures line items only — amounts are read by deterministic code". Replace the `GROQ_API_KEY` line with the four `EXTRACTOR_*` names from `.env.example` (Task 6).
+- [x] **Step 2:** In `docs/demo.md`, delete every number not produced by a committed command: "+20.0% part recovery", "96.0% short-reply flush recovery", "800 synthetic telephony turns", "Measured by us, N=800", "garages lose 8% of margins", "139 tests". Replace "legally sealed" with "tamper-evident".
+- [x] **Step 3:** In `docs/gates.md`, change the "74/74 PASS" row to "Not reproducible: no runner exists (see corrections note)". Note that `data/real_world_samples/mechanic_in_garage_noise.wav` is synthesised speech.
+- [x] **Step 4:** Write `docs/corrections-2026-10.md` with one dated bullet per change above and the reason for it.
+- [x] **Step 5:** Verify and commit.
 
 ```powershell
 git diff --check
@@ -137,7 +137,7 @@ git commit -m "docs: remove unmeasured claims and mark extractor required"
   - `render_hindi_amount(paise: int) -> str` (standard words + " रुपये")
   - `render_colloquial_amount(paise: int) -> str`
 
-- [ ] **Step 1: Write the failing test** `tests/test_numerals.py`:
+- [x] **Step 1: Write the failing test** `tests/test_numerals.py`:
 
 ```python
 import pytest
@@ -214,8 +214,8 @@ def test_render_rejects_non_whole_rupees_and_out_of_range():
             render_hindi_amount(bad)
 ```
 
-- [ ] **Step 2: Run it to see it fail.** `.\.venv\Scripts\python.exe -m pytest -q tests/test_numerals.py`. Expected: collection error `ModuleNotFoundError: No module named 'parcha.numerals'`.
-- [ ] **Step 3: Create `src/parcha/numerals.py`.** The tables and the phrase parser are the decision, so here is the full body, as prototyped:
+- [x] **Step 2: Run it to see it fail.** `.\.venv\Scripts\python.exe -m pytest -q tests/test_numerals.py`. Expected: collection error `ModuleNotFoundError: No module named 'parcha.numerals'`.
+- [x] **Step 3: Create `src/parcha/numerals.py`.** The tables and the phrase parser are the decision, so here is the full body, as prototyped:
 
 ```python
 """Deterministic Hinglish amount grammar. No network, no LLM.
@@ -494,8 +494,8 @@ def render_colloquial_amount(paise: int) -> str:
     return render_hindi_amount(paise).removesuffix(" रुपये")
 ```
 
-- [ ] **Step 4: Run the tests.** `.\.venv\Scripts\python.exe -m pytest -q tests/test_numerals.py`. Expected: **149 passed**.
-- [ ] **Step 5: Commit.** `git add src/parcha/numerals.py tests/test_numerals.py`, then `git commit -m "feat(money): deterministic Hinglish amount grammar"`.
+- [x] **Step 4: Run the tests.** `.\.venv\Scripts\python.exe -m pytest -q tests/test_numerals.py`. Expected: **149 passed**.
+- [x] **Step 5: Commit.** `git add src/parcha/numerals.py tests/test_numerals.py`, then `git commit -m "feat(money): deterministic Hinglish amount grammar"`.
 
 ### Task 3: Money path at intake
 
@@ -516,7 +516,7 @@ def render_colloquial_amount(paise: int) -> str:
   - `Workflow._two_passes(wav) -> tuple[str, str]`
   - Abstention logs use `role="system"`, `mode=f"abstain:{field}"` and `text=reason`.
 
-- [ ] **Step 1: Write the fake and the failing tests.** `tests/fakes.py` (it also exports the intake texts reused in Task 4):
+- [x] **Step 1: Write the fake and the failing tests.** `tests/fakes.py` (it also exports the intake texts reused in Task 4):
 
 ```python
 INTAKE_T = "front brake pad ₹450, labour ₹200, Somvaar shaam tak"
@@ -681,8 +681,8 @@ def test_abstained_card_cannot_be_read_back_and_reason_is_in_audit_manifest():
     assert "abstain:items.part-1.amount_paise" in [e["mode"] for e in audit_manifest(store.get(sid))["logs"]]
 ```
 
-- [ ] **Step 2: Run it to see it fail.** `.\.venv\Scripts\python.exe -m pytest -q tests/test_money_path.py`. Expected: `ImportError: cannot import name 'RepeatRequest'`.
-- [ ] **Step 3: Give `GnaniError` a status.** In `src/parcha/gnani.py`:
+- [x] **Step 2: Run it to see it fail.** `.\.venv\Scripts\python.exe -m pytest -q tests/test_money_path.py`. Expected: `ImportError: cannot import name 'RepeatRequest'`.
+- [x] **Step 3: Give `GnaniError` a status.** In `src/parcha/gnani.py`:
 
 ```python
 class GnaniError(RuntimeError):
@@ -696,7 +696,7 @@ def _check_response(response: httpx.Response) -> None:
         raise GnaniError(f"Gnani request failed: HTTP {response.status_code}", status=response.status_code)
 ```
 
-- [ ] **Step 4: Create `src/parcha/money.py`.** The attachment and abstention rules are the decision, so the full body follows:
+- [x] **Step 4: Create `src/parcha/money.py`.** The attachment and abstention rules are the decision, so the full body follows:
 
 ```python
 """Money path: amounts come only from the numeral grammar; the transcribe pass is a formatting cross-check."""
@@ -806,7 +806,7 @@ def settle_card_amounts(card: JobCard, *, verbatim: str,
     return JobCard(items=items, delivery=card.delivery, evidence=tuple(evidence)), abstentions
 ```
 
-- [ ] **Step 5: Wire it into `Workflow.intake`** in `src/parcha/workflow.py`.
+- [x] **Step 5: Wire it into `Workflow.intake`** in `src/parcha/workflow.py`.
   1. Imports: `from .gnani import GnaniError, PrismaClient, TimbreClient`, `from .money import AbstainReason, decide_amounts, settle_card_amounts`, and add `Evidence` to the schema import.
   2. Above `Readback`, add:
 
@@ -856,12 +856,12 @@ def settle_card_amounts(card: JobCard, *, verbatim: str,
           return normalized, verbatim
   ```
 
-- [ ] **Step 6: Move the shared fakes onto the new path.**
+- [x] **Step 6: Move the shared fakes onto the new path.**
   - In `tests/conftest.py` and in `tests/test_workflow.py`'s `FakePrisma`, change the verbatim reply to `"front brake pad saade chaar sau labour do sau Somvaar shaam tak"`.
   - In `test_workflow.py:119`, assert that same text.
   - Existing totals (₹650) then still hold.
-- [ ] **Step 7: Run the tests.** `.\.venv\Scripts\python.exe -m pytest -q tests/test_money_path.py tests/test_workflow.py tests/test_app.py`. Expected: all pass. Then the full suite: `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green. `reask` is untouched until Task 4, so its existing test still passes through the extractor.
-- [ ] **Step 8: Commit.** `git add src/parcha/money.py src/parcha/gnani.py src/parcha/workflow.py tests/fakes.py tests/test_money_path.py tests/conftest.py tests/test_workflow.py`, then `git commit -m "feat(money): amounts only from grammar with abstain-and-re-ask at intake"`.
+- [x] **Step 7: Run the tests.** `.\.venv\Scripts\python.exe -m pytest -q tests/test_money_path.py tests/test_workflow.py tests/test_app.py`. Expected: all pass. Then the full suite: `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green. `reask` is untouched until Task 4, so its existing test still passes through the extractor.
+- [x] **Step 8: Commit.** `git add src/parcha/money.py src/parcha/gnani.py src/parcha/workflow.py tests/fakes.py tests/test_money_path.py tests/conftest.py tests/test_workflow.py`, then `git commit -m "feat(money): amounts only from grammar with abstain-and-re-ask at intake"`.
 
 ### Task 4: Amount re-ask uses the same path
 
@@ -871,7 +871,7 @@ def settle_card_amounts(card: JobCard, *, verbatim: str,
 - Consumes: `decide_amounts`, `RepeatRequest`, `abstain_logs`, `_two_passes` (Task 3).
 - Produces: `Workflow._reask_amount(session, field, wav, audio_sha256, expected_revision, recorded_at_utc) -> Session`. `reask` keeps its public signature.
 
-- [ ] **Step 1: Append the failing tests** to `tests/test_money_path.py`:
+- [x] **Step 1: Append the failing tests** to `tests/test_money_path.py`:
 
 ```python
 def test_amount_reask_uses_grammar_and_keeps_other_fields():
@@ -903,8 +903,8 @@ def test_correction_with_two_numbers_abstains():
 
 In `tests/test_workflow.py::test_reask_updates_single_field_and_increments_revision`, build the service with `prisma=ScriptedPrisma([INTAKE_T, INTAKE_V, "₹500", "paanch sau", "Mangalvaar subah", "rear brake pad"])`, importing `INTAKE_T`, `INTAKE_V` and `ScriptedPrisma` from `tests.fakes`. Keep every existing assertion: the amount becomes 50000 through the grammar, and the delivery and label re-asks still use the extractor.
 
-- [ ] **Step 2: Run them to see them fail.** `.\.venv\Scripts\python.exe -m pytest -q tests/test_money_path.py -k "reask or two_numbers"`. Expected: `AssertionError: amount re-ask must not call the extractor`.
-- [ ] **Step 3: Branch `reask`.** Right after `audio_sha256` is computed:
+- [x] **Step 2: Run them to see them fail.** `.\.venv\Scripts\python.exe -m pytest -q tests/test_money_path.py -k "reask or two_numbers"`. Expected: `AssertionError: amount re-ask must not call the extractor`.
+- [x] **Step 3: Branch `reask`.** Right after `audio_sha256` is computed:
 
   ```python
   if field.endswith(".amount_paise"):
@@ -912,8 +912,8 @@ In `tests/test_workflow.py::test_reask_updates_single_field_and_increments_revis
   ```
 
   Then add `_reask_amount`. It runs `_two_passes`; on `RepeatRequest` it uses `exc.reason`. Otherwise it logs `reask:{field}` with the verbatim text and takes `decide_amounts(verbatim, transcript, expected_count=1)[0]`. It replaces only that item's `amount_paise`. It replaces that field's evidence with `Evidence(field, quote, 1.0)` when accepted; otherwise it removes the evidence and appends `abstain_logs({field: reason}, recorded_at_utc)`. Finally it calls `store.set_card(...)` once.
-- [ ] **Step 4: Run the tests.** `.\.venv\Scripts\python.exe -m pytest -q`. Expected: all green.
-- [ ] **Step 5: Commit.** `git commit -am "feat(money): amount re-asks use grammar and cross-check, never the extractor"`
+- [x] **Step 4: Run the tests.** `.\.venv\Scripts\python.exe -m pytest -q`. Expected: all green.
+- [x] **Step 5: Commit.** `git commit -am "feat(money): amount re-asks use grammar and cross-check, never the extractor"`
 
 ### Task 5: Website: "please say it again" and why an amount is being re-asked
 
@@ -923,7 +923,7 @@ In `tests/test_workflow.py::test_reask_updates_single_field_and_increments_revis
 - Consumes: `RepeatRequest` (Task 3) and abstention logs (`mode="abstain:{field}"`).
 - Produces: HTTP 422 with `detail == {"repeat": true, "reason": <AbstainReason>}`. `session_payload(...)["abstentions"]` is a `dict[field, reason]` holding only fields still in `review_fields`.
 
-- [ ] **Step 1: Write the failing tests** `tests/test_app_repeat.py`:
+- [x] **Step 1: Write the failing tests** `tests/test_app_repeat.py`:
 
 ```python
 from fastapi.testclient import TestClient
@@ -956,8 +956,8 @@ def test_session_payload_explains_each_amount_awaiting_re_ask(fake_services):
     assert "items.part-1.amount_paise" in body["review_fields"]
 ```
 
-- [ ] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_app_repeat.py`. Expected: the first test fails with an HTTP 502 or a text detail; the second with `KeyError: 'abstentions'`.
-- [ ] **Step 3: Backend** (`src/parcha/app.py`). Import `RepeatRequest` from `.workflow` and `review_fields` from `.schema`. Add:
+- [x] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_app_repeat.py`. Expected: the first test fails with an HTTP 502 or a text detail; the second with `KeyError: 'abstentions'`.
+- [x] **Step 3: Backend** (`src/parcha/app.py`). Import `RepeatRequest` from `.workflow` and `review_fields` from `.schema`. Add:
 
 ```python
 def abstention_reasons(session) -> dict[str, str]:
@@ -977,7 +977,7 @@ def abstention_reasons(session) -> dict[str, str]:
             raise HTTPException(422, {"repeat": True, "reason": exc.reason})
 ```
 
-- [ ] **Step 4: Front end** (`src/parcha/static/app.js`). Add near the top:
+- [x] **Step 4: Front end** (`src/parcha/static/app.js`). Add near the top:
 
 ```js
 const REPEAT_MESSAGE = "आवाज़ साफ़ नहीं आई — कृपया फिर से बोलिए (Please say it again)";
@@ -1010,8 +1010,8 @@ if (reason) {
 ```
 
   Add `.abstain-reason { margin-left: .5rem; font-size: .85em; color: #b45309; }` to the page stylesheet in `templates/workshop.html`.
-- [ ] **Step 5: Verify.** Run `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green. Then start `.\.venv\Scripts\python.exe -m uvicorn parcha.app:app --reload --port 8000`, open `/workshop`, record two seconds of silence, and confirm the Hindi repeat message appears and the Record button is enabled again. Record an estimate that ends with a dangling "saade" and confirm the brake-pad amount shows "अधूरी रकम — फिर से पूछेंगे". Check the mobile layout at 390 px width (AGENTS.md: UI changes need the affected flow and mobile check).
-- [ ] **Step 6:** `git add src/parcha/app.py src/parcha/static/app.js src/parcha/templates/workshop.html tests/test_app_repeat.py`, then `git commit -m "feat(app): repeat request and per-amount re-ask reasons in the workshop UI"`
+- [x] **Step 5: Verify.** Run `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green. Then start `.\.venv\Scripts\python.exe -m uvicorn parcha.app:app --reload --port 8000`, open `/workshop`, record two seconds of silence, and confirm the Hindi repeat message appears and the Record button is enabled again. Record an estimate that ends with a dangling "saade" and confirm the brake-pad amount shows "अधूरी रकम — फिर से पूछेंगे". Check the mobile layout at 390 px width (AGENTS.md: UI changes need the affected flow and mobile check).
+- [x] **Step 6:** `git add src/parcha/app.py src/parcha/static/app.js src/parcha/templates/workshop.html tests/test_app_repeat.py`, then `git commit -m "feat(app): repeat request and per-amount re-ask reasons in the workshop UI"`
 
 ### Task 6: Evon replaces Groq for line items
 
@@ -1020,7 +1020,7 @@ if (reason) {
 **Interfaces:**
 - Produces: `Settings.extractor_provider` defaults to `"evon"`, with no Groq fallback. `Extractor(base_url, api_key, model, http=None, provider="evon")`. `extract.CARD_RESPONSE_SCHEMA`.
 
-- [ ] **Step 1: Write the failing tests** `tests/test_extract_evon.py`:
+- [x] **Step 1: Write the failing tests** `tests/test_extract_evon.py`:
 
 ```python
 import json
@@ -1077,8 +1077,8 @@ def test_groq_key_alone_no_longer_configures_an_extractor():
         settings.require_extractor()
 ```
 
-- [ ] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_extract_evon.py`. Expected: `ImportError: cannot import name 'CARD_RESPONSE_SCHEMA'`.
-- [ ] **Step 3: Implement.**
+- [x] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_extract_evon.py`. Expected: `ImportError: cannot import name 'CARD_RESPONSE_SCHEMA'`.
+- [x] **Step 3: Implement.**
   - **`config.py`:** `key = (values.get("EXTRACTOR_API_KEY") or "").strip()`. Delete the Groq default block. The dataclass default and the `from_mapping` default for `extractor_provider` become `"evon"`.
   - **`extract.py`:** add `CARD_RESPONSE_SCHEMA`, an object schema with:
     - `items` (an array of `{id: ^[a-z]+-[0-9]+$, label: string|null, kind: part|labour, amount_paise: integer|null}`, all four required, minItems 1);
@@ -1091,8 +1091,8 @@ def test_groq_key_alone_no_longer_configures_an_extractor():
   - **`.env.example`:** `EXTRACTOR_BASE_URL=http://localhost:8080/v1`, `EXTRACTOR_API_KEY=`, `EXTRACTOR_MODEL=gnani-evon-v3.3`, `EXTRACTOR_PROVIDER=evon`.
   - **`conftest.py`:** use those values.
   - **`test_config.py`:** rename the Groq test to `test_settings_have_no_groq_fallback` and assert that all three extractor fields are `""`.
-- [ ] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green. Live smoke test against a running `llama-server` (Evon Q8_0 per R7 §3): `curl.exe http://localhost:8080/v1/models` lists the model, and one intake on `/workshop` shows labels with amounts set by the grammar.
-- [ ] **Step 5:** `git commit -am "feat(extract): Evon as the line-item extractor; no Groq fallback"`
+- [x] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green. Live smoke test against a running `llama-server` (Evon Q8_0 per R7 §3): `curl.exe http://localhost:8080/v1/models` lists the model, and one intake on `/workshop` shows labels with amounts set by the grammar.
+- [x] **Step 5:** `git commit -am "feat(extract): Evon as the line-item extractor; no Groq fallback"`
 
 ### Task 7: Line Noise Lab: canonical references, outcomes, labels, bias control
 
