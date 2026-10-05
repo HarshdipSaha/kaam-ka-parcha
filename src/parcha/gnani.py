@@ -64,7 +64,20 @@ class PrismaClient:
             payload.get("transcript"), str
         ):
             raise GnaniError("Gnani STT response lacked a transcript")
+        raw_conf = payload.get("confidence")
+        self.last_confidence = float(raw_conf) if raw_conf is not None else 1.0
         return payload["transcript"].strip()
+
+    def transcribe_detailed(
+        self,
+        wav: bytes,
+        *,
+        mode: Literal["transcribe", "verbatim"] = "transcribe",
+        bias: list[str] | None = None,
+        score: float = 1.0,
+    ) -> tuple[str, float]:
+        transcript = self.transcribe(wav, mode=mode, bias=bias, score=score)
+        return transcript, getattr(self, "last_confidence", 1.0)
 
 
 class TimbreClient:

@@ -14,7 +14,7 @@ class Conflict(RuntimeError):
 class Session:
     id: str
     revision: int = 0
-    status: Literal["draft", "review", "awaiting_reply", "confirmed"] = "draft"
+    status: Literal["draft", "review", "awaiting_reply", "fallback_ready", "confirmed"] = "draft"
     card: JobCard | None = None
     logs: tuple[TranscriptLog, ...] = ()
     readback_revision: int | None = None
@@ -82,6 +82,45 @@ class SessionStore:
             self._items[session_id] = updated
             return updated
 
+    def trigger_fallback(
+        self,
+        session_id: str,
+        *,
+        expected_revision: int,
+        log: TranscriptLog | None = None,
+    ) -> Session:
+        with self._lock:
+            current = self._editable(session_id, expected_revision)
+            if current.status not in ("awaiting_reply", "fallback_ready"):
+                raise Conflict("session not in reply state")
+            updated = replace(
+                current,
+                status="fallback_ready",
+                logs=current.logs + ((log,) if log else ()),
+            )
+            self._items[session_id] = updated
+            return updated
+
+    def request_changes(
+        self,
+        session_id: str,
+        *,
+        expected_revision: int,
+        log: TranscriptLog | None = None,
+    ) -> Session:
+        with self._lock:
+            current = self._editable(session_id, expected_revision)
+            if current.status not in ("awaiting_reply", "fallback_ready"):
+                raise Conflict("session not in reply or fallback state")
+            updated = replace(
+                current,
+                status="review",
+                readback_revision=None,
+                logs=current.logs + ((log,) if log else ()),
+            )
+            self._items[session_id] = updated
+            return updated
+
     def confirm(
         self,
         session_id: str,
@@ -92,7 +131,7 @@ class SessionStore:
     ) -> Session:
         with self._lock:
             current = self._editable(session_id, expected_revision)
-            if current.status != "awaiting_reply" or current.readback_revision != current.revision:
+            if current.status not in ("awaiting_reply", "fallback_ready") or current.readback_revision != current.revision:
                 raise Conflict("stale read-back")
             updated = replace(
                 current,
