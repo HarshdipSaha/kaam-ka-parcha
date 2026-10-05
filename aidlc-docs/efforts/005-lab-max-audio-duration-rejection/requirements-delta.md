@@ -1,8 +1,8 @@
 # Effort 005: Lab Handling for Gnani REST Audio Duration Rejection
 
-**Effort ID:** 005  
-**Reference:** `lab-max-audio-duration-rejection`  
-**Parent:** `004-enterprise-telephony-compliance` / Issue #7  
+**Effort ID:** 005
+**Reference:** `lab-max-audio-duration-rejection`
+**Parent:** `004-enterprise-telephony-compliance` / Issue #7
 **Started:** 2026-10-05
 
 ## Problem

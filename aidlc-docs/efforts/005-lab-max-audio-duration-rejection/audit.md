@@ -1,6 +1,6 @@
 # Effort 005: Audit
 
-**Audit date:** 2026-10-05  
+**Audit date:** 2026-10-05
 **Status:** Pending merge.
 
 | Requirement | Evidence | Audit result |

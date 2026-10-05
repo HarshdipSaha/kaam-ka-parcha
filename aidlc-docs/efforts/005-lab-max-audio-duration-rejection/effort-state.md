@@ -1,10 +1,10 @@
 # Effort State: 005 — Lab Max Audio Duration Rejection
 
-**Effort ID:** 005  
-**Reference:** `lab-max-audio-duration-rejection`  
-**Title:** Split Long Lab Audio at the Gnani REST Duration Limit  
-**Status:** in progress pending PR merge  
-**Started:** 2026-10-05  
+**Effort ID:** 005
+**Reference:** `lab-max-audio-duration-rejection`
+**Title:** Split Long Lab Audio at the Gnani REST Duration Limit
+**Status:** in progress pending PR merge
+**Started:** 2026-10-05
 **Parent Effort:** `004-enterprise-telephony-compliance`
 
 ## Stage Progression

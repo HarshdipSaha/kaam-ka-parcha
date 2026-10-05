@@ -1,6 +1,6 @@
 # Effort 005: Construction Log
 
-**Date:** 2026-10-05  
+**Date:** 2026-10-05
 **Scope:** Reproduce and fix `MAX_AUDIO_DURATION_EXCEEDED` in the Issue #7 transient-noise lab runner.
 
 ## Reproduction
