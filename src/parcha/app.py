@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 
 from .config import Settings
 from .session import Conflict, SessionStore
-from .workflow import Workflow
+from .workflow import RepeatRequest, Workflow
 from .audio import AudioError, normalize_upload
 from .extract import ExtractionError, Extractor
 from .gnani import PrismaClient, TimbreClient, GnaniError
@@ -67,6 +67,16 @@ def default_services() -> AppServices:
     return AppServices(settings, store, workflow, timbre)
 
 
+def abstention_reasons(session) -> dict[str, str]:
+    """Latest abstain reason per field, kept only while that field still needs review."""
+    pending = set(review_fields(session.card)) if session.card else set()
+    reasons: dict[str, str] = {}
+    for log in session.logs:
+        if log.mode.startswith("abstain:"):
+            reasons[log.mode.removeprefix("abstain:")] = log.text
+    return {field: reason for field, reason in reasons.items() if field in pending}
+
+
 def session_payload(session) -> dict:
     card = session.card
     return {
@@ -79,6 +89,7 @@ def session_payload(session) -> dict:
         "card": card.model_dump(mode="json") if card else None,
         "total_paise": card.maybe_total_paise if card else None,
         "review_fields": review_fields(card) if card else [],
+        "abstentions": abstention_reasons(session),
     }
 
 
@@ -201,6 +212,8 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             raise HTTPException(404, "unknown session")
         except Conflict as exc:
             raise HTTPException(409, str(exc))
+        except RepeatRequest as exc:
+            raise HTTPException(422, {"repeat": True, "reason": exc.reason})
         except (AudioError, ExtractionError) as exc:
             raise HTTPException(422, str(exc))
         except ValueError as exc:
@@ -233,6 +246,8 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             raise HTTPException(404, "unknown session")
         except Conflict as exc:
             raise HTTPException(409, str(exc))
+        except RepeatRequest as exc:
+            raise HTTPException(422, {"repeat": True, "reason": exc.reason})
         except (AudioError, ExtractionError) as exc:
             raise HTTPException(422, str(exc))
         except ValueError as exc:
