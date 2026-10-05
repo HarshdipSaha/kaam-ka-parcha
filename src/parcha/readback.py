@@ -10,6 +10,10 @@ PHRASAL_AFFIRMATION_PROMPT = (
     "Agar aapko yeh manzoor hai, toh boliye: 'Haan, theek hai'. Koi badlaav chahiye toh rate batayein."
 )
 
+STATUTORY_CONSENT_NOTICE = (
+    "DPDP Act 2023 ke antargat yeh call service estimate confirmation hetu record ki ja rahi hai."
+)
+
 ReplyClass = Literal["accept", "correction", "reject", "unclear"]
 YES = {"haan", "han", "हाँ", "हां"}
 NO = {"nahi", "nahin", "नहीं", "ना"}
@@ -32,12 +36,12 @@ def format_rupees(paise: int) -> str:
         return f"₹{paise / 100:.2f}"
 
 
-def make_readback(card: JobCard) -> str:
+def make_readback(card: JobCard, *, include_consent: bool = False) -> str:
     """Synthesize structured read-back prompt with phrasal affirmation instructions.
     
-    Itemized totals, delivery date, and explicit phrasal affirmation elicit stable
-    3-word responses ('Haan, theek hai') over narrowband 8 kHz telephony channels,
-    preventing Voice Activity Detector (VAD) endpointing truncation.
+    Itemized totals, delivery date, explicit verbal DPDP statutory consent, and phrasal
+    affirmation elicit stable 3-word responses ('Haan, theek hai') over narrowband 8 kHz
+    telephony channels, preventing Voice Activity Detector (VAD) endpointing truncation.
     """
     items_str = ", ".join(
         f"{item.label}: {format_rupees(item.amount_paise if item.amount_paise is not None else 0)}"
@@ -48,8 +52,10 @@ def make_readback(card: JobCard) -> str:
         if card.delivery and card.delivery.spoken
         else ""
     )
+    consent_prefix = f"{STATUTORY_CONSENT_NOTICE} " if include_consent else ""
     prefix = f"{items_str}. " if items_str else ""
-    return f"{prefix}कुल {format_rupees(card.total_paise)}. {delivery_str}{PHRASAL_AFFIRMATION_PROMPT}"
+    return f"{consent_prefix}{prefix}कुल {format_rupees(card.total_paise)}. {delivery_str}{PHRASAL_AFFIRMATION_PROMPT}"
+
 
 
 def classify_reply(text: str) -> ReplyClass:

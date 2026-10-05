@@ -628,6 +628,16 @@ async function handleCustomerRecord(sessionId) {
 
   if (!currentCustomerSession) return;
 
+  const consentCheckbox = document.getElementById("dpdp-consent-checkbox");
+  if (consentCheckbox && !consentCheckbox.checked) {
+    if (statusEl) statusEl.textContent = "Statutory Consent Required";
+    if (messageEl) {
+      messageEl.textContent =
+        "Please accept the DPDP Act 2023 Statutory Privacy Notice before recording voice biometric confirmation.";
+    }
+    return;
+  }
+
   try {
     if (player && !player.paused) {
       player.pause();
@@ -649,6 +659,7 @@ async function handleCustomerRecord(sessionId) {
     const formData = new FormData();
     formData.append("expected_revision", currentCustomerSession.revision);
     formData.append("readback_revision", currentCustomerSession.readback_revision);
+    formData.append("dpdp_consent", "true");
     const ext = blob.type.includes("wav")
       ? "wav"
       : blob.type.includes("ogg")

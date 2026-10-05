@@ -73,6 +73,9 @@ def session_payload(session) -> dict:
         "id": session.id,
         "revision": session.revision,
         "status": session.status,
+        "dpdp_consent_granted": session.dpdp_consent_granted,
+        "dpdp_consent_at_utc": session.dpdp_consent_at_utc.isoformat() if session.dpdp_consent_at_utc else None,
+        "dpdp_consent_sha256": session.dpdp_consent_sha256,
         "card": card.model_dump(mode="json") if card else None,
         "total_paise": card.maybe_total_paise if card else None,
         "review_fields": review_fields(card) if card else [],
@@ -118,6 +121,9 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                 "revision": session.revision,
                 "readback_revision": session.readback_revision,
                 "status": session.status,
+                "dpdp_consent_granted": session.dpdp_consent_granted,
+                "dpdp_consent_at_utc": session.dpdp_consent_at_utc.isoformat() if session.dpdp_consent_at_utc else None,
+                "dpdp_consent_sha256": session.dpdp_consent_sha256,
             },
         )
 
@@ -131,6 +137,41 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             return session_payload(services.store.get(session_id))
         except KeyError:
             raise HTTPException(404, "unknown session")
+
+    @app.post("/sessions/{session_id}/consent")
+    def record_consent(
+        session_id: str,
+        request: Request,
+        expected_revision: int = Form(...),
+        granted: bool = Form(True),
+    ):
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+            raise HTTPException(404, "unknown session")
+        try:
+            services.store.get(session_id)
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+
+        now = datetime.now(timezone.utc)
+        user_agent = request.headers.get("user-agent")
+        try:
+            updated = services.store.record_dpdp_consent(
+                session_id,
+                expected_revision=expected_revision,
+                when=now,
+                user_agent=user_agent,
+                granted=granted,
+            )
+            return {
+                "id": updated.id,
+                "revision": updated.revision,
+                "status": updated.status,
+                "dpdp_consent_granted": updated.dpdp_consent_granted,
+                "dpdp_consent_at_utc": updated.dpdp_consent_at_utc.isoformat() if updated.dpdp_consent_at_utc else None,
+                "dpdp_consent_sha256": updated.dpdp_consent_sha256,
+            }
+        except Conflict as exc:
+            raise HTTPException(409, str(exc))
 
     @app.post("/sessions/{session_id}/intake")
     async def intake(
@@ -265,15 +306,32 @@ def create_app(services: AppServices | None = None) -> FastAPI:
     @app.post("/sessions/{session_id}/reply")
     async def reply(
         session_id: str,
+        request: Request,
         expected_revision: int = Form(...),
         readback_revision: int = Form(...),
         audio: UploadFile = File(...),
+        dpdp_consent: bool = Form(True),
     ):
         try:
             blob = await audio.read()
             if not blob:
                 raise AudioError("empty recording")
             services.settings.require_gnani()
+
+            if dpdp_consent:
+                try:
+                    current_s = services.store.get(session_id)
+                    if not current_s.dpdp_consent_granted:
+                        services.store.record_dpdp_consent(
+                            session_id,
+                            expected_revision=expected_revision,
+                            when=datetime.now(timezone.utc),
+                            user_agent=request.headers.get("user-agent"),
+                            granted=True,
+                        )
+                except Exception:
+                    pass
+
             result = services.workflow.reply(
                 session_id,
                 blob,
@@ -482,6 +540,12 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                 "confirmed_at_utc": session.confirmed_at_utc.isoformat() if session.confirmed_at_utc else None,
                 "audit_manifest_sha256": audit_digest,
                 "legal_compliance": legal_compliance,
+                "dpdp_consent": {
+                    "granted": session.dpdp_consent_granted,
+                    "recorded_at_utc": session.dpdp_consent_at_utc.isoformat() if session.dpdp_consent_at_utc else None,
+                    "user_agent": session.dpdp_user_agent,
+                    "consent_sha256": session.dpdp_consent_sha256,
+                },
                 "intake": {
                     "transcript": intake_log.text if intake_log else "",
                     "recorded_at_utc": intake_log.recorded_at_utc.isoformat() if intake_log else None,
@@ -507,6 +571,12 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                 "confirmed_at_utc": session.confirmed_at_utc.isoformat() if session.confirmed_at_utc else None,
                 "audit_manifest_sha256": audit_digest,
                 "legal_compliance": legal_compliance,
+                "dpdp_consent": {
+                    "granted": session.dpdp_consent_granted,
+                    "recorded_at_utc": session.dpdp_consent_at_utc.isoformat() if session.dpdp_consent_at_utc else None,
+                    "user_agent": session.dpdp_user_agent,
+                    "consent_sha256": session.dpdp_consent_sha256,
+                },
                 "intake": {
                     "transcript": intake_log.text if intake_log else "No intake transcript available",
                     "recorded_at_utc": intake_log.recorded_at_utc.isoformat() if intake_log else None,

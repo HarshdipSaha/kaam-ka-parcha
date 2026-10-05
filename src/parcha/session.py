@@ -2,6 +2,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from threading import RLock
 from typing import Literal
+import hashlib
 import secrets
 from .schema import JobCard, TranscriptLog
 
@@ -19,6 +20,10 @@ class Session:
     logs: tuple[TranscriptLog, ...] = ()
     readback_revision: int | None = None
     confirmed_at_utc: datetime | None = None
+    dpdp_consent_granted: bool = False
+    dpdp_consent_at_utc: datetime | None = None
+    dpdp_user_agent: str | None = None
+    dpdp_consent_sha256: str | None = None
 
 
 class SessionStore:
@@ -155,5 +160,35 @@ class SessionStore:
             if current.status != "awaiting_reply" or current.readback_revision != readback_revision:
                 raise Conflict("stale reply")
             updated = replace(current, logs=current.logs + (log,))
+            self._items[session_id] = updated
+            return updated
+
+    def record_dpdp_consent(
+        self,
+        session_id: str,
+        *,
+        expected_revision: int,
+        when: datetime,
+        user_agent: str | None = None,
+        granted: bool = True,
+    ) -> Session:
+        with self._lock:
+            current = self._editable(session_id, expected_revision)
+            raw = f"DPDP_2023:{session_id}:{when.isoformat()}:{user_agent or ''}:{granted}"
+            consent_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+            log = TranscriptLog(
+                role="customer",
+                mode="dpdp_consent",
+                text=f"DPDP Act 2023 statutory consent {'granted' if granted else 'withheld'} at {when.isoformat()} (User-Agent: {user_agent or 'unknown'})",
+                recorded_at_utc=when,
+            )
+            updated = replace(
+                current,
+                dpdp_consent_granted=granted,
+                dpdp_consent_at_utc=when if granted else None,
+                dpdp_user_agent=user_agent,
+                dpdp_consent_sha256=consent_hash if granted else None,
+                logs=current.logs + (log,),
+            )
             self._items[session_id] = updated
             return updated

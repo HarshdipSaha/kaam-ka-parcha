@@ -204,12 +204,14 @@ class Workflow:
         session_id: str,
         expected_revision: int,
         recorded_at_utc: datetime | None = None,
+        *,
+        include_consent: bool = True,
     ) -> Readback:
         session = self.store.get(session_id)
         if session.card is None or session.card.needs_review:
             raise Conflict("card needs review")
 
-        text = make_readback(session.card)
+        text = make_readback(session.card, include_consent=include_consent)
 
         if not self.timbre:
             raise ValueError("Timbre client required for readback")
