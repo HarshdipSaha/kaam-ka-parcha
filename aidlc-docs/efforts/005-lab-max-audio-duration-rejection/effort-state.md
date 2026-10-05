@@ -3,9 +3,9 @@
 **Effort ID:** 005
 **Reference:** `lab-max-audio-duration-rejection`
 **Title:** Split Long Lab Audio at the Gnani REST Duration Limit
-**Status:** complete  
-**Started:** 2026-10-05  
-**Completed:** 2026-10-05  
+**Status:** complete
+**Started:** 2026-10-05
+**Completed:** 2026-10-05
 **Parent Effort:** `004-enterprise-telephony-compliance`
 
 ## Stage Progression
