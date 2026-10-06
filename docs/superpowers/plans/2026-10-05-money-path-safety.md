@@ -1396,7 +1396,7 @@ BIAS_CONTROL_WORDS = (("alternator", "अल्टरनेटर"), ("camshaft"
   - `source_clipped(blob: bytes) -> bool`
   - `prepare(parquet_path: Path, audio_dir: Path) -> list[dict]`
 
-- [ ] **Step 1: Write the failing tests:**
+- [x] **Step 1: Write the failing tests:**
 
 ```python
 import io, wave
@@ -1448,8 +1448,8 @@ def test_rejects_non_16k_input():
         wav16k_to_wav8k(wav_at(tone(1000)[:8000], rate=8000))
 ```
 
-- [ ] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_gramvaani.py`. Expected: `ModuleNotFoundError`.
-- [ ] **Step 3: Create `src/parcha/lab/gramvaani.py`.** This is the verified version: on the real parquet it wrote 1,032 clips with 10,063.6 s preserved, attenuated a 6 kHz tone to RMS 14 against 7,070 for a 1 kHz tone, and added no hard clipping.
+- [x] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_gramvaani.py`. Expected: `ModuleNotFoundError`.
+- [x] **Step 3: Create `src/parcha/lab/gramvaani.py`.** This is the verified version: on the real parquet it wrote 1,032 clips with 10,063.6 s preserved, attenuated a 6 kHz tone to RMS 14 against 7,070 for a 1 kHz tone, and added no hard clipping.
 
 ```python
 """Gramvaani real-telephone slice: Vistaar test parquet -> 8 kHz mono WAVs + Line Noise Lab manifest rows.
@@ -1531,7 +1531,7 @@ def prepare(parquet_path: Path, audio_dir: Path) -> list[dict]:
   - writes the full manifest (with text) next to the audio;
   - writes the committed index with only `id, source_row, audio_sha256, stratum, duration_s`;
   - prints the totals and the two-pass credit forecast.
-- [ ] **Step 4: Download, prepare and check:**
+- [x] **Step 4: Download, prepare and check:**
 
 ```powershell
 New-Item -ItemType Directory -Force var\benchmark_audio\gramvaani | Out-Null
@@ -1542,7 +1542,7 @@ curl.exe -L -o var\benchmark_audio\gramvaani\test.parquet https://huggingface.co
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-- [ ] **Step 5:** `git add src/parcha/lab/gramvaani.py scripts/prepare_gramvaani.py tests/test_gramvaani.py pyproject.toml data/benchmarks/gramvaani/index.jsonl`, then `git commit -m "feat(bench): Gramvaani real-telephone slice preparation (index only committed)"`
+- [x] **Step 5:** `git add src/parcha/lab/gramvaani.py scripts/prepare_gramvaani.py tests/test_gramvaani.py pyproject.toml data/benchmarks/gramvaani/index.jsonl`, then `git commit -m "feat(bench): Gramvaani real-telephone slice preparation (index only committed)"`
 
 ### Task 13: Timbre echo test
 
