@@ -1278,7 +1278,7 @@ def test_gramvaani_number_agreement(hypothesis, expected):
   - `make_bias_control(n=20, seed=20261007) -> list[dict]`
   - Each row is `Clip`-valid, with `expected_amounts_paise` in spoken order and a `voice`.
 
-- [ ] **Step 1: Write the failing tests:**
+- [x] **Step 1: Write the failing tests:**
 
 ```python
 import pytest
@@ -1323,8 +1323,8 @@ def test_bias_control_uses_only_product_bias_words():
     assert all(r["entities"]["bias_word"] in AUTOMOTIVE_BIAS_WORDS for r in rows)
 ```
 
-- [ ] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py`. Expected: `ModuleNotFoundError: parcha.lab.amount_bench`.
-- [ ] **Step 3: Implement `amount_bench.py`.** The tables below are the decision (the hard spoken forms and near-collisions are over-represented on purpose); the generators follow them:
+- [x] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py`. Expected: `ModuleNotFoundError: parcha.lab.amount_bench`.
+- [x] **Step 3: Implement `amount_bench.py`.** The tables below are the decision (the hard spoken forms and near-collisions are over-represented on purpose); the generators follow them:
 
 ```python
 HINDI_TIMBRE_VOICES = ("Nalini", "Bhavna", "Yashvi", "Urmila", "Jwala", "Chitra", "Ambuja",
@@ -1355,8 +1355,8 @@ BIAS_CONTROL_WORDS = (("alternator", "अल्टरनेटर"), ("camshaft"
                       ("axle", "एक्सल"))
 ```
   - **The script:** validates every row with `Clip.model_validate` and writes the four files. It prints `estimates=120 (amounts=296) corrections=40 stress_amounts=37`.
-- [ ] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q`, then `.\.venv\Scripts\python.exe scripts/make_amount_benchmark.py`. Expected: the counts line above.
-- [ ] **Step 5:** `git add src/parcha/lab/amount_bench.py scripts/make_amount_benchmark.py data/benchmarks/amount_v2 tests/test_benchmark_v2.py`, then `git commit -m "feat(bench): gold-first amount-labelled v2 set, corrections, stress amounts, bias control"`
+- [x] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q`, then `.\.venv\Scripts\python.exe scripts/make_amount_benchmark.py`. Expected: the counts line above.
+- [x] **Step 5:** `git add src/parcha/lab/amount_bench.py scripts/make_amount_benchmark.py data/benchmarks/amount_v2 tests/test_benchmark_v2.py`, then `git commit -m "feat(bench): gold-first amount-labelled v2 set, corrections, stress amounts, bias control"`
 
 ### Task 10: Render the synthetic slices with Timbre (multi-voice)
 
@@ -1691,3 +1691,11 @@ foreach ($m in "estimates","corrections") {
 
 - [x] Task 7 — Line Noise Lab: canonical references, outcomes, labels, bias control; Steps 1–5 complete. Validation: 12 focused tests, 53 affected lab/dataset tests, 423 full offline tests passed.
 - Next: Task 8.
+
+## Task 9 completion update — Gold-first v2 amount data
+
+- [x] Add test-first renderer, stress round-trip, estimate, correction, and bias-control regressions; observe the expected missing-module failure before implementation.
+- [x] Implement seeded benchmark generators and a writer that validates every JSONL row as `Clip`.
+- [x] Generate `data/benchmarks/amount_v2/estimates.jsonl` (120 rows, 296 labels), `corrections.jsonl` (40 rows), `stress_rupees.json` (37 distinct amounts), and `bias_control.jsonl` (20 rows).
+- [x] Run `tests/test_benchmark_v2.py` (15 passed) and the offline suite with `PYTHONPATH=src API_KEY=test-only` (438 passed).
+- [x] Confirm the generator prints `estimates=120 (amounts=296) corrections=40 stress_amounts=37`; no live APIs or paid services used.

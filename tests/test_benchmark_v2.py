@@ -263,3 +263,82 @@ def test_money_eval_cli_reads_bom_manifests_skips_exclusions_and_creates_output(
     assert by_slice["correction"]["correct"] == 1
     assert by_slice["scripted_estimate"]["amounts"] == 1
     assert by_slice["scripted_estimate"]["correct"] == 1
+
+
+def test_colloquial_amount_renderer_covers_gold_first_amount_phrasings():
+    from parcha.numerals import render_colloquial_amount
+
+    expected = {
+        450: "साढ़े चार सौ",
+        150: "डेढ़ सौ",
+        250: "ढाई सौ",
+        125: "सवा सौ",
+        175: "पौने दो सौ",
+        1500: "डेढ़ हज़ार",
+        1250: "सवा हज़ार",
+        1750: "पौने दो हज़ार",
+        1200: "बारह सौ",
+        3500: "साढ़े तीन हज़ार",
+        2050: "दो हज़ार पचास",
+        75: "पचहत्तर",
+    }
+
+    assert {rupees: render_colloquial_amount(rupees * 100) for rupees in expected} == expected
+
+
+def test_every_distinct_stress_amount_round_trips_through_colloquial_parser():
+    from parcha.lab.amount_bench import STRESS_RUPEES
+    from parcha.numerals import parse_amounts, render_colloquial_amount
+
+    for rupees in dict.fromkeys(STRESS_RUPEES):
+        mentions = parse_amounts(render_colloquial_amount(rupees * 100))
+        assert [mention.paise for mention in mentions if mention.status == "complete"] == [rupees * 100]
+
+
+def test_gold_first_estimates_are_deterministic_and_have_296_ordered_labels():
+    from parcha.lab.amount_bench import HINDI_TIMBRE_VOICES, make_estimates
+    from parcha.numerals import parse_amounts
+
+    rows = make_estimates()
+    assert rows == make_estimates()
+    assert len(rows) == 120
+    assert sum(len(row["expected_amounts_paise"]) for row in rows) == 296
+    assert len({row["voice"] for row in rows}) >= 10
+    for row in rows:
+        assert row["voice"] in HINDI_TIMBRE_VOICES
+        assert row["source"] == "timbre"
+        assert row["stratum"] == "scripted_estimate"
+        assert row["text"] == row["reference_transcribe"]
+        assert [mention.paise for mention in parse_amounts(row["text"]) if mention.status == "complete"] == row[
+            "expected_amounts_paise"
+        ]
+
+
+def test_corrections_are_reply_clips_with_one_parseable_expected_amount():
+    from parcha.lab.amount_bench import make_corrections
+    from parcha.numerals import parse_amounts
+
+    rows = make_corrections()
+    assert len(rows) == 40
+    for row in rows:
+        assert row["kind"] == "reply"
+        assert row["stratum"] == "correction"
+        assert len(row["expected_amounts_paise"]) == 1
+        assert [mention.paise for mention in parse_amounts(row["text"]) if mention.status == "complete"] == row[
+            "expected_amounts_paise"
+        ]
+
+
+def test_bias_control_clips_use_automotive_bias_words_and_validate_as_clips():
+    from parcha.lab.amount_bench import BIAS_CONTROL_WORDS, make_bias_control
+    from parcha.lab.dataset import Clip
+    from parcha.vocabulary import AUTOMOTIVE_BIAS_WORDS
+
+    rows = make_bias_control()
+    assert len(rows) == 20
+    assert all(row["stratum"] == "bias_control" for row in rows)
+    assert {row["entities"]["bias_word"] for row in rows} <= set(AUTOMOTIVE_BIAS_WORDS)
+    assert [row["entities"]["bias_word"] for row in rows[: len(BIAS_CONTROL_WORDS)]] == [
+        word for word, _ in BIAS_CONTROL_WORDS
+    ]
+    assert all(Clip.model_validate(row) for row in rows)

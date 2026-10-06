@@ -16,7 +16,7 @@
 | Plan | Complete | [`2026-10-05-money-path-safety.md`](../../../docs/superpowers/plans/2026-10-05-money-path-safety.md) |
 | Spec sync | Complete | [`money-path-safety-spec.md`](../../../docs/specs/money-path-safety-spec.md) corrected and committed |
 | Audit | Complete | [`audit.md`](audit.md) |
-| Implementation | Active | Tasks 1–8 complete; Task 0 owner-only pre-flight remains pending |
+| Implementation | Active | Tasks 1–9 complete; Task 0 owner-only pre-flight remains pending |
 
 ## Implementation Progress
 
@@ -46,6 +46,14 @@
 - **Task 8 execution checklist:** [x] Write the single-provider-error and CLI/condition-collision regressions and observe their expected RED failures; [x] implement evaluator and CLI fixes; [x] targeted CLI/fractional-SNR/loss/profile regressions (4 passed); [x] full `tests/test_benchmark_v2.py` (10 passed); [x] full offline suite (433 passed); [x] `git diff --check`; [x] no live APIs or Prisma calls.
 - **Validation:** `.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py -k "fractional_snr or nonzero_loss or impulse_profile or cli_reads"`: 4 passed; `.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py`: 10 passed; `PYTHONPATH=src`, `API_KEY=test-only`, `.venv\Scripts\python.exe -m pytest -q`: 433 passed. Pytest reported one existing Starlette `TestClient` deprecation warning.
 
+## Task 9 — Complete: Gold-first v2 amount data
+
+Added `src/parcha/lab/amount_bench.py` and `scripts/make_amount_benchmark.py` to generate seeded estimate, correction, stress-amount, and bias-control datasets. All JSONL rows are validated through `Clip`; amount labels are in spoken order. Added gold-first renderer, stress round-trip, deterministic estimate, correction, and bias-control regressions in `tests/test_benchmark_v2.py`.
+
+- **Task 9 execution checklist:** [x] Add regressions and observe expected missing-module RED; [x] implement seeded generators and writer; [x] generate all four tracked artifacts; [x] validate JSONL rows and ordered amount labels; [x] run focused benchmark tests; [x] run full offline suite; [x] `git diff --check`; [x] no live APIs or paid services.
+- **Generated outputs:** `estimates.jsonl` — 120 rows, 296 labels, 86,462 bytes; `corrections.jsonl` — 40 rows, 40 labels, 20,939 bytes; `bias_control.jsonl` — 20 rows, 0 amount labels, 9,897 bytes; `stress_rupees.json` — 37 distinct amounts, 341 bytes.
+- **Validation:** Initial RED was 4 missing-module failures and 11 existing passes. `.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py`: 15 passed. With `PYTHONPATH=src` and `API_KEY=test-only`, `.venv\Scripts\python.exe -m pytest -q`: 438 passed. The suite reported one existing Starlette `TestClient` deprecation warning. Generator printed exactly `estimates=120 (amounts=296) corrections=40 stress_amounts=37`.
+
 ## Next
 
-Task 9.
+Task 0 owner-only pre-flight.
