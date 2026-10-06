@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: kaam-ka-parcha
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: API_KEY            # Gnani Prisma/Timbre key — set in the dashboard, never commit
+        sync: false
+      - key: EXTRACTOR_BASE_URL
+        sync: false
+      - key: EXTRACTOR_API_KEY
+        sync: false
+      - key: EXTRACTOR_MODEL
+        value: gnani-evon-v3.3
+      - key: EXTRACTOR_PROVIDER
+        value: evon
+      - key: TTS_VOICE
+        value: Vikrant

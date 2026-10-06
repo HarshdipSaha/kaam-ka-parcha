@@ -43,3 +43,14 @@ def test_concurrent_updates_same_expected_revision_fails_one():
     # another update with expected_revision=0 must raise Conflict
     with pytest.raises(Conflict, match="stale revision"):
         store.set_card(session.id, expected_revision=0, card=sample_card())
+
+
+def test_store_evicts_oldest_untouched_sessions_but_never_worked_ones():
+    store = SessionStore(max_untouched=3)
+    worked = store.create()
+    store.set_card(worked.id, expected_revision=0, card=sample_card())
+    untouched = [store.create().id for _ in range(5)]
+    assert store.get(worked.id).card is not None
+    with pytest.raises(KeyError):
+        store.get(untouched[0])
+    assert [store.get(sid).id for sid in untouched[-3:]] == untouched[-3:]

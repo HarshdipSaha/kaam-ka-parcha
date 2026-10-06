@@ -5,7 +5,7 @@
 > 2. All parts and amounts are listed in digits. **DO NOT read this as a fixed script.**
 > 3. Record each take extempore on your phone beside a running scooter in normal workshop ambient noise.
 > 4. Speak naturally in colloquial Hinglish (e.g., using colloquial numbers like dedh, dhai, saade, sava, paune, barah sau where natural).
-> 5. Save recordings as o001.wav through o080.wav under ar/benchmark_audio/owner/.
+> 5. Save recordings as o001.wav through o080.wav under var/benchmark_audio/owner/.
 
 ### o001
 - Items: rear tyre ₹1750, labour ₹250

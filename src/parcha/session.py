@@ -27,15 +27,23 @@ class Session:
 
 
 class SessionStore:
-    def __init__(self):
+    def __init__(self, max_untouched: int = 500):
         self._lock = RLock()
         self._items: dict[str, Session] = {}
+        self._max_untouched = max_untouched
 
     def create(self) -> Session:
         with self._lock:
             session = Session(id=secrets.token_urlsafe(18))
             self._items[session.id] = session
+            self._evict_untouched()
             return session
+
+    def _evict_untouched(self) -> None:
+        """Bound memory from page loads and crawlers: drop the oldest sessions that never got a card."""
+        untouched = [sid for sid, s in self._items.items() if s.card is None and s.status == "draft"]
+        for sid in untouched[: max(0, len(untouched) - self._max_untouched)]:
+            del self._items[sid]
 
     def get(self, session_id: str) -> Session:
         with self._lock:

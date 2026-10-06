@@ -1,0 +1,10 @@
+.venv
+.git
+var
+docs
+tests
+aidlc-docs
+__pycache__
+*.pyc
+.env
+HANDOFF.md
