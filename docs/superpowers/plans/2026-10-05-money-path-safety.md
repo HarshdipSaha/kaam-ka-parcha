@@ -1367,11 +1367,12 @@ BIAS_CONTROL_WORDS = (("alternator", "अल्टरनेटर"), ("camshaft"
 - CLI: `--manifest`, `--audio-dir var/benchmark_audio/amount_v2`, `--live`, `--request-interval-seconds 1.0`.
 - Live: one `TimbreClient(settings.api_key, voice=row["voice"], base_url=settings.gnani_base_url)` per voice; `mulaw_to_wav(client.synthesize(text))` written to `audio-dir/row["audio"]`; existing files are skipped (cache).
 
-- [ ] **Step 1: Failing test:** `forecast([{"text": "abcd", "voice": "Nalini"}] * 3) == {"rows": 3, "chars": 12, "credits": 0.6, "voices": ["Nalini"]}`.
-- [ ] **Step 2:** Run it. Expected: FAIL (no module).
-- [ ] **Step 3:** Implement as above. Read the manifest with `utf-8-sig`.
-- [ ] **Step 4:** Dry run: `.\.venv\Scripts\python.exe scripts/render_amount_benchmark.py --manifest data/benchmarks/amount_v2/estimates.jsonl`. Expected: `{"rows": 120, "chars": 6843, "credits": 342.15, …}`. Corrections: `"chars": 1080, "credits": 54.0`. Bias control: printed. Then run each with `--live`. Expected: 120 + 40 + 20 WAVs, each 8 kHz mono (spot-check with `ffprobe`).
-- [ ] **Step 5:** `git add scripts/render_amount_benchmark.py tests/test_render_forecast.py`, then `git commit -m "feat(bench): multi-voice Timbre renderer with per-character forecast"`
+- [x] **Step 1: Failing test:** `forecast([{"text": "abcd", "voice": "Nalini"}] * 3) == {"rows": 3, "chars": 12, "credits": 0.6, "voices": ["Nalini"]}`.
+- [x] **Step 2:** Run it. Expected: FAIL (no module).
+- [x] **Step 3:** Implement as above. Read the manifest with `utf-8-sig`.
+- [x] **Step 4: Dry-run forecasts.** Count the exact `text` codepoints sent to Timbre. Estimates: 120 rows, 7,140 chars, 357.00 credits; corrections: 40 rows, 1,084 chars, 54.20 credits; bias control: 20 rows, 418 chars, 20.90 credits. The earlier estimates/corrections figures (6,843 / 342.15 and 1,080 / 54.0) did not match the generated manifests.
+- [ ] **Step 5: Live render after Task 0 pre-flight.** Run each manifest with `--live` after the owner verifies account balance/key provenance and approves the spend. Expected: 120 + 40 + 20 WAVs, each 8 kHz mono (spot-check with `ffprobe`). This remains pending; no API calls were made during this implementation task.
+- [x] **Step 6:** `git add scripts/render_amount_benchmark.py tests/test_render_forecast.py`, then `git commit -m "feat(bench): multi-voice Timbre renderer with per-character forecast"`
 
 ### Task 11: Owner extempore takes (internal)
 

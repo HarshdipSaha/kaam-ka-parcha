@@ -16,7 +16,7 @@
 | Plan | Complete | [`2026-10-05-money-path-safety.md`](../../../docs/superpowers/plans/2026-10-05-money-path-safety.md) |
 | Spec sync | Complete | [`money-path-safety-spec.md`](../../../docs/specs/money-path-safety-spec.md) corrected and committed |
 | Audit | Complete | [`audit.md`](audit.md) |
-| Implementation | Active | Tasks 1–9 complete; Task 0 owner-only pre-flight remains pending |
+| Implementation | Active | Tasks 1–10 code and dry-run complete; paid Task 10 WAV generation and Task 0 owner-only pre-flight remain pending |
 
 ## Implementation Progress
 
@@ -53,6 +53,14 @@ Added `src/parcha/lab/amount_bench.py` and `scripts/make_amount_benchmark.py` to
 - **Task 9 execution checklist:** [x] Add regressions and observe expected missing-module RED; [x] implement seeded generators and writer; [x] generate all four tracked artifacts; [x] validate JSONL rows and ordered amount labels; [x] run focused benchmark tests; [x] run full offline suite; [x] `git diff --check`; [x] no live APIs or paid services.
 - **Generated outputs:** `estimates.jsonl` — 120 rows, 296 labels, 86,462 bytes; `corrections.jsonl` — 40 rows, 40 labels, 20,939 bytes; `bias_control.jsonl` — 20 rows, 0 amount labels, 9,897 bytes; `stress_rupees.json` — 37 distinct amounts, 341 bytes.
 - **Validation:** Initial RED was 4 missing-module failures and 11 existing passes. `.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py`: 15 passed. With `PYTHONPATH=src` and `API_KEY=test-only`, `.venv\Scripts\python.exe -m pytest -q`: 438 passed. The suite reported one existing Starlette `TestClient` deprecation warning. Generator printed exactly `estimates=120 (amounts=296) corrections=40 stress_amounts=37`.
+
+## Task 10 - Multi-voice Timbre renderer and per-character forecast
+
+Added `scripts/render_amount_benchmark.py` and `tests/test_render_forecast.py`. The forecast counts Python string codepoints in the exact `text` sent to `TimbreClient.synthesize`, multiplies by `TTS_CREDITS_PER_CHAR = 0.05`, rounds credits to two decimals, and reports sorted unique voices. The CLI reads UTF-8-SIG JSONL; dry-run prints JSON without loading settings or contacting services. Live mode preflights all required fields and resolved destinations before loading settings, rejects output paths outside the resolved audio root, the root itself, and duplicate destinations, then requires `API_KEY`, reuses one Timbre client per voice, converts mu-law responses to WAV, skips cached files, spaces requests, and closes all clients even if a close fails.
+
+- **Task 10 execution checklist:** [x] Add forecast regression and observe missing-module RED; [x] implement forecast and CLI; [x] cover BOM input, credential-free dry-run, finite non-negative interval validation, cache behavior, per-voice reuse, request spacing, and cleanup failures with offline tests; [x] preflight every live row before settings/client/request/output side effects; [x] reject path escapes, symlink escapes, root destinations, and duplicate resolved outputs; [x] ensure every client close is attempted and preserve synthesis errors when cleanup fails; [x] validate all three generated manifest forecasts; [x] run focused tests; [x] run full offline suite; [x] run three dry-run CLI commands; [x] `git diff --check`; [x] make no live API calls. [ ] Paid 120 + 40 + 20 WAV generation, deferred pending Task 0 owner-only pre-flight.
+- **Dry-run forecasts:** `estimates.jsonl` - 120 rows, 7,140 characters, 357.00 credits; `corrections.jsonl` - 40 rows, 1,084 characters, 54.20 credits; `bias_control.jsonl` - 20 rows, 418 characters, 20.90 credits. The Task 10 plan arithmetic supplied earlier (6,843 / 342.15 and 1,080 / 54.00) is stale for the current generated manifests. Direct generation from `parcha.lab.amount_bench` matches these current totals; no Task 9 data was changed to force the stale figures.
+- **Validation:** `.venv\Scripts\python.exe -m pytest -q tests/test_render_forecast.py`: 26 passed. `PYTHONPATH=src`, `API_KEY=test-only`, `.venv\Scripts\python.exe -m pytest -q`: 464 passed. All three dry-run CLI commands printed the totals above with `API_KEY` empty. One existing Starlette `TestClient` deprecation warning was reported. No paid TTS run was performed; Task 0 owner-only pre-flight remains pending.
 
 ## Next
 
