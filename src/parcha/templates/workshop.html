@@ -28,11 +28,15 @@
     </div>
   </section>
   <section id="share" class="share" hidden>
-    <h2 class="share__title">ग्राहक को भेजिए<span class="en">Send to the customer</span></h2>
+    <h2 class="share__title" id="share-title">ग्राहक को भेजिए<span class="en">Send to the customer</span></h2>
     <button id="copy-link" class="btn btn--primary" type="button">लिंक कॉपी करें<span class="en">Copy link</span></button>
     <a id="whatsapp-open" class="btn btn--wa" href="#" target="_blank" rel="noopener">WhatsApp खोलें<span class="en">Open WhatsApp</span></a>
     <a id="customer-link" class="btn btn--ghost" href="#" target="_blank" rel="noopener" hidden>ग्राहक वाला पेज खोलें<span class="en">Open customer page</span></a>
-    <p class="fineprint">अपने आप कुछ नहीं भेजा जाता — भेजना आपके हाथ में है।<span class="en">Nothing is sent automatically.</span></p>
+    <div class="actions" id="sealed-links" hidden>
+      <a id="sealed-verify" class="btn btn--primary" href="#">असली पर्चा खोलें<span class="en">Open the verified record</span></a>
+      <a id="sealed-pdf" class="btn btn--ghost" href="#" download>PDF डाउनलोड करें<span class="en">Download sealed PDF</span></a>
+    </div>
+    <p class="fineprint" id="share-note">अपने आप कुछ नहीं भेजा जाता — भेजना आपके हाथ में है।<span class="en">Nothing is sent automatically.</span></p>
   </section>
 </main>
 <nav class="dock" id="dock" data-mic="idle" data-idle-hi="बोलिए" data-idle-en="Tap to speak" aria-label="माइक">

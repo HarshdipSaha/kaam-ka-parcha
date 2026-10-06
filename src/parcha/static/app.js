@@ -30,6 +30,7 @@ async function recordOnce(startButton, stopButton, hooks = {}) {
   } catch (err) {
     throw new UI.MicError(err && err.name === "NotAllowedError" ? "blocked" : "unavailable");
   }
+  if (navigator.vibrate) navigator.vibrate(10);
   const mimeType = getSupportedMimeType();
   const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
   const chunks = [];
@@ -122,6 +123,14 @@ function renderSession(data) {
   $("customer-link").href = `/customer/${data.id}`;
   $("whatsapp-open").href = UI.whatsappHref(UI.shareMessage(data, customerUrl));
   $("copy-link").dataset.url = customerUrl;
+  const sealed = stage === "manzoor";
+  const title = sealed ? ["ग्राहक ने मंज़ूर किया", "Customer approved — the record is sealed"] : ["ग्राहक को भेजिए", "Send to the customer"];
+  $("share-title").replaceChildren(title[0], UI.el("span", { class: "en" }, title[1]));
+  ["copy-link", "whatsapp-open", "customer-link", "share-note"].forEach((id) => { $(id).hidden = sealed; });
+  $("sealed-links").hidden = !sealed;
+  $("sealed-verify").href = `/verify/${data.id}`;
+  $("sealed-pdf").href = `/sessions/${data.id}/pdf`;
+  if ((stage === "haan" || sealed) && previousStatus !== data.status) window.scrollTo({ top: 0, behavior: "smooth" });
   if (stage === "haan") startWaiting();
   if (stage === "manzoor" && previousStatus && previousStatus !== "confirmed") celebrate();
   if (previousStatus === "awaiting_reply" && data.status === "review") {
@@ -248,6 +257,14 @@ function enableRecordIfReady() {
   const button = $("customer-record");
   const consent = $("dpdp-consent-checkbox");
   if (!button) return;
+  const needConsent = Boolean(s && s.status === "awaiting_reply" && s.readback_revision != null && consent && !consent.checked);
+  const dock = $("dock");
+  dock.dataset.idleHi = needConsent ? "पहले सहमति दें" : "बोलकर जवाब दें";
+  dock.dataset.idleEn = needConsent ? "Tick the consent box first" : "Speak your answer";
+  if (dock.dataset.mic === "idle") {
+    dock.querySelector("[data-mic-title]").textContent = dock.dataset.idleHi;
+    dock.querySelector("[data-mic-sub]").textContent = dock.dataset.idleEn;
+  }
   button.disabled = !(s && s.status === "awaiting_reply" && s.readback_revision !== null && s.readback_revision !== undefined
     && consent && consent.checked && !isCustomerRecording);
 }
@@ -283,6 +300,8 @@ function wireCall() {
     call.dataset.call = "ended";
     UI.setCaption($("readback-caption"), caption(), 1);
     $("call-status").textContent = "अब नीचे माइक दबाकर जवाब दीजिए";
+    const consent = $("dpdp-consent-checkbox");
+    if (!consent.checked) $("dpdp-consent-box").scrollIntoView({ behavior: "smooth", block: "center" });
   });
   player.addEventListener("error", audioFailed);
   if (player.readyState >= 3) play.disabled = false;  // canplay may have fired before this listener existed

@@ -22,7 +22,7 @@ h1, h2, p { margin: 0; }
 .page { min-height: 100dvh; padding-bottom: calc(var(--dock-h) + env(safe-area-inset-bottom)); }
 .page--verify, .page--stage { padding-bottom: 24px; }
 .sheet { max-width: 480px; margin: 0 auto; padding: 12px 16px 24px; display: grid; gap: 14px; }
-.en { display: block; font-size: max(13px, .78em); font-weight: 400; line-height: 1.35; color: var(--ink-muted); }
+.en { display: block; font-size: max(14px, .8em); font-weight: 400; line-height: 1.35; color: var(--ink-muted); }
 .btn .en, .mic .en, .call .en, .verdict .en { color: inherit; opacity: .85; }
 :focus-visible { outline: 3px solid var(--neela); outline-offset: 3px; }
 .topbar { max-width: 480px; margin: 0 auto; padding: 12px 16px 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -184,7 +184,13 @@ h1, h2, p { margin: 0; }
 .phone figcaption { font-weight: 800; font-size: 20px; }
 .phone figcaption { padding: 2px 16px; border-radius: var(--r-pill); background: var(--ink); color: #fff; }
 .phone figcaption .en { display: inline; margin-left: 6px; color: inherit; opacity: .8; }
-.phone iframe { width: 360px; height: min(760px, calc(100dvh - 190px)); min-height: 560px; border: 10px solid var(--ink); border-radius: 36px; background: var(--counter); box-shadow: var(--shadow-paper); }
+.phone iframe { width: 360px; height: min(760px, calc(100dvh - 300px)); min-height: 560px; border: 10px solid var(--ink); border-radius: 36px; background: var(--counter); box-shadow: var(--shadow-paper); }
+#workshop[data-stage="haan"] #share, #workshop[data-stage="manzoor"] #share { order: -1; }
+#workshop[data-stage="haan"] #stepper, #workshop[data-stage="manzoor"] #stepper { order: -3; }
+#workshop[data-stage="haan"] #message, #workshop[data-stage="manzoor"] #message { order: -2; }
+button, a, summary, label { cursor: pointer; }
+:disabled { cursor: not-allowed; }
+@media (hover: hover) { .btn:hover:not(:disabled) { filter: brightness(1.08); } .reask:hover { background: #ffc61f; } .mic:hover:not(:disabled) { transform: scale(1.03); } }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 @media (min-width: 768px) { body { font-size: 19px; } }
 @media (prefers-reduced-motion: reduce) {
