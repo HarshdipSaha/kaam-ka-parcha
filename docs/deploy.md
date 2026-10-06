@@ -14,11 +14,12 @@ See `.env.example` for the rest. FFmpeg must be present; the Dockerfile installs
 2. Fill the four `sync: false` secrets in the dashboard.
 3. Wait for `/health` to go green, then open `https://<service>.onrender.com/stage`.
 
-## Any Docker host
+## Any Docker host (build and run verified 2026-10-07)
 ```
-docker build -t kaam-ka-parcha .
-docker run -p 8000:8000 --env-file .env kaam-ka-parcha
+docker compose up --build        # uses .env locally, http://localhost:8000/stage
+# or: docker build -t kaam-ka-parcha . && docker run -p 8000:8000 --env-file .env kaam-ka-parcha
 ```
+The image never contains `.env`; pass secrets at run time or in the platform dashboard.
 
 ## Before you demo
 - Open `/stage` on the final URL once and grant the microphone.
