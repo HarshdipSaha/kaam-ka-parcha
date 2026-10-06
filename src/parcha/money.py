@@ -33,6 +33,9 @@ def _split_spoken_total(text: str) -> tuple[str, str | None]:
 
 _RS = r"(?:₹\s?)?(\d[\d,]*)"
 _CLOCK_FRACTION = re.compile(rf"(?<!\d)(\d{{1,2}}):30\s+{_RS}(?![\d,])")          # साढ़े H N is formatted as a clock time
+_BIG_UNIT = {"हज़ार": 1000, "हजार": 1000, "लाख": 100000}
+_CLOCK_WORD = re.compile(r"(?<!\d)(\d{1,2}):30\s+(हज़ार|हजार|लाख)")                     # साढ़े H हज़ार -> "H:30 हज़ार"
+_SADHE_NUMBER = re.compile(rf"(?:^|(?<=\s))साढ़े\s+{_RS}(?:\s*(हज़ार|हजार|लाख))?(?![\d,])")  # "साढ़े 4,000" / "साढ़े 23 हज़ार"
 _WORD_FRACTION = re.compile(rf"(?:^|(?<=\s))(डेढ़|ढाई)\s+{_RS}(?![\d,])")
 _QUARTER = re.compile(rf"(?:^|(?<=\s))(सवा|पौने)\s+{_RS}(?![\d,])")
 
@@ -56,6 +59,18 @@ def normalise_transcribe_fractions(text: str) -> str:
         hours, unit = int(m.group(1)), _rupees(m.group(2))
         return f"₹{hours * unit + unit // 2}" if unit in (100, 1000) and 0 < hours < 100 else m.group(0)
 
+    def clock_word(m: re.Match) -> str:
+        unit = _BIG_UNIT[m.group(2)]
+        return f"₹{int(m.group(1)) * unit + unit // 2}"
+
+    def sadhe(m: re.Match) -> str:
+        number, unit = _rupees(m.group(1)), _BIG_UNIT.get(m.group(2) or "")
+        if number is None or number == 0:
+            return m.group(0)
+        if unit is not None:
+            return f"₹{number * unit + unit // 2}"
+        return f"₹{number + 500}" if number >= 1000 and number % 1000 == 0 else m.group(0)
+
     def word(m: re.Match) -> str:
         unit = _rupees(m.group(2))
         if unit not in (100, 1000):
@@ -69,7 +84,8 @@ def normalise_transcribe_fractions(text: str) -> str:
         step = _unit(base) // 4
         return f"₹{base + step if m.group(1) == 'सवा' else base - step}"
 
-    return _QUARTER.sub(quarter, _WORD_FRACTION.sub(word, _CLOCK_FRACTION.sub(clock, text)))
+    text = _CLOCK_WORD.sub(clock_word, _CLOCK_FRACTION.sub(clock, text))
+    return _QUARTER.sub(quarter, _WORD_FRACTION.sub(word, _SADHE_NUMBER.sub(sadhe, text)))
 
 
 def decide_amounts(verbatim: str, transcribe: str | None, *, expected_count: int) -> list[AmountDecision]:

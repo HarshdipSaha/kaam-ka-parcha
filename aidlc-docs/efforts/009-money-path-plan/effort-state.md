@@ -124,6 +124,17 @@ AMR-NB 4.75 / 0 dB: Vikrant words 120/120, Roopesh digits 119/120, Chitra words 
 
 Still pending: Task 0 console balance/outreach, owner takes (Task 14 Step 2/5), human listening labels (Task 13 Step 4 tail).
 
+## Follow-up hardening (2026-10-07)
+
+- **Prompt reword.** The closing read-back prompt is now "Kuch galat ho toh bataiye." Confirm re-run `echo_confirm_prompt2_20261007.jsonl`: 1,080 rows complete; `amr_nb_4750|0` Vikrant/words 120/120, Roopesh/digits 119/120, Chitra/words 117/120 (113 before). The phantom "लाख" insertions are gone.
+- **Heard quote.** Abstained amounts keep what was heard as zero-score evidence (stays in review; shown on the flagged row). Intake and re-ask.
+- **Fraction-aware cross-check.** The transcribe pass formats साढ़े/डेढ़/ढाई/सवा/पौने amounts as `04:30 ₹100`, `ढाई ₹100`, `पौने ₹200`; these now normalise to their value before the cross-check, so colloquial fractions are no longer 100% `crosscheck_disagreement`. Disagreeing values still disagree (regressions for both).
+- **Two agreeing recordings.** A flagged amount is settled by a re-ask only when it agrees with the previous recording; otherwise the new value becomes the candidate (`independent_confirmation_required` / `recordings_disagree`). This replaces single-recording acceptance, which wrongly accepted 23 of 1,000 benchmark re-asks (truncated "NN सौ" heard as ₹NN at 0 dB).
+- **Re-ask recovery benchmark** (`scripts/run_reask_bench.py`, `parcha.lab.reask_bench`): 1,000 live rows. Rescored with today's logic: single recording 96.3% recovered / 24 wrong (all at 0 dB); two agreeing recordings 93.4% settle at the first pair / 4 wrong (all one ₹31,000→₹21,000 confusion at 0 dB), 66 need one more recording; every clean/control row recovers. Held-out run on fresh amounts: see the final entry below.
+- **Rejected idea, with numbers:** accept an amount when both modes agree. Saved Task 14 rows: 475/1,344 accepted, 19 wrong (4.0%; 10.2% at 0 dB).
+- **Ops:** Dockerfile, `render.yaml`, `docs/deploy.md` (Docker daemon was not running here, so the image build is untested); `scripts/make_owner_recorder.py` + `docs/owner-recording.md` for the 80 owner takes; untouched sessions are capped (`SessionStore(max_untouched=500)`) so `GET /stage` cannot leak memory.
+- **Remaining, user-only:** deploy to a public HTTPS URL; record the 80 owner takes; human listening labels; Task 0 console balance and Gramvaani/organizer permission.
+
 ## Next
 
-Finish the fresh Task 13 confirm run at `var/lab/echo_confirm_live2_20261006.jsonl`; then generate the private Task 15 report and record the confirm-stage voice/style decision and reproducible gate data. Keep human-listening labels pending until a person actually reviews them. Owner takes remain unavailable until recordings and a manifest exist; Task 14 Step 2 and an owner-inclusive score remain pending. Keep result artifacts private under ignored `var/`; the owner-reported approximately 235,000-credit forecast and billed totals remain unverified from the console.
+Only user-supplied inputs remain: deployment, the owner's own recordings (`docs/owner-recording.md`), human listening labels, and the Task 0 console/permission records. Keep result artifacts private under ignored `var/`; billed totals remain unverified from the console.

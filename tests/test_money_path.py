@@ -207,6 +207,12 @@ def test_disputed_reask_keeps_what_was_heard_without_confirming_it():
     ("पौने दो हज़ार रुपए", "पौने ₹2,000", 175000),
     ("साढ़े सात सौ रुपये", "07:30 ₹100", 75000),
     ("साढ़े तीन हज़ार रुपये", "03:30 ₹1,000", 350000),
+    ("साढ़े तीन हज़ार।", "03:30 हज़ार।", 350000),
+    ("साढ़े दस हजार", "10:30 हजार।", 1050000),
+    ("साढ़े चार हज़ार", "साढ़े 4,000", 450000),
+    ("साढ़े उनतीस हज़ार", "साढ़े 29,000", 2950000),
+    ("साढ़े तेईस हज़ार।", "साढ़े 23 हज़ार।", 2350000),
+    ("साढ़े सैंतीस हज़ार रुपये।", "साढ़े 37,000 रुपये।", 3750000),
 ])
 def test_transcribe_pass_fraction_formatting_still_cross_checks_the_spoken_amount(verbatim, transcribe, paise):
     [decision] = decide_amounts(verbatim, transcribe, expected_count=1)
