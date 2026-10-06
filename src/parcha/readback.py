@@ -8,7 +8,7 @@ from .numerals import render_hindi_amount
 from .schema import JobCard
 
 PHRASAL_AFFIRMATION_PROMPT = (
-    "Agar aapko yeh manzoor hai, toh boliye: 'Haan, theek hai'. Koi badlaav chahiye toh rate batayein."
+    "Agar aapko yeh manzoor hai, toh boliye: 'Haan, theek hai'. Kuch galat ho toh bataiye."
 )
 
 STATUTORY_CONSENT_NOTICE = (

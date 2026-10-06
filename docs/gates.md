@@ -373,3 +373,15 @@ Spend is runner-estimated, not console-billed; an interrupted resume attempt
 (`echo_confirm_resumed_20261006.jsonl`, 1,063 rows, no summary) was abandoned and
 its small unrecorded duplicate spend is not included above. Private report:
 `.\.venv\Scripts\python.exe -m parcha.lab.bench_report --echo var/lab/echo_screen_resumed4_20261006.jsonl --echo var/lab/echo_confirm_resumed2_20261006.jsonl` → `var/lab/benchmark_report.md`.
+
+### Follow-up hardening (2026-10-07)
+
+All private outputs are under ignored `var/lab/`; credits are runner estimates, not console billing.
+
+| Item | Reproduction | Result |
+|---|---|---|
+| Read-back prompt reword | `scripts/run_echo_test.py --stage confirm --from var/lab/echo_screen_resumed4_20261006.jsonl --output var/lab/echo_confirm_prompt2_20261007.jsonl --request-interval-seconds 1 --live` (closing prompt now "Kuch galat ho toh bataiye.") | 1,080 rows, `status=complete`. `amr_nb_4750\|0`: Vikrant/words 120/120 (120/120 on control and G.711), Roopesh/digits 119/120, Chitra/words 117/120 (was 113/120). Prisma 3,040.61 + Timbre 3,283.55 estimated credits. The phantom "लाख" insertion no longer occurs; the 4 remaining failures are one Roopesh total misheard and three Chitra "पार्ट एक" → extra ₹60 insertions. |
+| Re-ask recovery (single amount, 100 amounts × 2 voices × 5 conditions) | `scripts/run_reask_bench.py --live`, then `--rescore` | 1,000 rows. Logic as first run: 73.3% recovered, 23 wrong accepted. After the transcribe-fraction fix: 84.0% recovered, 23 wrong accepted (2.3%, 13 at AMR 0 dB). |
+| Two agreeing recordings (pairs of the two voices) | `--rescore` | 80.8% settle on the first pair, 4 wrong (0.4%, Wilson upper 1.0%), 188 need one more recording. Clean and control conditions: 0 wrong in 600 pairs. All 4 wrong are one amount (₹31,000 heard as ₹21,000 in both voices at 0 dB), a systematic confusion the customer read-back must catch. |
+
+Offline check of "accept when both modes agree" on the saved Task 14 runs: 475 of 1,344 amounts would be accepted and 19 of those (4.0%, 10.2% at 0 dB) would be wrong, so that rule was not adopted.

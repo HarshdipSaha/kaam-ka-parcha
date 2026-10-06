@@ -1371,7 +1371,7 @@ def test_confirm_resume_validates_accounted_next_case_and_forecasts_remaining_wo
     next_case = ordered_cases[348]
     next_chars = len(make_readback(cards[next_case[0]], amount_style=next_case[2]))
     assert next_case == ("v109", "Chitra", "words")
-    assert next_chars == 233
+    assert next_chars == 221
 
     lab_root, output_path, _summary_path, rows, _selected = _write_interrupted_confirm_run(
         tmp_path,
@@ -1392,8 +1392,8 @@ def test_confirm_resume_validates_accounted_next_case_and_forecasts_remaining_wo
     assert len(rows) == 1044
     assert summary["rows_written"] == 1044
     assert summary["stt_requests_attempted"] == 1045
-    assert reconstructed_tts_chars == 67460
-    assert summary["tts_chars_accounted_lower_bound"] == 67693
+    assert reconstructed_tts_chars == 63284
+    assert summary["tts_chars_accounted_lower_bound"] == 63505
 
     resumed = _load_confirm_resume(output_path, pairs=pairs, lab_root=lab_root)
     forecast = _forecast_resume(cards, pairs, resumed)
@@ -1403,20 +1403,20 @@ def test_confirm_resume_validates_accounted_next_case_and_forecasts_remaining_wo
     assert resumed.completed_cases == frozenset(ordered_cases[:348])
     assert resumed.possible_next_case == next_case
     assert resumed.possible_next_tts_chars == next_chars
-    assert resumed.prior_tts_chars == 67693
+    assert resumed.prior_tts_chars == 63505
     assert resumed.possible_next_tts_already_accounted_chars == next_chars
     assert resumed.inferred_possible_cases == ({
         "card_id": "v109",
         "voice": "Chitra",
         "style": "words",
-        "characters": 233,
+        "characters": 221,
         "run_id": "confirm-run",
     },)
     assert forecast["completed_cases"] == 348
     assert forecast["remaining_cases"] == 12
     assert forecast["next_case_tts_chars_already_accounted"] == next_chars
-    assert forecast["tts_chars"] == 2531
-    assert forecast["credits"] == 126.55
+    assert forecast["tts_chars"] == 2387
+    assert forecast["credits"] == 119.35
 
 
 def test_confirm_resume_skips_persisted_cases_and_replays_only_next_case(tmp_path, monkeypatch):

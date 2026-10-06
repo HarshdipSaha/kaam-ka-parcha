@@ -12,7 +12,7 @@ from parcha.lab.bench_report import build_report, main, _load_bias_target_labels
 def test_default_echo_inputs_use_the_final_task13_continuation_paths():
     assert bench_report.DEFAULT_ECHO_FILES == (
         Path("var/lab/echo_screen_resumed4_20261006.jsonl"),
-        Path("var/lab/echo_confirm_resumed2_20261006.jsonl"),
+        Path("var/lab/echo_confirm_prompt2_20261007.jsonl"),
     )
 
 

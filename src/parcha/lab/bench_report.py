@@ -22,7 +22,7 @@ BIAS_SPOKEN_BY_ENGLISH = {english.casefold(): spoken for english, spoken in BIAS
 PRIVATE_OUTPUT_ROOT = Path("var/lab")
 DEFAULT_ECHO_FILES = (
     Path("var/lab/echo_screen_resumed4_20261006.jsonl"),
-    Path("var/lab/echo_confirm_resumed2_20261006.jsonl"),
+    Path("var/lab/echo_confirm_prompt2_20261007.jsonl"),
 )
 DEFAULT_USAGE_FILES = (
     Path("var/lab/v2_estimates.jsonl"),

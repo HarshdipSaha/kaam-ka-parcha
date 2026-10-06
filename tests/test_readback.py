@@ -30,7 +30,7 @@ def test_make_readback_formats_card_and_total():
         "कुल ₹650. "
         "डिलीवरी Somvaar shaam tak. "
         "Agar aapko yeh manzoor hai, toh boliye: 'Haan, theek hai'. "
-        "Koi badlaav chahiye toh rate batayein."
+        "Kuch galat ho toh bataiye."
     )
     assert text == expected
 
