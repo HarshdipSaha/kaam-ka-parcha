@@ -39,3 +39,10 @@ Walked the full mechanic-to-owner flow in Chromium with a fake mic (390x844, tou
 - Markup: bilingual pairs are `.hi` + `.en`; single-language values (chips, dates, status, totals) use `.lang-hi` / `.lang-en`. One `data-lang` on `<html>` swaps which language is the headline (CSS `order`, needs `:has`).
 - Server adds `delivery_en`, `kind_en`, `status_en`; `ui.js` adds `both`, `setBoth`, `setLang`.
 - Size now 69.7 KB (cap raised to 72 KB for this feature).
+
+## Live end-to-end dry run (real Gnani Prisma + Timbre, real extractor), 2026-10-06
+Chromium (390x844 touch) with sample WAVs as the fake microphone; server on :8002 with the real `.env`.
+- Mechanic phrase "फ्रंट ब्रेक पैड चार सौ पचास रुपये, लेबर दो सौ रुपये, मंगलवार शाम तक" (Timbre-synthesised): items 45000 + 20000 paise, total ₹650, no review fields, delivery Tuesday evening. Read-back via Timbre (21 s audio). Customer "हाँ ठीक है" -> confirmed at revision 1; verify manifest and PDF (6.6 KB) produced. About 40 s end to end.
+- Finding 1 (fixed here): Gnani returned HTTP 429 on back-to-back calls; the app treated it as "say it again". `gnani.py` now retries 429/503 twice (1.0 s, 2.5 s) before giving up.
+- Finding 2 (not changed, money-path code): the "transcribe" format renders "साढ़े चार सौ" (450) as "04:30 100" while "verbatim" is right, so the cross-check abstains (`crosscheck_disagreement`) and the row asks for a re-check. Safe, but "साढ़े चार सौ" is common speech. Plain phrasing ("चार सौ पचास") passes cleanly.
+- Test artefact: the fake mic loops its WAV, so recordings longer than the clip add repeated words.

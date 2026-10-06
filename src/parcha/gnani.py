@@ -1,5 +1,6 @@
 import json
 import re
+import time
 from typing import Literal
 import httpx
 
@@ -10,6 +11,21 @@ class GnaniError(RuntimeError):
     def __init__(self, message: str, *, status: int | None = None):
         super().__init__(message)
         self.status = status
+
+
+RETRY_STATUSES = frozenset({429, 503})
+RETRY_DELAYS = (1.0, 2.5)  # seconds before retry 1 and 2; Gnani rate-limits short bursts
+
+
+def _post(http: httpx.Client, url: str, **kwargs) -> httpx.Response:
+    """POST, retrying a rate-limit (429/503) twice with a short pause before giving up."""
+    response = http.post(url, **kwargs)
+    for delay in RETRY_DELAYS:
+        if response.status_code not in RETRY_STATUSES:
+            break
+        time.sleep(delay)
+        response = http.post(url, **kwargs)
+    return response
 
 
 def _check_response(response: httpx.Response) -> None:
@@ -54,7 +70,8 @@ class PrismaClient:
                 bias_list=json.dumps(words, ensure_ascii=False),
                 bias_score=str(score),
             )
-        response = self.http.post(
+        response = _post(
+            self.http,
             f"{self.base_url}/stt/v3",
             headers={"X-API-Key-ID": self.api_key},
             data=data,
@@ -114,7 +131,8 @@ class TimbreClient:
                 "container": "mulaw",
             },
         }
-        response = self.http.post(
+        response = _post(
+            self.http,
             f"{self.base_url}/api/v1/tts/inference",
             headers={"X-API-Key-ID": self.api_key},
             json=body,
