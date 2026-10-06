@@ -58,7 +58,7 @@ def test_flagged_amount_is_asked_on_its_row_and_fixed_by_voice(page, world):
     expect(row).to_contain_text("front brake pad का दाम?")
     expect(row).to_contain_text("अधूरी रकम — फिर से पूछेंगे")          # money-path abstain label
     expect(page.locator("#review-count")).to_contain_text("1 चीज़ जाँचनी है")
-    expect(page.locator("#total-cell")).to_have_text("अधूरा")
+    expect(page.locator("#total-cell")).to_have_text("Incomplete", use_inner_text=True)
     expect(page.locator("#start-readback")).to_be_hidden()
     page.screenshot(path=str(SCREENS / "workshop-flagged-360.png"), full_page=True)
     world.prisma.say("paanch sau")

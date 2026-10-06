@@ -3,32 +3,33 @@
 {% block title %}Kaam ka Parcha — Customer Estimate Review{% endblock %}
 {% block body_class %}page--customer{% endblock %}
 {% block body %}
+<header class="topbar"><div class="brand"><span class="hi">काम का पर्चा</span><span class="en">Kaam ka Parcha</span></div><button id="lang-toggle" class="langtoggle" type="button" aria-label="Language / भाषा"><span>EN</span><span>हिं</span></button></header>
 <div class="disclosure" id="disclosure" role="note">
-  <span>यह नकली फ़ोन लाइन है — कोई कॉल नहीं हुई। सभी नाम और रकम डेमो के हैं।</span>
+  <span class="hi">यह नकली फ़ोन लाइन है — कोई कॉल नहीं हुई। सभी नाम और रकम डेमो के हैं।</span>
   <span class="en" lang="en">Simulated phone line: audio passed through G.711 + recorded engine ambience at 5 dB. No call was placed. All names and amounts are synthetic.</span>
 </div>
 <main class="sheet" id="customer-container" data-session-id="{{ session.id }}" data-revision="{{ revision }}" data-readback-revision="{{ readback_revision if readback_revision is not none else '' }}" data-status="{{ status }}">
   <section class="receipt" id="confirmed-banner" role="status"{% if status != "confirmed" %} hidden{% endif %}>
     <div class="receipt__tick" aria-hidden="true"><svg focusable="false"><use href="/static/icons.svg#check"/></svg></div>
-    <h1 class="receipt__title">पर्चा मंज़ूर हुआ<span class="en">Estimate Confirmed</span></h1>
+    <h1 class="receipt__title"><span class="hi">पर्चा मंज़ूर हुआ</span><span class="en">Estimate Confirmed</span></h1>
     <p class="receipt__total" id="receipt-total">{{ card.maybe_total_paise | inr if card else "₹ —" }}</p>
-    <p class="receipt__said" id="receipt-said" hidden>आपने कहा: “<span id="receipt-words"></span>”</p>
-    <p class="receipt__meta"><span id="receipt-how">फ़ोन पर आवाज़ से मंज़ूर</span> · № {{ parcha_no }} <span id="receipt-time"></span></p>
+    <p class="receipt__said" id="receipt-said" hidden><span class="lang-hi">आपने कहा:</span><span class="lang-en">You said:</span> “<span id="receipt-words"></span>”</p>
+    <p class="receipt__meta"><span id="receipt-how"><span class="lang-hi">फ़ोन पर आवाज़ से मंज़ूर</span><span class="lang-en">Approved by voice</span></span> · № {{ parcha_no }} <span id="receipt-time"></span></p>
     <div class="receipt__actions">
-      <a id="download-pdf-link" class="btn btn--primary" href="/sessions/{{ session.id }}/pdf" download>PDF डाउनलोड करें<span class="en">Download sealed PDF</span></a>
-      <button id="whatsapp-copy" class="btn btn--wa" type="button">WhatsApp टेक्स्ट कॉपी करें<span class="en">Copy WhatsApp text</span></button>
-      <a id="verify-link" class="btn btn--ghost" href="/verify/{{ session.id }}">असली है? जाँचें<span class="en">Verify</span></a>
-      <a id="whatsapp-link" class="btn btn--ghost" href="/sessions/{{ session.id }}/whatsapp" target="_blank" rel="noopener">टेक्स्ट फ़ाइल<span class="en">Text file</span></a>
+      <a id="download-pdf-link" class="btn btn--primary" href="/sessions/{{ session.id }}/pdf" download><span class="hi">PDF डाउनलोड करें</span><span class="en">Download sealed PDF</span></a>
+      <button id="whatsapp-copy" class="btn btn--wa" type="button"><span class="hi">WhatsApp टेक्स्ट कॉपी करें</span><span class="en">Copy WhatsApp text</span></button>
+      <a id="verify-link" class="btn btn--ghost" href="/verify/{{ session.id }}"><span class="hi">असली है? जाँचें</span><span class="en">Verify</span></a>
+      <a id="whatsapp-link" class="btn btn--ghost" href="/sessions/{{ session.id }}/whatsapp" target="_blank" rel="noopener"><span class="hi">टेक्स्ट फ़ाइल</span><span class="en">Text file</span></a>
     </div>
-    <p class="fineprint">कॉपी करने से कुछ अपने आप नहीं भेजा जाता।<span class="en">Copying sends nothing by itself.</span></p>
+    <p class="fineprint"><span class="hi">कॉपी करने से कुछ अपने आप नहीं भेजा जाता।</span><span class="en">Copying sends nothing by itself.</span></p>
   </section>
 
   <section class="call" id="audio-panel" data-call="idle" aria-label="गैराज से कॉल"{% if status == "confirmed" %} hidden{% endif %}>
     <div class="call__who">
       <div class="call__avatar" aria-hidden="true">गै</div>
       <div>
-        <div class="call__title">गैराज से कॉल<span class="en">Call from workshop</span></div>
-        <div class="call__status" id="call-status">{% if readback_revision is not none %}पर्चा सुनने के लिए ▶ दबाइए{% else %}गैराज पर्चा तैयार कर रहा है…{% endif %}</div>
+        <div class="call__title"><span class="hi">गैराज से कॉल</span><span class="en">Call from workshop</span></div>
+        <div class="call__status" id="call-status">{% if readback_revision is not none %}<span class="lang-hi">पर्चा सुनने के लिए ▶ दबाइए</span><span class="lang-en">Press ▶ to hear the estimate</span>{% else %}<span class="lang-hi">गैराज पर्चा तैयार कर रहा है…</span><span class="lang-en">The workshop is preparing the estimate…</span>{% endif %}</div>
       </div>
     </div>
     <div class="call__controls">
@@ -41,7 +42,7 @@
 
   <section id="estimate-card" aria-label="आपका पर्चा">
     <div class="card-head">
-      <span id="card-status-badge" class="pill {{ 'pill--ok' if status == 'confirmed' else ('pill--wait' if status == 'awaiting_reply' else 'pill--warn') }}">{{ status | status_hi }}</span>
+      <span id="card-status-badge" class="pill {{ 'pill--ok' if status == 'confirmed' else ('pill--wait' if status == 'awaiting_reply' else 'pill--warn') }}"><span class="lang-hi">{{ status | status_hi }}</span><span class="lang-en">{{ status | status_en }}</span></span>
       <span id="card-revision-badge" class="pill">Rev {{ revision }}</span>
     </div>
     <div id="slip-slot">{{ slip(card, card.maybe_total_paise if card else none, parcha_no, copy="original", stamp=(status == "confirmed")) }}</div>
@@ -49,34 +50,34 @@
 
   <section class="consent" id="dpdp-consent-box"{% if status == "confirmed" %} hidden{% endif %}>
     <label class="consent__row"><input type="checkbox" id="dpdp-consent-checkbox"{% if dpdp_consent_granted %} checked{% endif %}>
-      <span>मेरी आवाज़ रिकॉर्ड होकर इस पर्चे के सबूत के तौर पर रखी जाए — मैं सहमत हूँ।<span class="en">I agree my voice is recorded as proof for this parcha.</span></span></label>
+      <span><span class="hi">मेरी आवाज़ रिकॉर्ड होकर इस पर्चे के सबूत के तौर पर रखी जाए — मैं सहमत हूँ।</span><span class="en">I agree my voice is recorded as proof for this parcha.</span></span></label>
     <details class="consent__full">
-      <summary>पूरा नोटिस<span class="en">Full notice (DPDP Act 2023)</span></summary>
+      <summary><span class="hi">पूरा नोटिस</span><span class="en">Full notice (DPDP Act 2023)</span></summary>
       <p><strong>DPDP Act 2023 Statutory Privacy Notice:</strong> I understand and give consent that my spoken voice reply will be recorded, processed, and cryptographically hashed as an electronic biometric confirmation record under the <em>Digital Personal Data Protection Act, 2023</em> and <em>Bharatiya Sakshya Adhiniyam, 2023</em>.</p>
     </details>
   </section>
 
   <section class="fallback" id="fallback-banner"{% if status != "fallback_ready" %} hidden{% endif %}>
-    <h2>लाइन साफ़ नहीं है<span class="en">Voice line unclear</span></h2>
-    <p>बटन से जवाब दीजिए।<span class="en">Answer with a button instead.</span></p>
+    <h2><span class="hi">लाइन साफ़ नहीं है</span><span class="en">Voice line unclear</span></h2>
+    <p><span class="hi">बटन से जवाब दीजिए।</span><span class="en">Answer with a button instead.</span></p>
     <div class="fallback__actions">
-      <button id="fallback-approve" class="btn btn--haan" type="button">मंज़ूर करें<span class="en">Approve</span></button>
-      <button id="fallback-reject" class="btn btn--change" type="button">बदलाव चाहिए<span class="en">Request changes</span></button>
+      <button id="fallback-approve" class="btn btn--haan" type="button"><span class="hi">मंज़ूर करें</span><span class="en">Approve</span></button>
+      <button id="fallback-reject" class="btn btn--change" type="button"><span class="hi">बदलाव चाहिए</span><span class="en">Request changes</span></button>
     </div>
   </section>
 
   <div id="customer-status" class="status-line" role="status" aria-live="polite"></div>
-  <output id="customer-message" class="notice">पहले ऊपर पर्चा सुनिए, फिर नीचे माइक दबाकर जवाब दीजिए।<span class="en">Listen first, then tap the mic to answer.</span></output>
+  <output id="customer-message" class="notice"><span class="hi">पहले ऊपर पर्चा सुनिए, फिर नीचे माइक दबाकर जवाब दीजिए।</span><span class="en">Listen first, then tap the mic to answer.</span></output>
 </main>
 
 <nav class="dock" id="dock" data-mic="idle" data-idle-hi="बोलकर जवाब दें" data-idle-en="Speak your answer" aria-label="जवाब"{% if status in ("confirmed", "fallback_ready") %} hidden{% endif %}>
   <div class="dock__inner">
-    <div class="hints"><span class="hint hint--haan">“हाँ, ठीक है”</span><span class="hint hint--change">“नहीं, ब्रेक पैड 500 था”</span></div>
+    <div class="hints"><span class="hint hint--haan"><span class="lang-hi">“हाँ, ठीक है”</span><span class="lang-en">“Haan, theek hai”</span></span><span class="hint hint--change"><span class="lang-hi">“नहीं, ब्रेक पैड 500 था”</span><span class="lang-en">“Nahi, brake pad 500 tha”</span></span></div>
     <div class="dock__row">
       <button id="customer-record" class="mic" type="button" disabled aria-label="बोलकर जवाब दें — Speak your answer"><svg aria-hidden="true" focusable="false"><use href="/static/icons.svg#mic"/></svg></button>
       <button id="customer-stop" class="mic mic--stop" type="button" disabled hidden aria-label="रोकें — Stop"><svg aria-hidden="true" focusable="false"><use href="/static/icons.svg#stop"/></svg></button>
       <div class="dock__status">
-        <span class="dock__title" data-mic-title>बोलकर जवाब दें</span>
+        <span class="dock__title hi" data-mic-title>बोलकर जवाब दें</span>
         <span class="en" data-mic-sub>Speak your answer</span>
         <span class="timer" data-mic-timer></span>
         <div class="meter" aria-hidden="true"><span></span></div>

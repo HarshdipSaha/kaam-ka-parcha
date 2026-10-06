@@ -11,6 +11,17 @@ HINDI_MONTHS = ("जनवरी", "फ़रवरी", "मार्च", "अ
                 "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर")
 WINDOW_HI = {"morning": "सुबह", "afternoon": "दोपहर", "evening": "शाम"}
 KIND_HI = {"part": "पार्ट", "labour": "लेबर"}
+WEEKDAYS_EN = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+MONTHS_EN = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+WINDOW_EN = {"morning": "morning", "afternoon": "afternoon", "evening": "evening"}
+KIND_EN = {"part": "Part", "labour": "Labour"}
+STATUS_EN = {
+    "draft": "Draft",
+    "review": "Needs checking",
+    "awaiting_reply": "Waiting for customer",
+    "fallback_ready": "Confirm with buttons",
+    "confirmed": "Approved",
+}
 STATUS_HI = {
     "draft": "कच्चा पर्चा",
     "review": "जाँच बाकी",
@@ -52,6 +63,21 @@ def hindi_delivery(delivery: Delivery | None) -> str:
     return f"{HINDI_WEEKDAYS[d.weekday()]}, {d.day} {HINDI_MONTHS[d.month - 1]} · {WINDOW_HI[delivery.window]}"
 
 
+def delivery_en(delivery: Delivery | None) -> str:
+    if delivery is None:
+        return "Not decided yet"
+    d = delivery.date
+    return f"{WEEKDAYS_EN[d.weekday()]}, {d.day} {MONTHS_EN[d.month - 1]} · {WINDOW_EN[delivery.window]}"
+
+
+def kind_en(kind: str) -> str:
+    return KIND_EN.get(kind, kind)
+
+
+def status_en(status: str) -> str:
+    return STATUS_EN.get(status, status)
+
+
 def kind_label(kind: str) -> str:
     return KIND_HI.get(kind, kind)
 
@@ -73,4 +99,5 @@ def latest_log_text(logs: Sequence[TranscriptLog], *, role: str, mode: str | Non
 
 
 def register_filters(env) -> None:
-    env.filters.update(inr=format_inr, hindi_delivery=hindi_delivery, kind_hi=kind_label, status_hi=status_label)
+    env.filters.update(inr=format_inr, hindi_delivery=hindi_delivery, kind_hi=kind_label, status_hi=status_label,
+                       delivery_en=delivery_en, kind_en=kind_en, status_en=status_en)

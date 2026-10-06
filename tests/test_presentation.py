@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 import pytest
 
 from parcha.presentation import (
-    format_inr, hindi_delivery, kind_label, latest_log_text, parcha_no, status_label,
+    delivery_en, kind_en, status_en, format_inr, hindi_delivery, kind_label, latest_log_text, parcha_no, status_label,
 )
 from parcha.schema import Delivery, TranscriptLog
 
@@ -58,3 +58,11 @@ def test_latest_log_text_picks_the_newest_matching_log():
     assert latest_log_text(logs, role="mechanic") == "paanch sau"
     assert latest_log_text(logs, role="system", mode="timbre_readback") == "aapki gaadi"
     assert latest_log_text(logs, role="customer") is None
+
+
+def test_english_labels_mirror_the_hindi_ones():
+    d = Delivery(date=date(2026, 10, 6), window="evening", spoken="x")
+    assert delivery_en(d) == "Tuesday, 6 Oct · evening"
+    assert delivery_en(None) == "Not decided yet"
+    assert kind_en("part") == "Part" and kind_en("labour") == "Labour"
+    assert status_en("confirmed") == "Approved" and status_en("awaiting_reply") == "Waiting for customer"

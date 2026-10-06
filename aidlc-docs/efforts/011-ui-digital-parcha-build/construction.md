@@ -33,3 +33,9 @@ Walked the full mechanic-to-owner flow in Chromium with a fake mic (390x844, tou
 - Stage iframes sized so the mic dock fits at 1440x900; pointer cursor and hover states on desktop; 10 ms haptic on record start; sub-line floor 14px.
 - ui-ux-pro-max's generated design system (navy SaaS, Lexend) was not adopted; it does not fit the bill-book world. Its checklist (focus, reduced motion, tap targets, haptics) was applied.
 - Size: 64.6 KB of 64 KiB cap.
+
+## English / Hindi toggle
+- English leads by default; EN | हिं toggle on every page, saved in localStorage (`parcha-lang`), `?lang=` overrides, stage iframes follow via the `storage` event.
+- Markup: bilingual pairs are `.hi` + `.en`; single-language values (chips, dates, status, totals) use `.lang-hi` / `.lang-en`. One `data-lang` on `<html>` swaps which language is the headline (CSS `order`, needs `:has`).
+- Server adds `delivery_en`, `kind_en`, `status_en`; `ui.js` adds `both`, `setBoth`, `setLang`.
+- Size now 69.7 KB (cap raised to 72 KB for this feature).

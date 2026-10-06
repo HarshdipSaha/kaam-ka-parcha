@@ -4,33 +4,32 @@
 {% block body_class %}page--verify{% endblock %}
 {% block body %}
 {% set sealed = session.status == "confirmed" %}
-<header class="topbar"><div class="brand">काम का पर्चा<span class="en">Kaam ka Parcha — Audit Verification &amp; Audio Replay</span></div></header>
+<header class="topbar"><div class="brand"><span class="hi">काम का पर्चा</span><span class="en">Kaam ka Parcha</span></div><span class="pill">Audit Verification &amp; Audio Replay</span><button id="lang-toggle" class="langtoggle" type="button" aria-label="Language / भाषा"><span>EN</span><span>हिं</span></button></header>
 <main class="sheet">
   <section class="verdict {{ 'verdict--ok' if sealed else 'verdict--pending' }}" id="verify-verdict" role="status">
     <div class="verdict__icon" aria-hidden="true">{{ "✓" if sealed else "!" }}</div>
-    <h1 class="verdict__title">{{ "असली पर्चा" if sealed else "अभी मंज़ूर नहीं" }}</h1>
-    <p class="en">{{ "Verified electronic record" if sealed else "Not yet confirmed by the customer" }}</p>
+    <h1 class="verdict__title"><span class="hi">{{ "असली पर्चा" if sealed else "अभी मंज़ूर नहीं" }}</span><span class="en">{{ "Verified electronic record" if sealed else "Not yet confirmed by the customer" }}</span></h1>
     <p class="verdict__meta">№ {{ parcha_no }} · {{ vehicle }}</p>
   </section>
 
   {{ slip(session.card, total_paise, parcha_no, copy="original", stamp=sealed) }}
 
   <section class="voices" aria-label="रिकॉर्डिंग">
-    <h2 class="section-title">किसने क्या कहा<span class="en">Who said what</span></h2>
+    <h2 class="section-title"><span class="hi">किसने क्या कहा</span><span class="en">Who said what</span></h2>
     <div class="voice">
-      <div class="voice__who">मिस्त्री<span class="en">Mechanic intake — Gnani Prisma heard</span></div>
+      <div class="voice__who"><span class="hi">मिस्त्री</span><span class="en">Mechanic intake — Gnani Prisma heard</span></div>
       <p class="voice__text">“{{ intake.transcript }}”</p>
       <audio controls preload="metadata" src="{{ intake.audio_url }}"></audio>
     </div>
     <div class="voice voice--customer">
-      <div class="voice__who">ग्राहक<span class="en">Customer confirmation</span></div>
+      <div class="voice__who"><span class="hi">ग्राहक</span><span class="en">Customer confirmation</span></div>
       <p class="voice__text">“{{ confirmation.transcript }}”</p>
       <audio controls preload="metadata" src="{{ confirmation.audio_url }}"></audio>
     </div>
   </section>
 
   <details class="tech" id="dpdp-compliance-panel">
-    <summary>तकनीकी सबूत<span class="en">Technical evidence</span></summary>
+    <summary><span class="hi">तकनीकी सबूत</span><span class="en">Technical evidence</span></summary>
     <dl class="kv">
       <dt>Legal basis</dt><dd>{{ legal_compliance }} — <strong>BSA 2023 §§ 61–63 Compliant</strong></dd>
       <dt>Session ID</dt><dd>{{ session.id }}</dd>
@@ -48,9 +47,10 @@
 
   {% if sealed %}
   <div class="actions">
-    <a class="btn btn--primary" href="/sessions/{{ session.id }}/pdf" download>PDF डाउनलोड करें<span class="en">Download certified PDF</span></a>
-    <a class="btn btn--ghost" href="/sessions/{{ session.id }}/whatsapp" target="_blank" rel="noopener">WhatsApp टेक्स्ट<span class="en">View WhatsApp text</span></a>
+    <a class="btn btn--primary" href="/sessions/{{ session.id }}/pdf" download><span class="hi">PDF डाउनलोड करें</span><span class="en">Download certified PDF</span></a>
+    <a class="btn btn--ghost" href="/sessions/{{ session.id }}/whatsapp" target="_blank" rel="noopener"><span class="hi">WhatsApp टेक्स्ट</span><span class="en">View WhatsApp text</span></a>
   </div>
   {% endif %}
 </main>
 {% endblock %}
+{% block scripts %}<script src="/static/ui.js"></script>{% endblock %}

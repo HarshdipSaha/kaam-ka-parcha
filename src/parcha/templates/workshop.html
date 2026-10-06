@@ -3,40 +3,41 @@
 {% block body_class %}page--workshop{% endblock %}
 {% block body %}
 <header class="topbar">
-  <div class="brand">काम का पर्चा<span class="en">Kaam ka Parcha</span></div>
+  <div class="brand"><span class="hi">काम का पर्चा</span><span class="en">Kaam ka Parcha</span></div>
   <span class="pill pill--demo">Synthetic demo data</span>
+  <button id="lang-toggle" class="langtoggle" type="button" aria-label="Language / भाषा"><span>EN</span><span>हिं</span></button>
 </header>
 <main class="sheet" id="workshop" data-stage="bolo">
   <ol class="stepper" id="stepper" aria-label="काम कहाँ तक पहुँचा">
-    <li data-step="bolo" data-state="current" aria-current="step">बोलो<span class="en">Speak</span></li>
-    <li data-step="parcha">पर्चा<span class="en">Check</span></li>
-    <li data-step="sunao">सुनाओ<span class="en">Read</span></li>
-    <li data-step="haan">हाँ<span class="en">Customer</span></li>
-    <li data-step="manzoor">मंज़ूर<span class="en">Approved</span></li>
+    <li data-step="bolo" data-state="current" aria-current="step"><span class="hi">बोलो</span><span class="en">Speak</span></li>
+    <li data-step="parcha"><span class="hi">पर्चा</span><span class="en">Check</span></li>
+    <li data-step="sunao"><span class="hi">सुनाओ</span><span class="en">Read</span></li>
+    <li data-step="haan"><span class="hi">हाँ</span><span class="en">Customer</span></li>
+    <li data-step="manzoor"><span class="hi">मंज़ूर</span><span class="en">Approved</span></li>
   </ol>
-  <output id="message" class="notice" role="status" aria-live="polite">पीला माइक दबाइए और पर्चा बोलिए।<span class="en">Tap the yellow mic and speak the estimate.</span></output>
+  <output id="message" class="notice" role="status" aria-live="polite"><span class="hi">पीला माइक दबाइए और पर्चा बोलिए।</span><span class="en">Tap the yellow mic and speak the estimate.</span></output>
   <section id="transcript" class="heard" hidden>
-    <div class="heard__k">आपने कहा<span class="en">You said — Gnani Prisma heard</span></div>
+    <div class="heard__k"><span class="hi">आपने कहा</span><span class="en">You said — Gnani Prisma heard</span></div>
     <p class="heard__text" id="transcript-content"></p>
   </section>
   <section id="review-section" class="flagbar" hidden aria-live="polite"><span id="review-count"></span></section>
   <section id="card">
     <div class="empty">
-      <p class="empty__title">अभी कोई पर्चा नहीं<span class="en">No estimate yet</span></p>
-      <p>नीचे पीला माइक दबाइए और काम, पार्ट, दाम और गाड़ी कब मिलेगी — बोलिए।<span class="en">Tap the yellow mic and say the work, parts, prices and the ready day.</span></p>
+      <p class="empty__title"><span class="hi">अभी कोई पर्चा नहीं</span><span class="en">No estimate yet</span></p>
+      <p><span class="hi">नीचे पीला माइक दबाइए और काम, पार्ट, दाम और गाड़ी कब मिलेगी — बोलिए।</span><span class="en">Tap the yellow mic and say the work, parts, prices and the ready day.</span></p>
       <p class="empty__example">“फ्रंट ब्रेक पैड बदला, पार्ट साढ़े चार सौ, लेबर दो सौ, सोमवार शाम तक”</p>
     </div>
   </section>
   <section id="share" class="share" hidden>
-    <h2 class="share__title" id="share-title">ग्राहक को भेजिए<span class="en">Send to the customer</span></h2>
-    <button id="copy-link" class="btn btn--primary" type="button">लिंक कॉपी करें<span class="en">Copy link</span></button>
-    <a id="whatsapp-open" class="btn btn--wa" href="#" target="_blank" rel="noopener">WhatsApp खोलें<span class="en">Open WhatsApp</span></a>
-    <a id="customer-link" class="btn btn--ghost" href="#" target="_blank" rel="noopener" hidden>ग्राहक वाला पेज खोलें<span class="en">Open customer page</span></a>
+    <h2 class="share__title" id="share-title"><span class="hi">ग्राहक को भेजिए</span><span class="en">Send to the customer</span></h2>
+    <button id="copy-link" class="btn btn--primary" type="button"><span class="hi">लिंक कॉपी करें</span><span class="en">Copy link</span></button>
+    <a id="whatsapp-open" class="btn btn--wa" href="#" target="_blank" rel="noopener"><span class="hi">WhatsApp खोलें</span><span class="en">Open WhatsApp</span></a>
+    <a id="customer-link" class="btn btn--ghost" href="#" target="_blank" rel="noopener" hidden><span class="hi">ग्राहक वाला पेज खोलें</span><span class="en">Open customer page</span></a>
     <div class="actions" id="sealed-links" hidden>
-      <a id="sealed-verify" class="btn btn--primary" href="#">असली पर्चा खोलें<span class="en">Open the verified record</span></a>
-      <a id="sealed-pdf" class="btn btn--ghost" href="#" download>PDF डाउनलोड करें<span class="en">Download sealed PDF</span></a>
+      <a id="sealed-verify" class="btn btn--primary" href="#"><span class="hi">असली पर्चा खोलें</span><span class="en">Open the verified record</span></a>
+      <a id="sealed-pdf" class="btn btn--ghost" href="#" download><span class="hi">PDF डाउनलोड करें</span><span class="en">Download sealed PDF</span></a>
     </div>
-    <p class="fineprint" id="share-note">अपने आप कुछ नहीं भेजा जाता — भेजना आपके हाथ में है।<span class="en">Nothing is sent automatically.</span></p>
+    <p class="fineprint" id="share-note"><span class="hi">अपने आप कुछ नहीं भेजा जाता — भेजना आपके हाथ में है।</span><span class="en">Nothing is sent automatically.</span></p>
   </section>
 </main>
 <nav class="dock" id="dock" data-mic="idle" data-idle-hi="बोलिए" data-idle-en="Tap to speak" aria-label="माइक">
@@ -45,13 +46,13 @@
       <button id="record" class="mic" type="button" aria-label="बोलिए — Tap to speak"><svg aria-hidden="true" focusable="false"><use href="/static/icons.svg#mic"/></svg></button>
       <button id="stop" class="mic mic--stop" type="button" disabled hidden aria-label="रोकें — Stop"><svg aria-hidden="true" focusable="false"><use href="/static/icons.svg#stop"/></svg></button>
       <div class="dock__status">
-        <span class="dock__title" data-mic-title>बोलिए</span>
+        <span class="dock__title hi" data-mic-title>बोलिए</span>
         <span class="en" data-mic-sub>Tap to speak</span>
         <span class="timer" data-mic-timer></span>
         <div class="meter" aria-hidden="true"><span></span></div>
       </div>
     </div>
-    <button id="start-readback" class="btn btn--primary" type="button" disabled hidden>ग्राहक को सुनाएँ<span class="en">Read to customer</span></button>
+    <button id="start-readback" class="btn btn--primary" type="button" disabled hidden><span class="hi">ग्राहक को सुनाएँ</span><span class="en">Read to customer</span></button>
   </div>
 </nav>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>

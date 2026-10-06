@@ -107,7 +107,7 @@ function renderSession(data) {
   const flags = data.review_fields || [];
   const count = UI.flagCount(flags.length);
   $("review-section").hidden = flags.length === 0;
-  $("review-count").replaceChildren(count.hi, UI.el("span", { class: "en" }, count.en));
+  $("review-count").replaceChildren(UI.el("span", { class: "hi" }, count.hi), UI.el("span", { class: "en" }, count.en));
   if (data.card) {
     UI.renderSlip($("card"), data, { copy: "duplicate", flags: true, onReask: handleReask, stamp: stage === "manzoor" });
   } else {
@@ -125,7 +125,7 @@ function renderSession(data) {
   $("copy-link").dataset.url = customerUrl;
   const sealed = stage === "manzoor";
   const title = sealed ? ["ग्राहक ने मंज़ूर किया", "Customer approved — the record is sealed"] : ["ग्राहक को भेजिए", "Send to the customer"];
-  $("share-title").replaceChildren(title[0], UI.el("span", { class: "en" }, title[1]));
+  $("share-title").replaceChildren(UI.el("span", { class: "hi" }, title[0]), UI.el("span", { class: "en" }, title[1]));
   ["copy-link", "whatsapp-open", "customer-link", "share-note"].forEach((id) => { $(id).hidden = sealed; });
   $("sealed-links").hidden = !sealed;
   $("sealed-verify").href = `/verify/${data.id}`;
@@ -221,7 +221,7 @@ function renderCustomerCard(data, opts = {}) {
   const sealed = data.status === "confirmed";
   UI.renderSlip($("slip-slot"), data, { copy: "original", previous: opts.previous, stamp: sealed });
   const badge = $("card-status-badge");
-  badge.textContent = data.status_label || data.status;
+  UI.setBoth(badge, ...UI.statusBoth(data.status));
   badge.className = `pill ${sealed ? "pill--ok" : data.status === "awaiting_reply" ? "pill--wait" : "pill--warn"}`;
   $("card-revision-badge").textContent = `Rev ${data.revision}`;
   $("confirmed-banner").hidden = !sealed;
@@ -239,16 +239,16 @@ function describeCustomerState() {
   const message = $("customer-message");
   if (!s) return;
   if (s.status === "confirmed") {
-    status.textContent = "पर्चा मंज़ूर हो चुका है";
+    UI.setBoth(status, "पर्चा मंज़ूर हो चुका है", "The estimate is approved");
     UI.say(message, "PDF और WhatsApp टेक्स्ट ऊपर हैं।", "The PDF and WhatsApp text are above.", "ok");
   } else if (s.status === "fallback_ready") {
-    status.textContent = "लाइन साफ़ नहीं है";
+    UI.setBoth(status, "लाइन साफ़ नहीं है", "The line is unclear");
     UI.say(message, "नीचे बटन से जवाब दीजिए।", "Answer with the buttons.", "warn");
   } else if (s.readback_revision === null || s.readback_revision === undefined) {
-    status.textContent = "गैराज पर्चा तैयार कर रहा है…";
+    UI.setBoth(status, "गैराज पर्चा तैयार कर रहा है…", "The workshop is preparing the estimate…");
     UI.say(message, "तैयार होते ही यहाँ अपने आप दिखेगा।", "It will appear here by itself.");
   } else {
-    status.textContent = "पर्चा सुनिए, फिर जवाब दीजिए";
+    UI.setBoth(status, "पर्चा सुनिए, फिर जवाब दीजिए", "Listen to the estimate, then answer");
     UI.say(message, "सुनने के बाद ✓ सहमति दीजिए और माइक दबाकर बोलिए।", "Listen, tick consent, then tap the mic and answer.");
   }
 }
@@ -279,7 +279,7 @@ function loadReadback(url) {
 function audioFailed() {
   if (!$("readback-player").getAttribute("src")) return;
   $("play-readback").disabled = true;
-  $("call-status").textContent = "आवाज़ नहीं चली — नीचे लिखा पर्चा पढ़कर जवाब दीजिए।";
+  UI.setBoth($("call-status"), "आवाज़ नहीं चली — नीचे लिखा पर्चा पढ़कर जवाब दीजिए।", "Audio didn't play — read the estimate below and answer.");
   enableRecordIfReady();
 }
 function wireCall() {
@@ -289,7 +289,7 @@ function wireCall() {
   const caption = () => (currentCustomerSession && currentCustomerSession.readback_text) || "";
   player.addEventListener("canplay", () => { play.disabled = false; });
   play.addEventListener("click", () => { if (player.paused) player.play().catch(audioFailed); else player.pause(); });
-  player.addEventListener("play", () => { call.dataset.call = "talking"; UI.setIcon(play, "pause"); $("call-status").textContent = "बात चल रही है…"; });
+  player.addEventListener("play", () => { call.dataset.call = "talking"; UI.setIcon(play, "pause"); UI.setBoth($("call-status"), "बात चल रही है…", "On the call…"); });
   player.addEventListener("pause", () => { if (!player.ended) call.dataset.call = "idle"; UI.setIcon(play, "play"); });
   player.addEventListener("timeupdate", () => {
     const progress = player.duration ? player.currentTime / player.duration : 0;
@@ -299,7 +299,7 @@ function wireCall() {
   player.addEventListener("ended", () => {
     call.dataset.call = "ended";
     UI.setCaption($("readback-caption"), caption(), 1);
-    $("call-status").textContent = "अब नीचे माइक दबाकर जवाब दीजिए";
+    UI.setBoth($("call-status"), "अब नीचे माइक दबाकर जवाब दीजिए", "Now tap the mic below to answer");
     const consent = $("dpdp-consent-checkbox");
     if (!consent.checked) $("dpdp-consent-box").scrollIntoView({ behavior: "smooth", block: "center" });
   });
@@ -325,10 +325,10 @@ function wireConsent(sessionId) {
     enableRecordIfReady();
   });
 }
-function showReceipt({ words = "", how = "फ़ोन पर आवाज़ से मंज़ूर" } = {}) {
+function showReceipt({ words = "", how = ["फ़ोन पर आवाज़ से मंज़ूर", "Approved by voice"] } = {}) {
   $("receipt-said").hidden = !words;
   $("receipt-words").textContent = words;
-  $("receipt-how").textContent = how;
+  UI.setBoth($("receipt-how"), how[0], how[1]);
   $("receipt-time").textContent = `· ${UI.timeNow()}`;
   $("confirmed-banner").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -378,7 +378,7 @@ async function handleReplyOutcome(sessionId, reply, previousCard) {
   if (reply.outcome === "confirmed") {
     renderCustomerCard(await fresh());
     showReceipt({ words: reply.transcript || "" });
-    status.textContent = "पर्चा मंज़ूर हुआ";
+    UI.setBoth(status, "पर्चा मंज़ूर हुआ", "Estimate approved");
     UI.say(message, "धन्यवाद! गैराज को पता चल गया है।", "Thank you — the workshop has been told.", "ok");
   } else if (reply.outcome === "needs_readback") {
     UI.say(message, "बदलाव दर्ज हुआ — नया पर्चा बन रहा है…", "Change noted — preparing the new estimate…");
@@ -387,18 +387,18 @@ async function handleReplyOutcome(sessionId, reply, previousCard) {
     const readback = await UI.api.post(`/sessions/${sessionId}/readback`, form);
     renderCustomerCard(await fresh(), { previous: previousCard });
     loadReadback(readback.audio_url);
-    status.textContent = "नया पर्चा तैयार — फिर से सुनिए";
+    UI.setBoth(status, "नया पर्चा तैयार — फिर से सुनिए", "New estimate ready — listen again");
     UI.say(message, "ऊपर नया पर्चा सुनिए, फिर जवाब दीजिए।", "Listen to the updated estimate, then answer.");
   } else if (reply.outcome === "ask_field") {
     renderCustomerCard(await fresh());
-    status.textContent = "किस चीज़ को बदलना है?";
+    UI.setBoth(status, "किस चीज़ को बदलना है?", "Which item should change?");
     UI.say(message, "चीज़ का नाम लेकर बोलिए, जैसे “ब्रेक पैड 500”।", reply.message || "Name the item you want to change.", "warn");
   } else if (reply.outcome === "fallback") {
     renderCustomerCard(await fresh());
-    status.textContent = "लाइन साफ़ नहीं है";
+    UI.setBoth(status, "लाइन साफ़ नहीं है", "The line is unclear");
     UI.say(message, "नीचे बटन से जवाब दीजिए।", reply.message || "Answer with the buttons.", "warn");
   } else {
-    status.textContent = "समझ नहीं आया";
+    UI.setBoth(status, "समझ नहीं आया", "Couldn't understand");
     UI.say(message, "साफ़ बोलिए: “हाँ, ठीक है” — या क्या बदलना है।", reply.message || "Say yes, or say what to change.", "warn");
   }
 }
@@ -411,10 +411,10 @@ function wireFallback(sessionId) {
       await UI.api.post(`/sessions/${sessionId}/fallback`, form);
       renderCustomerCard(await UI.api.get(`/sessions/${sessionId}`));
       if (action === "approve") {
-        showReceipt({ how: "बटन से मंज़ूर" });
-        $("customer-status").textContent = "पर्चा मंज़ूर हुआ";
+        showReceipt({ how: ["बटन से मंज़ूर", "Approved by button"] });
+        UI.setBoth($("customer-status"), "पर्चा मंज़ूर हुआ", "Estimate approved");
       } else {
-        $("customer-status").textContent = "गैराज को बता दिया गया है";
+        UI.setBoth($("customer-status"), "गैराज को बता दिया गया है", "The workshop has been told");
         UI.say($("customer-message"), "गैराज आपका बदलाव देखकर नया पर्चा भेजेगा।", "The workshop will send an updated estimate.");
       }
     } catch (err) {
@@ -441,7 +441,7 @@ function waitForReadback(sessionId) {
       renderCustomerCard(s);
       if (s.readback_revision !== null && s.readback_revision !== undefined) {
         loadReadback(`/sessions/${sessionId}/readback.wav?revision=${s.readback_revision}`);
-        $("call-status").textContent = "पर्चा सुनने के लिए ▶ दबाइए";
+        UI.setBoth($("call-status"), "पर्चा सुनने के लिए ▶ दबाइए", "Press ▶ to hear the estimate");
       }
       describeCustomerState();
     },

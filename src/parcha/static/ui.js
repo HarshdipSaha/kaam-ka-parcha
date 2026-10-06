@@ -35,6 +35,23 @@
   const MONTHS = ["जनवरी", "फ़रवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"];
   const WINDOW_HI = { morning: "सुबह", afternoon: "दोपहर", evening: "शाम" };
   const KIND_HI = { part: "पार्ट", labour: "लेबर" };
+  const KIND_EN = { part: "Part", labour: "Labour" };
+  const WEEKDAYS_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const ABSTAIN_EN = {
+    incomplete_number: "Incomplete amount — we'll ask again",
+    crosscheck_disagreement: "Amount not certain — we'll ask again",
+    ambiguous_attachment: "Unclear which amount belongs to which item",
+    empty_transcript: "No voice heard",
+    provider_504: "Network stalled — say it again",
+    provider_429: "Too fast — pause a moment, then speak",
+    out_of_range: "Amount out of range",
+  };
+  const STATUS = {
+    draft: ["कच्चा पर्चा", "Draft"], review: ["जाँच बाकी", "Needs checking"],
+    awaiting_reply: ["ग्राहक का जवाब बाकी", "Waiting for customer"],
+    fallback_ready: ["बटन से पुष्टि", "Confirm with buttons"], confirmed: ["मंज़ूर", "Approved"],
+  };
   const STAGES = ["bolo", "parcha", "sunao", "haan", "manzoor"];
   const SVG_NS = "http://www.w3.org/2000/svg";
   const INR = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
@@ -78,6 +95,11 @@
     return `${WEEKDAYS_SUN0[weekday]}, ${d} ${MONTHS[m - 1]} · ${WINDOW_HI[delivery.window] || delivery.window}`;
   }
   const kindLabel = (kind) => KIND_HI[kind] || kind || "चीज़";
+  function englishDelivery(delivery) {
+    if (!delivery) return "Not decided yet";
+    const [y, m, d] = delivery.date.split("-").map(Number);
+    return `${WEEKDAYS_EN[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]}, ${d} ${MONTHS_EN[m - 1]} · ${delivery.window}`;
+  }
   function describeField(path, card) {
     if (path === "delivery") return { ...COPY.deliveryQ };
     const match = /^items\.([^.]+)\.(label|amount_paise)$/.exec(path);
@@ -128,6 +150,24 @@
     }
     return node;
   }
+  const both = (hi, en) => [el("span", { class: "lang-hi" }, hi), el("span", { class: "lang-en" }, en)];
+  const setBoth = (node, hi, en) => { if (node) node.replaceChildren(...both(hi, en)); };
+  const statusBoth = (status) => STATUS[status] || [status, status];
+
+  function setLang(lang) {
+    const l = lang === "hi" ? "hi" : "en";
+    document.documentElement.dataset.lang = l;
+    document.documentElement.lang = l;
+    try { localStorage.setItem("parcha-lang", l); } catch (_) { /* private mode: keep it for this page only */ }
+    document.querySelectorAll(".langtoggle").forEach((b) => b.setAttribute("aria-pressed", String(l === "hi")));
+  }
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".langtoggle")) setLang(document.documentElement.dataset.lang === "en" ? "hi" : "en");
+  });
+  window.addEventListener("storage", (e) => {
+    if (e.key === "parcha-lang" && e.newValue) { document.documentElement.dataset.lang = e.newValue; document.documentElement.lang = e.newValue; }
+  });
+
   function icon(name) {
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("aria-hidden", "true");
@@ -147,8 +187,8 @@
       icon("mic"), el("span", {}, COPY.reask.hi));
     if (onReask) chip.addEventListener("click", () => onReask(field, chip));
     return el("div", { class: "row__ask" },
-      el("span", { class: "row__question" }, q.hi, el("span", { class: "en" }, q.en)),
-      reason ? el("span", { class: "abstain-reason" }, ABSTAIN_LABELS[reason] || reason) : null,
+      el("span", { class: "row__question" }, el("span", { class: "hi" }, q.hi), el("span", { class: "en" }, q.en)),
+      reason ? el("span", { class: "abstain-reason" }, both(ABSTAIN_LABELS[reason] || reason, ABSTAIN_EN[reason] || reason)) : null,
       chip);
   }
   function renderSlip(target, session, opts = {}) {
@@ -169,31 +209,31 @@
           el("div", { class: "row__label" },
             change && change.labelFrom !== undefined ? el("s", { class: "row__was" }, change.labelFrom || "—") : null,
             item.label || "—"),
-          el("div", { class: "row__meta" }, el("span", { class: "chip" }, kindLabel(item.kind)), heard ? el("q", { class: "row__heard" }, heard) : null)),
+          el("div", { class: "row__meta" }, el("span", { class: "chip" }, both(kindLabel(item.kind), KIND_EN[item.kind] || item.kind)), heard ? el("q", { class: "row__heard" }, heard) : null)),
         el("div", { class: "row__amount" },
           change && change.amountFrom !== undefined ? el("s", { class: "row__was" }, formatRupees(change.amountFrom)) : null,
           formatRupees(item.amount_paise)));
       flagged.forEach((field) => row.append(askBlock(field, card, reasons[field], opts.onReask)));
       return row;
     });
-    if (!rows.length) rows.push(el("li", { class: "row row--empty" }, "अभी कोई चीज़ नहीं", el("span", { class: "en" }, "No items yet")));
+    if (!rows.length) rows.push(el("li", { class: "row row--empty" }, el("span", { class: "hi" }, "अभी कोई चीज़ नहीं"), el("span", { class: "en" }, "No items yet")));
     const total = session.total_paise;
     const delivery = el("div", { class: "slip__delivery", id: "delivery-info" },
-      el("span", { class: "slip__k" }, "गाड़ी कब मिलेगी", el("span", { class: "en" }, "Vehicle ready")),
-      el("strong", {}, hindiDelivery(card.delivery)),
+      el("span", { class: "slip__k" }, el("span", { class: "hi" }, "गाड़ी कब मिलेगी"), el("span", { class: "en" }, "Vehicle ready")),
+      el("strong", {}, both(hindiDelivery(card.delivery), englishDelivery(card.delivery))),
       card.delivery ? el("q", {}, card.delivery.spoken) : null);
     if (flags.has("delivery")) delivery.append(askBlock("delivery", card, reasons.delivery, opts.onReask));
     target.replaceChildren(el("article", { class: `slip slip--${opts.copy || "original"}`, id: "slip", "aria-label": `पर्चा № ${session.parcha_no || ""}` },
       el("header", { class: "slip__head" },
-        el("div", { class: "slip__title" }, "काम का पर्चा", el("span", { class: "en" }, "Job estimate")),
+        el("div", { class: "slip__title" }, el("span", { class: "hi" }, "काम का पर्चा"), el("span", { class: "en" }, "Job estimate")),
         el("div", { class: "slip__serial" }, "№ ", el("span", { id: "parcha-no" }, session.parcha_no || ""))),
       el("ol", { class: "slip__rows", id: "items-tbody" }, rows),
       el("div", { class: "slip__total" },
-        el("span", { class: "slip__total-k" }, "कुल", el("span", { class: "en" }, "Total")),
+        el("span", { class: "slip__total-k" }, el("span", { class: "hi" }, "कुल"), el("span", { class: "en" }, "Total")),
         el("strong", { class: "slip__total-v", id: "total-cell", "data-incomplete": total === null || total === undefined },
-          total === null || total === undefined ? "अधूरा" : formatRupees(total))),
+          total === null || total === undefined ? both("अधूरा", "Incomplete") : formatRupees(total))),
       delivery,
-      opts.stamp ? el("div", { class: "stamp", role: "img", "aria-label": "मंज़ूर — Approved" }, "मंज़ूर", el("small", {}, "APPROVED")) : null));
+      opts.stamp ? el("div", { class: "stamp", role: "img", "aria-label": "मंज़ूर — Approved" }, el("span", { class: "hi" }, "मंज़ूर"), el("span", { class: "en" }, "APPROVED")) : null));
   }
   function renderStepper(ol, stage) {
     if (!ol) return;
@@ -217,11 +257,11 @@
   function say(target, hi, en = "", tone = "info", detail = "") {
     if (!target) return;
     target.dataset.tone = tone;
-    target.replaceChildren(document.createTextNode(hi), en ? el("span", { class: "en" }, en) : "", detail ? el("small", {}, detail) : "");
+    target.replaceChildren(el("span", { class: "hi" }, hi), en ? el("span", { class: "en" }, en) : "", detail ? el("small", {}, detail) : "");
   }
   function stale(target) {
     say(target, COPY.stale.hi, COPY.stale.en, "error");
-    const btn = el("button", { class: "btn btn--ghost", type: "button", id: "reload" }, COPY.reload.hi, el("span", { class: "en" }, COPY.reload.en));
+    const btn = el("button", { class: "btn btn--ghost", type: "button", id: "reload" }, el("span", { class: "hi" }, COPY.reload.hi), el("span", { class: "en" }, COPY.reload.en));
     btn.addEventListener("click", () => window.location.reload());
     target.append(btn);
   }
@@ -337,7 +377,7 @@
     COPY, REPEAT_MESSAGE, ABSTAIN_LABELS, describeHttpError, HttpError, MicError, api,
     formatRupees, hindiDelivery, kindLabel, describeField, stageFor, flagCount, diffItems, heardQuote,
     el, icon, setIcon, renderSlip, renderStepper, emptyWorkshop, setCaption, say, stale, toast, copyText,
-    shareMessage, whatsappHref, startLevelMeter, micDock, chime, buzz, poll, timeNow,
+    shareMessage, whatsappHref, both, setBoth, statusBoth, setLang, englishDelivery, startLevelMeter, micDock, chime, buzz, poll, timeNow,
   };
   window.describeHttpError = describeHttpError;
 })();
