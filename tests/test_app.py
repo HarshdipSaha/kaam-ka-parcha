@@ -87,8 +87,12 @@ def test_intake_success_returns_card_and_total(fake_services):
     assert data["status"] == "review"
     assert data["card"] is not None
     assert len(data["card"]["items"]) == 2
-    assert data["total_paise"] == 65000
+    assert data["total_paise"] is None
     assert isinstance(data["review_fields"], list)
+    assert data["abstentions"] == {
+        "items.part-1.amount_paise": "independent_confirmation_required",
+        "items.labour-1.amount_paise": "independent_confirmation_required",
+    }
 
     get_res = client.get(f"/sessions/{session_id}")
     assert get_res.status_code == 200
@@ -119,7 +123,7 @@ def test_reask_endpoint_updates_field(fake_services):
     assert data["revision"] == 2
     part_1 = next(it for it in data["card"]["items"] if it["id"] == "part-1")
     assert part_1["amount_paise"] == 50000
-    assert data["total_paise"] == 70000
+    assert data["total_paise"] is None
 
     # Conflict on stale revision
     stale_res = client.post(
@@ -177,10 +181,22 @@ def test_customer_page_renders_card_and_disclosure(fake_services):
         files={"audio": ("estimate.wav", b"audio data", "audio/wav")},
     )
 
+    # Resolve both amounts with a deliberate repeat before readback.
+    client.post(
+        f"/sessions/{session_id}/reask/items.part-1.amount_paise",
+        data={"expected_revision": 1},
+        files={"audio": ("part.wav", b"recorded correction", "audio/wav")},
+    )
+    client.post(
+        f"/sessions/{session_id}/reask/items.labour-1.amount_paise",
+        data={"expected_revision": 2},
+        files={"audio": ("labour.wav", b"recorded correction", "audio/wav")},
+    )
+
     # Start readback so readback_revision is set
     rb_res = client.post(
         f"/sessions/{session_id}/readback",
-        data={"expected_revision": 1},
+        data={"expected_revision": 3},
     )
     assert rb_res.status_code == 200
 
@@ -194,7 +210,7 @@ def test_customer_page_renders_card_and_disclosure(fake_services):
     assert 'id="disclosure"' in html
     assert "Simulated phone line: audio passed through G.711 + recorded engine ambience at 5 dB. No call was placed. All names and amounts are synthetic." in html
     assert 'id="readback-player"' in html
-    assert f"/sessions/{session_id}/readback.wav?revision=1" in html
+    assert f"/sessions/{session_id}/readback.wav?revision=3" in html
     assert 'id="customer-record"' in html
     assert 'id="customer-stop"' in html
     assert 'id="customer-status"' in html
@@ -225,10 +241,22 @@ def test_customer_reply_endpoint_confirms_session(fake_services):
         files={"audio": ("estimate.wav", b"audio data", "audio/wav")},
     )
 
+    # Resolve amounts with separate deliberate repeats, then read back.
+    client.post(
+        f"/sessions/{session_id}/reask/items.part-1.amount_paise",
+        data={"expected_revision": 1},
+        files={"audio": ("part.wav", b"recorded correction", "audio/wav")},
+    )
+    client.post(
+        f"/sessions/{session_id}/reask/items.labour-1.amount_paise",
+        data={"expected_revision": 2},
+        files={"audio": ("labour.wav", b"recorded correction", "audio/wav")},
+    )
+
     # Readback
     rb_res = client.post(
         f"/sessions/{session_id}/readback",
-        data={"expected_revision": 1},
+        data={"expected_revision": 3},
     )
     assert rb_res.status_code == 200
 
@@ -238,17 +266,17 @@ def test_customer_reply_endpoint_confirms_session(fake_services):
     # Post reply
     reply_res = client.post(
         f"/sessions/{session_id}/reply",
-        data={"expected_revision": 1, "readback_revision": 1},
+        data={"expected_revision": 3, "readback_revision": 3},
         files={"audio": ("reply.wav", b"haan bytes", "audio/wav")},
     )
     assert reply_res.status_code == 200
     data = reply_res.json()
     assert data["outcome"] == "confirmed"
     assert data["status"] == "confirmed"
-    assert data["revision"] == 1
+    assert data["revision"] == 3
     assert data["id"] == session_id
     assert data["card"] is not None
-    assert data["total_paise"] == 65000
+    assert data["total_paise"] == 100000
     assert data["review_fields"] == []
 
     # Verify session GET also confirmed
@@ -284,16 +312,28 @@ def test_customer_reply_endpoint_handles_correction_and_conflict(fake_services):
         files={"audio": ("estimate.wav", b"audio data", "audio/wav")},
     )
 
+    # Resolve both amounts with deliberate repeats before readback.
+    client.post(
+        f"/sessions/{session_id}/reask/items.part-1.amount_paise",
+        data={"expected_revision": 1},
+        files={"audio": ("part.wav", b"recorded correction", "audio/wav")},
+    )
+    client.post(
+        f"/sessions/{session_id}/reask/items.labour-1.amount_paise",
+        data={"expected_revision": 2},
+        files={"audio": ("labour.wav", b"recorded correction", "audio/wav")},
+    )
+
     # Readback to reach awaiting_reply
     client.post(
         f"/sessions/{session_id}/readback",
-        data={"expected_revision": 1},
+        data={"expected_revision": 3},
     )
 
     # 2. 404 on unknown session
     res_404 = client.post(
         "/sessions/non-existent-session-id/reply",
-        data={"expected_revision": 1, "readback_revision": 1},
+        data={"expected_revision": 3, "readback_revision": 3},
         files={"audio": ("reply.wav", b"dummy audio", "audio/wav")},
     )
     assert res_404.status_code == 404
@@ -319,7 +359,7 @@ def test_customer_reply_endpoint_handles_correction_and_conflict(fake_services):
 
     res_stale_rb = client.post(
         f"/sessions/{session_id}/reply",
-        data={"expected_revision": 1, "readback_revision": 999},
+        data={"expected_revision": 3, "readback_revision": 999},
         files={"audio": ("reply.wav", b"dummy audio", "audio/wav")},
     )
     assert res_stale_rb.status_code == 409
@@ -329,26 +369,26 @@ def test_customer_reply_endpoint_handles_correction_and_conflict(fake_services):
     fake_services.workflow.prisma.transcribe = lambda wav, mode, **kw: "nahi front brake pad 500"
     res_corr = client.post(
         f"/sessions/{session_id}/reply",
-        data={"expected_revision": 1, "readback_revision": 1},
+        data={"expected_revision": 3, "readback_revision": 3},
         files={"audio": ("correction.wav", b"correction audio", "audio/wav")},
     )
     assert res_corr.status_code == 200
     corr_data = res_corr.json()
     assert corr_data["outcome"] == "needs_readback"
-    assert corr_data["revision"] == 2
+    assert corr_data["revision"] == 4
     part_1 = next(it for it in corr_data["card"]["items"] if it["id"] == "part-1")
     assert part_1["amount_paise"] == 50000
-    assert corr_data["total_paise"] == 70000
+    assert corr_data["total_paise"] == 100000
 
     # 6. Retry outcome when unclear
     client.post(
         f"/sessions/{session_id}/readback",
-        data={"expected_revision": 2},
+        data={"expected_revision": 4},
     )
     fake_services.workflow.prisma.transcribe = lambda wav, mode, **kw: "kya bola"
     res_retry = client.post(
         f"/sessions/{session_id}/reply",
-        data={"expected_revision": 2, "readback_revision": 2},
+        data={"expected_revision": 4, "readback_revision": 4},
         files={"audio": ("unclear.wav", b"unclear speech", "audio/wav")},
     )
     assert res_retry.status_code == 200

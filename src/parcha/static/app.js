@@ -1,5 +1,6 @@
 const REPEAT_MESSAGE = "आवाज़ साफ़ नहीं आई — कृपया फिर से बोलिए (Please say it again)";
 const ABSTAIN_LABELS = {
+  independent_confirmation_required: "रकम दोबारा बोलकर पक्की करें",
   incomplete_number: "अधूरी रकम — फिर से पूछेंगे",
   crosscheck_disagreement: "रकम पक्की नहीं — फिर से पूछेंगे",
   ambiguous_attachment: "कौन सी रकम किस आइटम की — साफ़ नहीं",

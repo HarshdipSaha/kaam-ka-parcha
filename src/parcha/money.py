@@ -12,7 +12,8 @@ from .schema import Evidence, JobCard, LineItem
 __all__ = ["AbstainReason", "AmountDecision", "decide_amounts", "settle_card_amounts", "spoken_item_order"]
 
 AbstainReason = Literal["incomplete_number", "crosscheck_disagreement", "empty_transcript",
-                        "provider_504", "provider_429", "ambiguous_attachment", "out_of_range"]
+                        "provider_504", "provider_429", "ambiguous_attachment", "out_of_range",
+                        "independent_confirmation_required"]
 
 
 @dataclass(frozen=True)
@@ -91,6 +92,13 @@ def settle_card_amounts(card: JobCard, *, verbatim: str,
         order = [item.id for item in card.items]
     else:
         decisions = decide_amounts(verbatim, transcribe, expected_count=len(card.items))
+        # Two modes over one recording are correlated evidence. A numeric parse is
+        # only a candidate until a deliberate repeat or customer confirmation.
+        decisions = [
+            AmountDecision(None, "independent_confirmation_required", decision.quote)
+            if decision.reason is None else decision
+            for decision in decisions
+        ]
     by_id = dict(zip(order, decisions))
     items = tuple(LineItem(id=it.id, label=it.label, kind=it.kind, amount_paise=by_id[it.id].paise)
                   for it in card.items)

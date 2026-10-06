@@ -1554,11 +1554,11 @@ curl.exe -L -o var\benchmark_audio\gramvaani\test.parquet https://huggingface.co
   - `EchoRow(card_id, voice, style, condition, expected_paise, heard_paise, transcript, passed, tts_ms)`
   - `expected_sequence(card) -> tuple[int, ...]` (items, then total)
   - `score_echo(card, transcript) -> (heard, passed)`
-  - `run_echo(cards, voices, styles, conditions, *, synthesize, degrade, transcribe) -> list[EchoRow]`
+  - `run_echo(cards, voices, styles, conditions, *, synthesize, degrade, transcribe, on_tts_attempt=None) -> list[EchoRow]`; the optional callback receives case, voice, style, and text character count immediately before synthesis.
   - Script stages `screen` (13 voices × {digits, words} × 37 stress cards) and `confirm` (top 3 pairs ranked on `amr_nb_4750|0`, on the 120 estimate cards)
   - Conditions: `["control", "g711|clean", "amr_nb_4750|0"]`
 
-- [ ] **Step 1: Write the failing tests:**
+- [x] **Step 1: Write the failing tests:**
 
 ```python
 from parcha.lab.echo import expected_sequence, run_echo, score_echo
@@ -1590,8 +1590,8 @@ def test_echo_scores_each_voice_style_condition_and_reuses_one_synthesis():
     assert expected_sequence(sample_card()) == (45000, 20000, 65000) and score_echo(sample_card(), "")[1] is False
 ```
 
-- [ ] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py -k "echo or readback"`. Expected: FAIL with `TypeError: make_readback() got an unexpected keyword argument 'amount_style'`.
-- [ ] **Step 3: Implement.**
+- [x] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py -k "echo or readback"`. Expected: FAIL with `TypeError: make_readback() got an unexpected keyword argument 'amount_style'`.
+- [x] **Step 3: Implement.**
   - **`make_readback`:** a local `money(paise)` returns `format_rupees(paise)` for `"digits"` and `render_hindi_amount(paise)` for `"words"`, used for each item and the total.
   - **`echo.py`:** synthesize once per (card, voice, style), then reuse that audio for every condition. The control condition skips `degrade`.
   - **`scripts/run_echo_test.py --live`:**
@@ -1600,23 +1600,38 @@ def test_echo_scores_each_voice_style_condition_and_reuses_one_synthesis():
     - Transcribe: `PrismaClient.transcribe(wav, mode="verbatim")` with a 1 s spacing.
     - Output: `var/lab/echo_{stage}.jsonl`.
     - The read-back runs **without** the DPDP consent sentence, because "DPDP Act 2023" would parse as a number.
-- [ ] **Step 4: Verify the forecasts, then run live:**
+- [x] **Step 4: Verify the forecasts, then run live** (runs complete 2026-10-06; human listening to failed rows/10% passes still pending — model verdict only in `var/lab/echo_model_verdict.md`):
 
 ```powershell
-.\.venv\Scripts\python.exe scripts/run_echo_test.py --stage screen     # {"cards": 37, "voice_style_pairs": 26, "tts_chars": 136214, "credits": 13621.4}
-.\.venv\Scripts\python.exe scripts/run_echo_test.py --stage screen --live
-.\.venv\Scripts\python.exe scripts/run_echo_test.py --stage confirm --from var/lab/echo_screen.jsonl          # ≈2,337 credits per pair, so ≈7,000 for 3
-.\.venv\Scripts\python.exe scripts/run_echo_test.py --stage confirm --from var/lab/echo_screen.jsonl --live
+.\.venv\Scripts\python.exe scripts/run_echo_test.py --stage screen     # 37 cards, 26 pairs, 134,290 TTS chars / 6,714.50 estimated credits; Prisma excluded
+.\.venv\Scripts\python.exe scripts/run_echo_test.py `
+  --stage screen --resume-from var/lab/echo_screen_resumed3_20261006.jsonl `
+  --output var/lab/echo_screen_resumed4_20261006.jsonl --request-interval-seconds 1 --live
+.\.venv\Scripts\python.exe scripts/run_echo_test.py `
+  --stage confirm --from var/lab/echo_screen_resumed4_20261006.jsonl `
+  --output var/lab/echo_confirm_live2_20261006.jsonl --request-interval-seconds 1  # 69,991 TTS chars / 3,499.55 estimated credits; Prisma excluded
+.\.venv\Scripts\python.exe scripts/run_echo_test.py `
+  --stage confirm --from var/lab/echo_screen_resumed4_20261006.jsonl `
+  --output var/lab/echo_confirm_live2_20261006.jsonl --request-interval-seconds 1 --live
 ```
 
+  If confirm is interrupted, resume from that confirm JSONL into a **new** output while supplying the same complete screen input: `--stage confirm --from <complete-screen.jsonl> --resume-from <interrupted-confirm.jsonl> --output <new-confirm-output.jsonl> --request-interval-seconds 1 --live`. The resume preflight validates the confirm row prefix, summary, selected pairs, review sidecars, and private paths; it prints remaining TTS characters/estimated credits and any already-accounted next-case replay before making live calls. It leaves the source JSONL and summary unchanged.
+
   Then listen to **every** failed row and a 10% random sample of passes. Label each failure in `var/lab/echo_labels.csv` as `timbre`, `line` or `prisma`.
+
+  **Resume-accounting implementation checkpoint (2026-10-06):** The live partial output remains untouched. Resume now rolls back only an expected trailing case with no review selection/audio and replays the full case from one render. Potentially billed Timbre POST transport failures are kept in a strictly validated `tts_possible_unconfirmed_post_attempts` list, separate from confirmed TTS lower-bound totals; entries carry sequence number, case, voice, style, deterministic character count, and error type only. Its explicit post-dispatch allowlist is `RemoteProtocolError`, `ReadError`, `WriteError`, `ReadTimeout`, `WriteTimeout`, and `CloseError`; `UnsupportedProtocol` and generic `TransportError` are rejected. Listed post-dispatch errors are recorded without retry; only `ConnectError` is retried. A subsequent TDD integrity checkpoint enforces the current-schema TTS character and credit equations while preserving legacy summary compatibility, exact inferred read-back lengths and unique `(card_id, voice, style, run_id)` identities, and row agreement between expected stress-card amounts and transcript-scored amounts/pass flags. The new regressions produced six intended RED failures; the distinct-run case is accepted. Focused resume/review/benchmark tests now pass 90 tests with one existing deprecation warning; `py_compile` and `git diff --check` pass. No live API calls were made. Step 4 and human listening remain incomplete.
+
+  **Resume reconciliation follow-up (2026-10-06):** Added a regression for a continuation that successfully synthesizes an inferred case, then fails all STT retries before writing its first row. Since the successful synthesis is included in the confirmed lower bound, the summary now removes the matching same-run inferred case and does not re-add it as possible usage. The regression observed duplicate metadata before the fix and verifies the new summary can be loaded for another resume. Focused resume/review/benchmark tests pass 91 tests; no live calls were made.
+
+- **Confirm-stage resume checkpoint (2026-10-06):** Added stage-aware loading and CLI resume for interrupted confirm runs. It requires the complete screen input to re-derive the selected voice/style pairs, validates confirm rows as a unique execution-order prefix, checks summary and confirm review sidecars under `var/lab`, and requires a distinct new output. A partial case is replayable only when its rows are an expected ordered prefix and no review selection/audio exists. An accounted but unpersisted TTS attempt is accepted only when summary accounting equals persisted-row characters plus exactly the deterministic read-back length of the next case; a merely possible, unbilled next case remains separate from the confirmed lower bound. Forecast output reports already-accounted next-case characters separately from remaining synthesis cost. TDD regressions use `tmp_path` fixtures and fake clients, including source preservation and next-case-only replay. No live calls or private `var/` artifact reads/writes were made; the Task 13 live confirm and listening steps remain incomplete.
+
 - [ ] **Step 5:** `git add src/parcha/readback.py src/parcha/lab/echo.py scripts/run_echo_test.py tests/test_benchmark_v2.py`, then `git commit -m "feat(bench): Timbre read-back echo test (screen + confirm)"`
 
 ### Task 14: Live benchmark runs
 
 **Files:** None created. Outputs go to `var/lab/`. Record spend and dates in the effort log.
 
-- [ ] **Step 1: Amount-labelled slices.** Do a dry run first; it prints the forecast. Then add `--live`.
+- [x] **Step 1: Amount-labelled slices.** Do a dry run first; it prints the forecast. Then add `--live`. Estimates and corrections completed; see the private run records in `aidlc-docs/efforts/009-money-path-plan/effort-state.md`. Their manifests contain only one recording per amount, so the safety evaluator abstains on every parser-accepted amount unless an independent repeat is available.
 
 ```powershell
 $bias = .\.venv\Scripts\python.exe -c "from parcha.vocabulary import AUTOMOTIVE_BIAS_WORDS as W; print(','.join(W))"
@@ -1630,9 +1645,12 @@ foreach ($m in "estimates","corrections") {
 
   The runner crosses codecs with SNRs. The spec's two conditions are `g711|clean` and `amr_nb_4750|0`. The other two cells (`g711|0`, `amr_nb_4750|clean`) are cheap context; report them separately.
 - [ ] **Step 2: Owner takes.** Same command with `--manifest var/benchmark_audio/owner/manifest.jsonl --audio-root var/benchmark_audio/owner --output var/lab/v2_owner.jsonl`.
-- [ ] **Step 3: Gramvaani.** `--manifest var/benchmark_audio/gramvaani/manifest.jsonl --audio-root var/benchmark_audio/gramvaani --codecs none --snr-dbs clean --impulse-profiles none --stt-modes transcribe,verbatim --bias-words <same> --max-credits 5000 --output var/lab/gramvaani.jsonl`. Forecast ≈4,025 credits.
-- [ ] **Step 4: Bias positive control.** `--manifest data/benchmarks/amount_v2/bias_control.jsonl --codecs none --snr-dbs clean --stt-modes verbatim,verbatim_nobias --bias-words <same> --output var/lab/bias_control.jsonl`. Pass rule: the outputs differ, or the bias word is recovered more often with bias, on ≥1 clip. Otherwise record "boosting not observable" and drop bias claims (spec).
+  **Pending:** `var/benchmark_audio/owner/manifest.jsonl` and the owner recordings are absent. Do not synthesize substitutes; rerun this step when the owner supplies the takes.
+- [x] **Step 3: Gramvaani.** `--manifest var/benchmark_audio/gramvaani/manifest.jsonl --audio-root var/benchmark_audio/gramvaani --codecs none --snr-dbs clean --impulse-profiles none --stt-modes transcribe,verbatim --bias-words <same> --max-credits 5000 --output var/lab/gramvaani.jsonl`. Forecast ≈4,025 credits. The initial run was preserved and the provider-error row retried via a signature-matched continuation; final output `var/lab/gramvaani_resumed.jsonl` has 2,064 unique successful rows.
+- [x] **Step 4: Bias positive control.** `--manifest data/benchmarks/amount_v2/bias_control.jsonl --codecs none --snr-dbs clean --impulse-profiles none --stt-modes verbatim,verbatim_nobias --bias-words <same> --output var/lab/bias_control.jsonl`. Pass rule: the outputs differ, or the bias word is recovered more often with bias, on ≥1 clip. Otherwise record "boosting not observable" and drop bias claims (spec). Observed outputs were identical for 20/20 clips and the spoken target occurred 13/20 times in each mode; verdict: “boosting not observable.” Reproduce by joining result `clip_id` to gold manifest `id`, mapping `entities.bias_word` through `BIAS_CONTROL_WORDS` to Hindi, then counting token-boundary hits in each transcript.
 - [ ] **Step 5: Score.** `.\.venv\Scripts\python.exe -m parcha.lab.money_eval --results var/lab/v2_estimates.jsonl --results var/lab/v2_corrections.jsonl --results var/lab/v2_owner.jsonl --manifest data/benchmarks/amount_v2/estimates.jsonl --manifest data/benchmarks/amount_v2/corrections.jsonl --manifest var/benchmark_audio/owner/manifest.jsonl --out var/lab/money_eval.json`. Acceptance: `wrong_accepted == 0` in every slice × condition. Any non-zero opens a regression task (add an abstain rule, then re-run that slice).
+
+  Available estimates/corrections rows were rescored after the independent-repeat gate to `var/lab/money_eval_after_repeat_gate.json`: 0/1,344 wrong accepted and 1,344/1,344 abstained, including 475 `independent_confirmation_required` outcomes. This zero-wrong result is achieved by full abstention and is not evidence of amount recognition or repeat-recovery accuracy. Step 5 remains open until the owner slice can be scored.
 
 ### Task 15: Report and data card
 
@@ -1641,7 +1659,7 @@ foreach ($m in "estimates","corrections") {
 **Interfaces:**
 - Produces: `build_report(money_eval: list[dict], gramvaani_rows: list[dict], echo_rows: list[dict], bias_rows: list[dict]) -> str` (private markdown) and `python -m parcha.lab.bench_report` (writes `var/lab/benchmark_report.md`).
 
-- [ ] **Step 1: Failing tests.** Given synthetic inputs, the report:
+- [x] **Step 1: Failing tests.** Given synthetic inputs, the report:
   - has one table per slice × condition with `amounts`, `wrong_accepted`, `wrong_amount_confirmed_upper95`, `abstain_rate` and the top abstain reasons;
   - has a Gramvaani section with canonical CER (marked PRIVATE), number agreement (`matched / confident_wrong / abstain_equivalent`), the clipped vs unclipped split, and the silent-empty count;
   - has an echo table of pass rate per voice × style × condition;
@@ -1650,25 +1668,25 @@ foreach ($m in "estimates","corrections") {
   - has total credits;
   - contains the string `PRIVATE: absolute metrics — do not publish`;
   - contains none of the names in `report.FORBIDDEN_COMPETITORS`.
-- [ ] **Step 2:** Run it. Expected: FAIL.
-- [ ] **Step 3:** Implement. Write `BENCHMARK_CARD.md` (no metrics) with:
+- [x] **Step 2:** Run it. Expected: FAIL.
+- [x] **Step 3:** Implement. Write `BENCHMARK_CARD.md` (no metrics) with:
   - composition: v2 estimates 120 / 296 amounts, corrections 40, owner takes 80 (internal), stress 37, bias control 20, Gramvaani 1,032 (2.80 h, 291 clipped);
   - construction (gold-first, colloquial forms, 13 voices, seeds);
   - licences (CC BY 4.0 IndicContextEval; Gramvaani academic, by permission; synthetic Timbre audio);
   - exclusions;
   - intended use and limits ("synthetic speech flatters results; Gramvaani has no rupee labels; the owner's takes are one speaker");
   - the reproduce commands from Tasks 9–14.
-- [ ] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q` and `.\.venv\Scripts\python.exe -m parcha.lab.bench_report`. Expected: green, and the report is written.
+- [x] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q` and `.\.venv\Scripts\python.exe -m parcha.lab.bench_report`. Expected: green, and the report is written.
 - [ ] **Step 5:** `git add src/parcha/lab/bench_report.py tests/test_bench_report.py docs/benchmarks/BENCHMARK_CARD.md`, then `git commit -m "feat(bench): private benchmark report and data card"`
 
 ### Task 16: Decisions and records
 
 **Files:** Modify `aidlc-docs/efforts/009-money-path-plan/*`, `aidlc-docs/registry.md`, `docs/gates.md`.
 
-- [ ] **Step 1: Transcribe pass.** Keep it only if `money_eval` shows ≥1 amount where the transcribe cross-check turned a would-be wrong acceptance into an abstention. To check, re-run the decision with `transcribe=None` on the same rows. Otherwise remove the second pass from `intake` and `reask` in a follow-up task (spec decision).
-- [ ] **Step 2: Read-back voice and amount style.** Use the confirm-stage leader on `amr_nb_4750|0`; on a tie, keep Nalini. Set `TTS_VOICE` and `make_readback(..., amount_style=…)` as the product default. Record known read-back risks (amount patterns that still fail).
-- [ ] **Step 3: Award.** Noise Canceller only if the Gramvaani results support it on real telephonic audio, with organiser and Gram Vaani consent for any public number. Otherwise Real Deal.
-- [ ] **Step 4:** Update `docs/gates.md` with dated, reproducible rows (command + output path + N + spend), and update the registry.
+- [x] **Step 1: Transcribe pass.** Keep it only if `money_eval` shows ≥1 amount where the transcribe cross-check turned a would-be wrong acceptance into an abstention. To check, re-run the decision with `transcribe=None` on the same rows. Otherwise remove the second pass from `intake` and `reask` in a follow-up task (spec decision). Fresh replay on the saved Task 14 estimates/corrections rows: 48 one-pass wrong accepts, of which the cross-check turned 29 into abstentions across 19 clips (27 estimate observations, 2 correction observations); criterion met. Reproduce with `.\.venv\Scripts\python.exe var/lab/replay_transcribe_crosscheck.py`; private result `var/lab/transcribe_crosscheck_analysis_replay.json`.
+- [x] **Step 2: Read-back voice and amount style.** Decision: Vikrant + words (120/120 on `amr_nb_4750|0`); see `docs/gates.md`. Use the confirm-stage leader on `amr_nb_4750|0`; on a tie, keep Nalini. Set `TTS_VOICE` and `make_readback(..., amount_style=…)` as the product default. Record known read-back risks (amount patterns that still fail).
+- [x] **Step 3: Award.** Noise Canceller only if the Gramvaani results support it on real telephonic audio, with organiser and Gram Vaani consent for any public number. Otherwise Real Deal. Decision: Real Deal; no written publication consent is recorded, and owner takes/human listening remain pending.
+- [x] **Step 4:** Update `docs/gates.md` with dated, reproducible rows (command + output path + N + spend), and update the registry.
 - [ ] **Step 5:** `git commit -am "docs(aidlc): record money-path and benchmark v2 decisions"`
 
 ---

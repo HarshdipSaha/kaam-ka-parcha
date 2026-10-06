@@ -86,7 +86,7 @@ class TimbreClient:
     def __init__(
         self,
         api_key: str,
-        voice: str = "Nalini",
+        voice: str = "Vikrant",
         http: httpx.Client | None = None,
         base_url: str = "https://api.vachana.ai",
     ):

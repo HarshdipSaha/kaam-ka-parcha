@@ -70,7 +70,7 @@ def test_telephony_readback_includes_statutory_consent_notice():
     text = make_readback(card, include_consent=True)
     assert STATUTORY_CONSENT_NOTICE in text
     assert text.startswith(STATUTORY_CONSENT_NOTICE)
-    assert "कुल ₹650" in text
+    assert "कुल छह सौ पचास रुपये" in text
     assert "Haan, theek hai" in text
 
 

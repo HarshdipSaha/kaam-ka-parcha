@@ -4,6 +4,7 @@ import re
 from typing import Literal
 import unicodedata
 
+from .numerals import render_hindi_amount
 from .schema import JobCard
 
 PHRASAL_AFFIRMATION_PROMPT = (
@@ -36,15 +37,33 @@ def format_rupees(paise: int) -> str:
         return f"₹{paise / 100:.2f}"
 
 
-def make_readback(card: JobCard, *, include_consent: bool = False) -> str:
+def make_readback(
+    card: JobCard,
+    *,
+    include_consent: bool = False,
+    amount_style: Literal["digits", "words"] = "words",
+) -> str:
     """Synthesize structured read-back prompt with phrasal affirmation instructions.
     
     Itemized totals, delivery date, explicit verbal DPDP statutory consent, and phrasal
     affirmation elicit stable 3-word responses ('Haan, theek hai') over narrowband 8 kHz
     telephony channels, preventing Voice Activity Detector (VAD) endpointing truncation.
     """
+    if amount_style not in {"digits", "words"}:
+        raise ValueError(f"unsupported amount style: {amount_style}")
+
+    def money(paise: int) -> str:
+        if amount_style == "words":
+            try:
+                return render_hindi_amount(paise)
+            except ValueError:
+                # Zero, fractional-paise and over-range amounts have no Hindi
+                # word rendering; keep them as digits rather than invent one.
+                return format_rupees(paise)
+        return format_rupees(paise)
+
     items_str = ", ".join(
-        f"{item.label}: {format_rupees(item.amount_paise if item.amount_paise is not None else 0)}"
+        f"{item.label}: {money(item.amount_paise if item.amount_paise is not None else 0)}"
         for item in card.items
     )
     delivery_str = (
@@ -54,7 +73,7 @@ def make_readback(card: JobCard, *, include_consent: bool = False) -> str:
     )
     consent_prefix = f"{STATUTORY_CONSENT_NOTICE} " if include_consent else ""
     prefix = f"{items_str}. " if items_str else ""
-    return f"{consent_prefix}{prefix}कुल {format_rupees(card.total_paise)}. {delivery_str}{PHRASAL_AFFIRMATION_PROMPT}"
+    return f"{consent_prefix}{prefix}कुल {money(card.total_paise)}. {delivery_str}{PHRASAL_AFFIRMATION_PROMPT}"
 
 
 

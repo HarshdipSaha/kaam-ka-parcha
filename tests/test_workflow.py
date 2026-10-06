@@ -105,13 +105,18 @@ def test_intake_uses_same_recording_for_two_prisma_passes():
     assert prisma.calls[0][0] == prisma.calls[1][0] == b"RIFFpcm"
     assert prisma.calls[1][2] is not None
     assert "brake" in prisma.calls[1][2]
-    # 3. Card total and session state updated
+    # 3. Spoken amounts need a separate recording before they can enter the card.
     assert result.card is not None
-    assert result.card.total_paise == 65000
+    assert [item.amount_paise for item in result.card.items] == [None, None]
+    assert result.card.maybe_total_paise is None
+    assert result.status == "review"
+    assert {log.text for log in result.logs if log.mode.startswith("abstain:")} == {
+        "independent_confirmation_required"
+    }
     assert result.revision == 1
     assert result.status == "review"
     # 4. Logs recorded atomically
-    assert len(result.logs) == 2
+    assert len(result.logs) == 4
     assert result.logs[0].role == "mechanic"
     assert result.logs[0].mode == "transcribe"
     assert result.logs[0].text == "front brake pad ₹450, labour ₹200, Somvaar shaam tak"
@@ -219,7 +224,7 @@ def test_concurrent_intake_conflict_handling():
     # First intake succeeds at revision 0
     s1 = service.intake(session.id, b"audio_1", "audio/webm", expected_revision=0)
     assert s1.revision == 1
-    assert len(s1.logs) == 2
+    assert len(s1.logs) == 4
 
     # Second intake using stale expected_revision=0 fails with Conflict
     with pytest.raises(Conflict, match="stale revision"):
@@ -228,7 +233,7 @@ def test_concurrent_intake_conflict_handling():
     # Session in store preserves only the committed intake's card and logs
     stored = store.get(session.id)
     assert stored.revision == 1
-    assert len(stored.logs) == 2
+    assert len(stored.logs) == 4
 
     # Thread-level concurrency: two simultaneous requests at expected_revision=0
     session_concurrent = store.create()
@@ -252,7 +257,7 @@ def test_concurrent_intake_conflict_handling():
     assert len(conflicts) == 1
     final_session = store.get(session_concurrent.id)
     assert final_session.revision == 1
-    assert len(final_session.logs) == 2
+    assert len(final_session.logs) == 4
 
 
 def test_reask_updates_single_field_and_increments_revision():
@@ -269,8 +274,8 @@ def test_reask_updates_single_field_and_increments_revision():
     s1 = service.intake(session.id, b"audio", "audio/webm", expected_revision=0)
     assert s1.revision == 1
     assert s1.card is not None
-    assert s1.card.items[0].amount_paise == 45000
-    assert s1.card.items[1].amount_paise == 20000
+    assert s1.card.items[0].amount_paise is None
+    assert s1.card.items[1].amount_paise is None
 
     # Re-ask items.part-1.amount_paise
     s2 = service.reask(
@@ -283,9 +288,9 @@ def test_reask_updates_single_field_and_increments_revision():
     assert s2.revision == 2
     assert s2.card is not None
     assert s2.card.items[0].amount_paise == 50000
-    assert s2.card.items[1].amount_paise == 20000
+    assert s2.card.items[1].amount_paise is None
     assert s2.card.delivery == s1.card.delivery
-    assert len(s2.logs) == 3
+    assert len(s2.logs) == 5
     assert s2.logs[-1].role == "mechanic"
     assert s2.logs[-1].mode == "reask:items.part-1.amount_paise"
 
@@ -302,7 +307,7 @@ def test_reask_updates_single_field_and_increments_revision():
     assert s3.card.delivery is not None
     assert s3.card.delivery.spoken == "Mangalvaar subah"
     assert s3.card.items[0].amount_paise == 50000
-    assert len(s3.logs) == 4
+    assert len(s3.logs) == 6
     assert s3.logs[-1].role == "mechanic"
     assert s3.logs[-1].mode == "reask:delivery"
 
@@ -318,7 +323,7 @@ def test_reask_updates_single_field_and_increments_revision():
     assert s4.card is not None
     assert s4.card.items[0].label == "rear brake pad"
     assert s4.card.items[0].amount_paise == 50000
-    assert len(s4.logs) == 5
+    assert len(s4.logs) == 7
     assert s4.logs[-1].mode == "reask:items.part-1.label"
 
 

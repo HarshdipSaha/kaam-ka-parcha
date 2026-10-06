@@ -4,6 +4,7 @@ import pytest
 
 from parcha.artefact import audit_manifest
 from parcha.gnani import GnaniError
+from parcha.money import decide_amounts
 from parcha.schema import Delivery, Evidence, JobCard, LineItem, review_fields
 from parcha.session import Conflict, SessionStore
 from parcha.workflow import RepeatRequest, Workflow
@@ -51,26 +52,37 @@ def abstentions(session):
     return {log.mode.removeprefix("abstain:"): log.text for log in session.logs if log.mode.startswith("abstain:")}
 
 
-def test_intake_amounts_come_from_grammar_not_extractor():
+def test_intake_requires_independent_confirmation_even_when_both_modes_agree():
     wf, _, sid = service(ScriptedPrisma([T_EN, V_EN]), CardExtractor(card()))
     s = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
-    assert [it.amount_paise for it in s.card.items] == [45000, 20000]
-    assert {ev.field: ev.quote for ev in s.card.evidence}["items.part-1.amount_paise"] == "saade chaar sau"
-    assert abstentions(s) == {} and review_fields(s.card) == []
+    assert [decision.paise for decision in decide_amounts(V_EN, T_EN, expected_count=2)] == [45000, 20000]
+    assert [it.amount_paise for it in s.card.items] == [None, None]
+    assert abstentions(s) == {
+        "items.part-1.amount_paise": "independent_confirmation_required",
+        "items.labour-1.amount_paise": "independent_confirmation_required",
+    }
+    assert set(review_fields(s.card)) == set(abstentions(s))
+    assert all(not ev.field.endswith(".amount_paise") for ev in s.card.evidence)
 
 
 def test_w2_crosscheck_disagreement_abstains_only_the_disputed_item():
     wf, _, sid = service(ScriptedPrisma([T_W2, V_W2]), CardExtractor(card(labels=("फ्रंट ब्रेक पैड", "लेबर"))))
     s = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
-    assert [it.amount_paise for it in s.card.items] == [None, 20000]
-    assert abstentions(s) == {"items.part-1.amount_paise": "crosscheck_disagreement"}
+    assert [it.amount_paise for it in s.card.items] == [None, None]
+    assert abstentions(s) == {
+        "items.part-1.amount_paise": "crosscheck_disagreement",
+        "items.labour-1.amount_paise": "independent_confirmation_required",
+    }
 
 
 def test_incomplete_number_abstains():
     wf, _, sid = service(ScriptedPrisma([T_EN, "front brake pad saade labour do sau shaam tak"]), CardExtractor(card()))
     s = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
-    assert [it.amount_paise for it in s.card.items] == [None, 20000]
-    assert abstentions(s) == {"items.part-1.amount_paise": "incomplete_number"}
+    assert [it.amount_paise for it in s.card.items] == [None, None]
+    assert abstentions(s) == {
+        "items.part-1.amount_paise": "incomplete_number",
+        "items.labour-1.amount_paise": "independent_confirmation_required",
+    }
 
 
 def test_amount_count_mismatch_abstains_every_amount():
@@ -84,7 +96,9 @@ def test_spoken_total_that_matches_the_items_is_not_an_extra_item():
     wf, _, sid = service(ScriptedPrisma(["front brake pad ₹450, labour ₹200, kul ₹650, shaam tak",
                                          "front brake pad saade chaar sau labour do sau kul saade chhe sau shaam tak"]),
                          CardExtractor(card()))
-    assert [it.amount_paise for it in wf.intake(sid, b"a", "audio/webm", expected_revision=0).card.items] == [45000, 20000]
+    session = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
+    assert [it.amount_paise for it in session.card.items] == [None, None]
+    assert set(abstentions(session).values()) == {"independent_confirmation_required"}
 
 
 def test_spoken_total_that_disagrees_with_the_items_abstains_every_amount():
@@ -142,8 +156,10 @@ def test_amount_reask_uses_grammar_and_keeps_other_fields():
     wf, _, sid = service(prisma, CardExtractor(card(labels=("फ्रंट ब्रेक पैड", "लेबर"))))
     s1 = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
     s2 = wf.reask(sid, "items.part-1.amount_paise", b"r", "audio/webm", expected_revision=s1.revision)
-    assert [it.amount_paise for it in s2.card.items] == [35000, 20000]
-    assert s2.card.delivery == s1.card.delivery and review_fields(s2.card) == []
+    assert [it.amount_paise for it in s1.card.items] == [None, None]
+    assert [it.amount_paise for it in s2.card.items] == [35000, None]
+    assert s2.card.delivery == s1.card.delivery
+    assert review_fields(s2.card) == ["items.labour-1.amount_paise"]
     assert s2.logs[-1].mode == "reask:items.part-1.amount_paise"
     assert [c[1] for c in prisma.calls[2:]] == ["transcribe", "verbatim"]
 
@@ -152,7 +168,7 @@ def test_amount_reask_with_provider_429_leaves_field_unset_and_logs_reason():
     wf, _, sid = service(ScriptedPrisma([T_EN, V_EN, GnaniError("HTTP 429", status=429)]), CardExtractor(card()))
     s1 = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
     s2 = wf.reask(sid, "items.part-1.amount_paise", b"r", "audio/webm", expected_revision=s1.revision)
-    assert [it.amount_paise for it in s2.card.items] == [None, 20000]
+    assert [it.amount_paise for it in s2.card.items] == [None, None]
     assert abstentions(s2)["items.part-1.amount_paise"] == "provider_429"
 
 

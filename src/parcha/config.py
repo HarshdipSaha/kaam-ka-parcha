@@ -31,7 +31,7 @@ class Settings:
     extractor_api_key: str = field(default="", repr=False)
     extractor_model: str = ""
     extractor_provider: str = "evon"
-    tts_voice: str = "Nalini"
+    tts_voice: str = "Vikrant"
     gnani_base_url: str = "https://api.vachana.ai"
     reply_transport: str = "rest"
     use_automotive_bias: bool = True
@@ -50,7 +50,7 @@ class Settings:
             extractor_api_key=key,
             extractor_model=model,
             extractor_provider=(values.get("EXTRACTOR_PROVIDER") or "").strip() or "evon",
-            tts_voice=(values.get("TTS_VOICE") or "").strip() or "Nalini",
+            tts_voice=(values.get("TTS_VOICE") or "").strip() or "Vikrant",
             gnani_base_url=(values.get("GNANI_BASE_URL") or "").strip() or "https://api.vachana.ai",
             reply_transport=(values.get("REPLY_TRANSPORT") or "").strip() or "rest",
             use_automotive_bias=(values.get("USE_AUTOMOTIVE_BIAS") or "true").strip().casefold() not in {"0", "false", "no", "off"},

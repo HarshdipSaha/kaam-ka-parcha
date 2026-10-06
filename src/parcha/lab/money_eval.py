@@ -86,8 +86,16 @@ def score_rows(
                 transcribe.get("transcript") or "",
                 expected_count=len(labels),
             )
-            decisions = [decision.paise for decision in decisions_from_parser]
-            reasons = [decision.reason for decision in decisions_from_parser]
+            # This benchmark has one recording and no separate confirmation, so
+            # parser agreement alone is not an accepted money decision.
+            decisions = [
+                None if decision.reason is None else decision.paise
+                for decision in decisions_from_parser
+            ]
+            reasons = [
+                "independent_confirmation_required" if decision.reason is None else decision.reason
+                for decision in decisions_from_parser
+            ]
 
         slice_name = slices.get(clip_id, "unspecified")
         for expected_paise, decided_paise, reason in zip(labels, decisions, reasons):

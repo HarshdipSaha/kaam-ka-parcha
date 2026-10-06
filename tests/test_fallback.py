@@ -136,16 +136,21 @@ def test_fallback_http_endpoint_approve_and_request_changes(fake_services):
         files={"audio": ("estimate.wav", b"fake speech", "audio/wav")},
     )
 
+    client.post(f"/sessions/{session_id}/reask/items.part-1.amount_paise", data={"expected_revision": 1},
+                files={"audio": ("part.wav", b"part correction", "audio/wav")})
+    client.post(f"/sessions/{session_id}/reask/items.labour-1.amount_paise", data={"expected_revision": 2},
+                files={"audio": ("labour.wav", b"labour correction", "audio/wav")})
+
     # Readback -> awaiting_reply
     client.post(
         f"/sessions/{session_id}/readback",
-        data={"expected_revision": 1},
+        data={"expected_revision": 3},
     )
 
     # Direct fallback trigger
     fb_trigger_res = client.post(
         f"/sessions/{session_id}/fallback",
-        data={"expected_revision": 1, "action": "trigger"},
+        data={"expected_revision": 3, "action": "trigger"},
     )
     assert fb_trigger_res.status_code == 200
     assert fb_trigger_res.json()["status"] == "fallback_ready"
@@ -154,7 +159,7 @@ def test_fallback_http_endpoint_approve_and_request_changes(fake_services):
     # Approve via fallback -> confirms session
     fb_approve_res = client.post(
         f"/sessions/{session_id}/fallback",
-        data={"expected_revision": 1, "action": "approve"},
+        data={"expected_revision": 3, "action": "approve"},
     )
     assert fb_approve_res.status_code == 200
     assert fb_approve_res.json()["status"] == "confirmed"
@@ -162,7 +167,7 @@ def test_fallback_http_endpoint_approve_and_request_changes(fake_services):
     # Calling fallback again on confirmed session returns 409 Conflict
     fb_stale_res = client.post(
         f"/sessions/{session_id}/fallback",
-        data={"expected_revision": 1, "action": "approve"},
+        data={"expected_revision": 3, "action": "approve"},
     )
     assert fb_stale_res.status_code == 409
 
@@ -195,16 +200,21 @@ def test_fallback_http_endpoint_request_changes(fake_services):
         files={"audio": ("estimate.wav", b"fake speech", "audio/wav")},
     )
 
+    client.post(f"/sessions/{session_id}/reask/items.part-1.amount_paise", data={"expected_revision": 1},
+                files={"audio": ("part.wav", b"part correction", "audio/wav")})
+    client.post(f"/sessions/{session_id}/reask/items.labour-1.amount_paise", data={"expected_revision": 2},
+                files={"audio": ("labour.wav", b"labour correction", "audio/wav")})
+
     # Readback -> awaiting_reply
     client.post(
         f"/sessions/{session_id}/readback",
-        data={"expected_revision": 1},
+        data={"expected_revision": 3},
     )
 
     # Request changes via digital fallback -> moves to review
     fb_change_res = client.post(
         f"/sessions/{session_id}/fallback",
-        data={"expected_revision": 1, "action": "request_changes"},
+        data={"expected_revision": 3, "action": "request_changes"},
     )
     assert fb_change_res.status_code == 200
     assert fb_change_res.json()["status"] == "review"
@@ -225,15 +235,20 @@ def test_customer_reply_low_confidence_e2e_http(fake_services):
         files={"audio": ("estimate.wav", b"fake speech", "audio/wav")},
     )
 
+    client.post(f"/sessions/{session_id}/reask/items.part-1.amount_paise", data={"expected_revision": 1},
+                files={"audio": ("part.wav", b"part correction", "audio/wav")})
+    client.post(f"/sessions/{session_id}/reask/items.labour-1.amount_paise", data={"expected_revision": 2},
+                files={"audio": ("labour.wav", b"labour correction", "audio/wav")})
+
     client.post(
         f"/sessions/{session_id}/readback",
-        data={"expected_revision": 1},
+        data={"expected_revision": 3},
     )
 
     # Reply over degraded line
     reply_res = client.post(
         f"/sessions/{session_id}/reply",
-        data={"expected_revision": 1, "readback_revision": 1},
+        data={"expected_revision": 3, "readback_revision": 3},
         files={"audio": ("reply.wav", b"degraded speech", "audio/wav")},
     )
     assert reply_res.status_code == 200
@@ -245,7 +260,7 @@ def test_customer_reply_low_confidence_e2e_http(fake_services):
     # Customer taps "Approve Estimate"
     approve_res = client.post(
         f"/sessions/{session_id}/fallback",
-        data={"expected_revision": 1, "action": "approve"},
+        data={"expected_revision": 3, "action": "approve"},
     )
     assert approve_res.status_code == 200
     assert approve_res.json()["status"] == "confirmed"
