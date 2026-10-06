@@ -1211,9 +1211,9 @@ def test_bias_control_runs_verbatim_with_and_without_bias(tmp_path):
   - `summarize(outcomes) -> list[dict]`, with keys `slice, condition, amounts, wrong_accepted, correct, abstained, wrong_amount_confirmed_rate, wrong_amount_confirmed_upper95, abstain_rate, abstain_reasons`
   - `wilson_upper(failures, n, z=1.96) -> float`
   - `score_number_agreement(reference, hypothesis) -> dict` with keys `ref_numbers, matched, confident_wrong, abstain_equivalent`
-  - CLI: `python -m parcha.lab.money_eval --results R.jsonl --manifest M.jsonl [--manifest M2.jsonl] --out var/lab/money_eval.json`
+  - CLI: `python -m parcha.lab.money_eval --results R.jsonl [--results R2.jsonl] --manifest M.jsonl [--manifest M2.jsonl] --out var/lab/money_eval.json`
 
-- [ ] **Step 1: Write the failing tests:**
+- [x] **Step 1: Write the failing tests:**
 
 ```python
 import pytest
@@ -1254,14 +1254,16 @@ def test_gramvaani_number_agreement(hypothesis, expected):
     assert (got["matched"], got["confident_wrong"], got["abstain_equivalent"]) == expected
 ```
 
-- [ ] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py -k "money_eval or wilson or agreement"`. Expected: `ModuleNotFoundError: parcha.lab.money_eval`.
-- [ ] **Step 3: Implement.**
-  - `score_rows` joins `transcribe` and `verbatim` rows by `(clip_id, f"{codec}|{'clean' if snr is None else int(snr)}")`. A row with `transcription_error` gives `reason="provider_error"` for every expected amount; otherwise use `decide_amounts(verbatim, transcribe, expected_count=len(expected))`.
+- [x] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py -k "money_eval or wilson or agreement"`. Expected: `ModuleNotFoundError: parcha.lab.money_eval`.
+- [x] **Step 3: Implement.**
+  - `score_rows` joins `transcribe` and `verbatim` rows by clip and full runner condition. Standard labels remain `{codec}|clean` or `{codec}|{snr}`; fractional SNRs retain precision, and non-default loss/impulse profiles are appended to the label. A provider-error row yields `reason="provider_error"` for every expected amount even when the counterpart row is missing; otherwise paired rows use `decide_amounts(verbatim, transcribe, expected_count=len(expected))`.
   - `wilson_upper` is the standard Wilson score upper bound.
   - `score_number_agreement` applies `canonical_reference` to the reference and keeps the complete grammar values. A count mismatch marks every reference number as `abstain_equivalent`. Otherwise it compares position by position: incomplete → abstain, equal → matched, else confident_wrong.
-  - The CLI reads manifests with `utf-8-sig`, builds `expected` and `slices` (from `stratum`), skips clips listed in `data/benchmarks/exclusions.json`, and writes the summary JSON.
-- [ ] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green.
-- [ ] **Step 5:** `git add src/parcha/lab/money_eval.py tests/test_benchmark_v2.py`, then `git commit -m "feat(lab): money evaluator with Wilson bounds and Gramvaani number agreement"`
+  - The CLI reads all repeated result files and manifests with `utf-8-sig`, builds `expected` and `slices` (from `stratum`), skips clips listed in `data/benchmarks/exclusions.json`, and writes the summary JSON.
+- [x] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green.
+- [x] **Step 5:** `git add src/parcha/lab/money_eval.py tests/test_benchmark_v2.py`, then `git commit -m "feat(lab): money evaluator with Wilson bounds and Gramvaani number agreement"`
+
+- **Task 8 validation:** 10 passed in `tests/test_benchmark_v2.py`; 433 passed in the full offline suite. `git diff --check` passed. No live APIs were called.
 
 ### Task 9: Gold-first v2 data (estimates, corrections, stress amounts, bias control)
 

@@ -16,7 +16,7 @@
 | Plan | Complete | [`2026-10-05-money-path-safety.md`](../../../docs/superpowers/plans/2026-10-05-money-path-safety.md) |
 | Spec sync | Complete | [`money-path-safety-spec.md`](../../../docs/specs/money-path-safety-spec.md) corrected and committed |
 | Audit | Complete | [`audit.md`](audit.md) |
-| Implementation | Active | Tasks 1–7 complete; Task 0 owner-only pre-flight remains pending |
+| Implementation | Active | Tasks 1–8 complete; Task 0 owner-only pre-flight remains pending |
 
 ## Implementation Progress
 
@@ -42,6 +42,10 @@
 - **Task 7 — Complete:** Added canonical benchmark references, explicit provider-error/empty/ok row outcomes, strict expected-amount labels, four-digit clip IDs, BOM-tolerant JSONL reading, unbiased verbatim mode, and stale-row rejection on resume. Added `data/benchmarks/exclusions.json`. Commit subject: `feat(lab): canonical references, explicit empty outcome, amount labels, bias control mode`.
 - **Validation:** 12 passed in `tests/test_lab_v2_runner.py`; 53 passed across the focused lab/dataset regression modules; 423 passed in the full offline suite. Analysis script completed successfully and reported 65 output entries; `var/lab/real_audio_analysis.md` has 110 physical lines because some entries contain embedded newlines. `git diff --check`: PASS.
 
+- **Task 8 — Complete:** Added `src/parcha/lab/money_eval.py` with order-independent transcribe/verbatim pairing, per-amount correct/wrong/abstained outcomes, Wilson upper bounds, number-agreement scoring, and the local `python -m parcha.lab.money_eval` JSON CLI. The CLI accepts repeated result files and manifests, concatenates all result rows, reads manifests as UTF-8-SIG, skips `data/benchmarks/exclusions.json` IDs, and creates the output directory. Condition labels preserve `codec|clean` and `codec|0` for default conditions, retain fractional SNR precision, and append loss/profile details only when non-default. Added regressions in `tests/test_benchmark_v2.py`, including identical wrong values on both passes, provider-error abstention with paired and single error rows, fractional SNR/loss/profile separation, repeated result files, incomplete number agreement, BOM manifests, and exclusions.
+- **Task 8 execution checklist:** [x] Write the single-provider-error and CLI/condition-collision regressions and observe their expected RED failures; [x] implement evaluator and CLI fixes; [x] targeted CLI/fractional-SNR/loss/profile regressions (4 passed); [x] full `tests/test_benchmark_v2.py` (10 passed); [x] full offline suite (433 passed); [x] `git diff --check`; [x] no live APIs or Prisma calls.
+- **Validation:** `.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py -k "fractional_snr or nonzero_loss or impulse_profile or cli_reads"`: 4 passed; `.venv\Scripts\python.exe -m pytest -q tests/test_benchmark_v2.py`: 10 passed; `PYTHONPATH=src`, `API_KEY=test-only`, `.venv\Scripts\python.exe -m pytest -q`: 433 passed. Pytest reported one existing Starlette `TestClient` deprecation warning.
+
 ## Next
 
-Task 8.
+Task 9.
