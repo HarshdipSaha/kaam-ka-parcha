@@ -1,10 +1,11 @@
 import re
+import time
 from urllib.parse import unquote
 
 import pytest
 from playwright.sync_api import expect
 
-from tests.e2e.helpers import SCREENS, reply_by_api, speak
+from tests.e2e.helpers import SCREENS, confirm_amounts_in_ui, reply_by_api, speak
 
 pytestmark = pytest.mark.e2e
 INTAKE_T = "front brake pad ₹450, labour ₹200, Somvaar shaam tak"
@@ -17,16 +18,21 @@ def dictate(page):
     expect(page.locator("#slip")).to_be_visible(timeout=15000)
 
 
-def test_dictation_builds_a_hindi_first_parcha(page):
+def test_dictation_builds_a_hindi_first_parcha(page, world):
     dictate(page)
     slip = page.locator("#slip")
-    for text in ("front brake pad", "₹450", "₹200", "पार्ट", "लेबर"):
+    for text in ("front brake pad", "पार्ट", "लेबर"):
+        expect(slip).to_contain_text(text)
+    expect(page.locator("#transcript")).to_contain_text("आपने कहा")
+    expect(page.locator("#transcript-content")).to_contain_text("front brake pad")
+    expect(page.locator("#total-cell")).to_have_text("Incomplete", use_inner_text=True)
+    expect(page.locator("#start-readback")).to_be_hidden()
+    confirm_amounts_in_ui(page, world)
+    for text in ("₹450", "₹200"):
         expect(slip).to_contain_text(text)
     expect(page.locator("#total-cell")).to_have_text("₹650")
     expect(page.locator("#delivery-info")).to_contain_text("सोमवार, 5 अक्टूबर · शाम")
     expect(page.locator("#parcha-no")).to_have_text(re.compile(r"^\d{6}$"))
-    expect(page.locator("#transcript")).to_contain_text("आपने कहा")
-    expect(page.locator("#transcript-content")).to_contain_text("front brake pad")
     expect(page.locator('#stepper [aria-current="step"]')).to_contain_text("सुनाओ")
     expect(page.locator("#start-readback")).to_be_enabled()
     expect(page.locator("body")).not_to_contain_text("items.part-1")
@@ -46,6 +52,7 @@ def test_listening_swaps_the_mic_for_a_stop_button_in_the_same_place(page):
     expect(page.locator("[data-mic-timer]")).to_have_text(re.compile(r"^\d:\d\d$"))
     stop_box = stop.bounding_box()
     assert abs(stop_box["x"] - mic_box["x"]) < 4 and abs(stop_box["y"] - mic_box["y"]) < 4
+    time.sleep(0.8)   # let the fake microphone record something
     stop.click()
     expect(page.locator("#slip")).to_be_visible(timeout=15000)
     expect(page.locator("#dock")).to_have_attribute("data-mic", "idle")
@@ -57,13 +64,17 @@ def test_flagged_amount_is_asked_on_its_row_and_fixed_by_voice(page, world):
     row = page.locator('[data-item="part-1"]')
     expect(row).to_contain_text("front brake pad का दाम?")
     expect(row).to_contain_text("अधूरी रकम — फिर से पूछेंगे")          # money-path abstain label
-    expect(page.locator("#review-count")).to_contain_text("1 चीज़ जाँचनी है")
+    expect(page.locator("#review-count")).to_contain_text("2 चीज़ें जाँचनी हैं")
     expect(page.locator("#total-cell")).to_have_text("Incomplete", use_inner_text=True)
     expect(page.locator("#start-readback")).to_be_hidden()
     page.screenshot(path=str(SCREENS / "workshop-flagged-360.png"), full_page=True)
     world.prisma.say("paanch sau")
     speak(page, row.get_by_role("button", name=re.compile("दोबारा बोलें")), "#stop")
     expect(page.locator('[data-item="part-1"] .row__amount')).to_have_text("₹500", timeout=15000)
+    # the single recording of labour still needs its deliberate second recording
+    world.prisma.say("do sau")
+    speak(page, page.locator('[data-item="labour-1"]').get_by_role("button", name=re.compile("दोबारा बोलें")), "#stop")
+    expect(page.locator('[data-item="labour-1"] .row__amount')).to_have_text("₹200", timeout=15000)
     expect(page.locator("#total-cell")).to_have_text("₹700")
     expect(page.locator("#review-section")).to_be_hidden()
     expect(page.locator("#start-readback")).to_be_enabled()
@@ -98,8 +109,9 @@ def test_hostile_label_renders_as_text(page, world):
     assert page.evaluate("window.__xss") is None
 
 
-def test_read_back_opens_a_share_sheet_with_copy_and_whatsapp(page):
+def test_read_back_opens_a_share_sheet_with_copy_and_whatsapp(page, world):
     dictate(page)
+    confirm_amounts_in_ui(page, world)
     page.locator("#start-readback").click()
     share = page.locator("#share")
     expect(share).to_be_visible(timeout=15000)
@@ -118,6 +130,7 @@ def test_read_back_opens_a_share_sheet_with_copy_and_whatsapp(page):
 
 def test_customer_approval_stamps_the_mechanics_slip(page, world):
     dictate(page)
+    confirm_amounts_in_ui(page, world)
     page.locator("#start-readback").click()
     expect(page.locator("#share")).to_be_visible(timeout=15000)
     world.prisma.say("हाँ ठीक है")

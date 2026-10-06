@@ -23,7 +23,10 @@ def test_payload_carries_display_fields(fake_services):
     assert "front brake pad" in body["mechanic_transcript"]
     assert body["readback_text"] is None
     assert body["readback_revision"] is None
-    assert body["abstentions"] == {}          # money-path key still present
+    assert body["abstentions"] == {              # money-path key still present
+        "items.part-1.amount_paise": "independent_confirmation_required",
+        "items.labour-1.amount_paise": "independent_confirmation_required",
+    }
 
 
 def test_readback_response_is_strict_json_when_no_noise_is_mixed(fake_services):
@@ -32,6 +35,8 @@ def test_readback_response_is_strict_json_when_no_noise_is_mixed(fake_services):
     client = TestClient(create_app(fake_services))
     sid = client.post("/sessions").json()["id"]
     rev = _intake(client, sid).json()["revision"]
+    from tests.test_pages import resolve_amounts
+    rev = resolve_amounts(client, sid, rev)
     res = client.post(f"/sessions/{sid}/readback", data={"expected_revision": rev})
     assert res.status_code == 200
     body = json.loads(res.text, parse_constant=_reject_constant)

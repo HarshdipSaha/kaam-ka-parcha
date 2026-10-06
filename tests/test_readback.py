@@ -24,7 +24,7 @@ def test_make_readback_formats_card_and_total():
     assert format_rupees(12345) == "₹123.45"
 
     card = make_test_card()
-    text = make_readback(card)
+    text = make_readback(card, amount_style="digits")
     expected = (
         "front brake pad: ₹450, labour: ₹200. "
         "कुल ₹650. "
@@ -42,7 +42,7 @@ def test_make_readback_formats_card_and_total():
             )
         }
     )
-    fractional_text = make_readback(fractional_card)
+    fractional_text = make_readback(fractional_card, amount_style="digits")
     assert "spark plug: ₹150.50" in fractional_text
     assert "कुल ₹150.50" in fractional_text
     assert "Agar aapko yeh manzoor hai, toh boliye: 'Haan, theek hai'." in fractional_text
@@ -58,7 +58,7 @@ def test_phrasal_readback_prompt_single_item_and_multi_item():
         delivery=None,
         evidence=(),
     )
-    single_text = make_readback(single_card)
+    single_text = make_readback(single_card, amount_style="digits")
     assert single_text == f"engine oil: ₹1200. कुल ₹1200. {PHRASAL_AFFIRMATION_PROMPT}"
 
     from datetime import date
@@ -69,7 +69,7 @@ def test_phrasal_readback_prompt_single_item_and_multi_item():
         delivery=Delivery(date=date(2026, 10, 6), window="afternoon", spoken="Kal dopehar tak"),
         evidence=(),
     )
-    single_del_text = make_readback(single_with_del)
+    single_del_text = make_readback(single_with_del, amount_style="digits")
     assert single_del_text == f"engine oil: ₹1200. कुल ₹1200. डिलीवरी Kal dopehar tak. {PHRASAL_AFFIRMATION_PROMPT}"
 
     # Multi-item job card (3 items)
@@ -82,7 +82,7 @@ def test_phrasal_readback_prompt_single_item_and_multi_item():
         delivery=Delivery(date=date(2026, 10, 7), window="evening", spoken="Budhvaar shaam tak"),
         evidence=(),
     )
-    multi_text = make_readback(multi_card)
+    multi_text = make_readback(multi_card, amount_style="digits")
     expected_multi = (
         "clutch plate: ₹1850, mobil oil: ₹450, service labour: ₹350. "
         "कुल ₹2650. "
@@ -112,7 +112,7 @@ def test_readback_uses_derived_total_and_marks_revision():
     assert isinstance(readback, Readback)
     assert readback.revision == 1
     assert readback.readback_revision == 1
-    assert "कुल ₹650" in readback.text
+    assert "कुल छह सौ पचास रुपये" in readback.text
     assert fake_timbre.calls == [readback.text]
     assert readback.manifest == {
         "codec": "g711",
@@ -222,18 +222,23 @@ def test_readback_http_endpoints_and_audio_serving(fake_services):
     assert res.status_code == 200
     assert res.json()["revision"] == 1
 
+    client.post(f"/sessions/{session_id}/reask/items.part-1.amount_paise", data={"expected_revision": 1},
+                files={"audio": ("part.wav", b"part correction", "audio/wav")})
+    client.post(f"/sessions/{session_id}/reask/items.labour-1.amount_paise", data={"expected_revision": 2},
+                files={"audio": ("labour.wav", b"labour correction", "audio/wav")})
+
     # POST readback
     readback_res = client.post(
         f"/sessions/{session_id}/readback",
-        data={"expected_revision": 1},
+        data={"expected_revision": 3},
     )
     assert readback_res.status_code == 200
     data = readback_res.json()
-    assert data["revision"] == 1
-    assert data["readback_revision"] == 1
-    assert data["audio_url"] == f"/sessions/{session_id}/readback.wav?revision=1"
+    assert data["revision"] == 3
+    assert data["readback_revision"] == 3
+    assert data["audio_url"] == f"/sessions/{session_id}/readback.wav?revision=3"
     assert "front brake pad" in data["text"]
-    assert "कुल ₹650" in data["text"]
+    assert "कुल एक हज़ार रुपये" in data["text"]
     assert data["manifest"]["codec"] == "g711"
 
     # GET readback audio
@@ -271,9 +276,12 @@ def test_readback_http_endpoints_and_audio_serving(fake_services):
         timbre=None,
     )
     client_no_timbre = TestClient(create_app(services_no_timbre))
+    client_no_timbre.post(f"/sessions/{session_id}/reask/items.part-1.amount_paise",
+                          data={"expected_revision": 3},
+                          files={"audio": ("part.wav", b"part correction", "audio/wav")})
     err_res = client_no_timbre.post(
         f"/sessions/{session_id}/readback",
-        data={"expected_revision": 1},
+        data={"expected_revision": 4},
     )
     assert err_res.status_code == 503
     assert "Timbre client required" in err_res.json()["detail"]
@@ -293,26 +301,31 @@ def test_stale_readback_wav_rejected(fake_services):
         files={"audio": ("estimate.wav", b"fake speech", "audio/wav")},
     )
 
+    client.post(f"/sessions/{session_id}/reask/items.part-1.amount_paise", data={"expected_revision": 1},
+                files={"audio": ("part.wav", b"part correction", "audio/wav")})
+    client.post(f"/sessions/{session_id}/reask/items.labour-1.amount_paise", data={"expected_revision": 2},
+                files={"audio": ("labour.wav", b"labour correction", "audio/wav")})
+
     # Calling GET readback.wav before readback started (status is 'review') -> 409
-    res_not_started = client.get(f"/sessions/{session_id}/readback.wav?revision=1")
+    res_not_started = client.get(f"/sessions/{session_id}/readback.wav?revision=3")
     assert res_not_started.status_code == 409
 
-    # Start readback -> revision 1, status 'awaiting_reply'
+    # Start readback at revision 3, status 'awaiting_reply'.
     readback_res = client.post(
         f"/sessions/{session_id}/readback",
-        data={"expected_revision": 1},
+        data={"expected_revision": 3},
     )
     assert readback_res.status_code == 200
 
     # Requesting with mismatched revision -> 409
-    res_wrong_rev = client.get(f"/sessions/{session_id}/readback.wav?revision=0")
+    res_wrong_rev = client.get(f"/sessions/{session_id}/readback.wav?revision=2")
     assert res_wrong_rev.status_code == 409
 
-    res_future_rev = client.get(f"/sessions/{session_id}/readback.wav?revision=2")
+    res_future_rev = client.get(f"/sessions/{session_id}/readback.wav?revision=4")
     assert res_future_rev.status_code == 409
 
     # Requesting valid revision -> 200
-    res_valid = client.get(f"/sessions/{session_id}/readback.wav?revision=1")
+    res_valid = client.get(f"/sessions/{session_id}/readback.wav?revision=3")
     assert res_valid.status_code == 200
 
     # Start readback again with stale expected_revision=0 -> 409
@@ -322,20 +335,40 @@ def test_stale_readback_wav_rejected(fake_services):
     )
     assert res_stale_post.status_code == 409
 
-    # Reask a field: updates card, bumps revision to 2, status to 'review'
+    # Reask a field: updates the card, bumps revision to 4, status to 'review'.
     reask_res = client.post(
         f"/sessions/{session_id}/reask/items.part-1.amount_paise",
-        data={"expected_revision": 1},
+        data={"expected_revision": 3},
         files={"audio": ("correction.wav", b"speech", "audio/wav")},
     )
     assert reask_res.status_code == 200
-    assert reask_res.json()["revision"] == 2
+    assert reask_res.json()["revision"] == 4
     assert reask_res.json()["status"] == "review"
 
-    # Now GET readback.wav with revision 1 must be rejected with 409
-    res_stale_after_reask = client.get(f"/sessions/{session_id}/readback.wav?revision=1")
+    # The previous readback is stale at revision 3 and must be rejected.
+    res_stale_after_reask = client.get(f"/sessions/{session_id}/readback.wav?revision=3")
     assert res_stale_after_reask.status_code == 409
 
-    # Even with revision 2, it is rejected because readback was not started for revision 2
-    res_rev2_not_started = client.get(f"/sessions/{session_id}/readback.wav?revision=2")
+    # The new revision has no readback yet and must also be rejected.
+    res_rev2_not_started = client.get(f"/sessions/{session_id}/readback.wav?revision=4")
     assert res_rev2_not_started.status_code == 409
+
+
+def test_readback_defaults_to_hindi_words_per_confirm_benchmark():
+    from parcha.config import Settings
+    from tests.conftest import make_test_card
+
+    text = make_readback(make_test_card())
+    assert "रुपये" in text and "₹" not in text
+    assert Settings.from_mapping({}).tts_voice == "Vikrant"
+
+
+def test_readback_words_fall_back_to_digits_for_unrenderable_amounts():
+    from parcha.readback import format_rupees
+    from tests.conftest import make_test_card
+
+    card = make_test_card()
+    for paise in (0, 12550, 20_000_000):
+        item = card.items[0].model_copy(update={"amount_paise": paise})
+        text = make_readback(card.model_copy(update={"items": [item, *card.items[1:]]}))
+        assert f"front brake pad: {format_rupees(paise)}" in text

@@ -5,12 +5,21 @@ from fastapi.testclient import TestClient
 from parcha.app import create_app
 
 
+def resolve_amounts(client, sid, rev=1):
+    """Single-recording amounts need a deliberate repeat before read-back (independent-confirmation gate)."""
+    for field in ("items.part-1.amount_paise", "items.labour-1.amount_paise"):
+        rev = client.post(f"/sessions/{sid}/reask/{field}", data={"expected_revision": rev},
+                          files={"audio": ("c.wav", b"recorded correction", "audio/wav")}).json()["revision"]
+    return rev
+
+
 def awaiting(fake_services):
     fake_services.workflow.timbre = fake_services.timbre
     client = TestClient(create_app(fake_services))
     sid = client.post("/sessions").json()["id"]
     rev = client.post(f"/sessions/{sid}/intake", data={"expected_revision": 0},
                       files={"audio": ("a.wav", b"x", "audio/wav")}).json()["revision"]
+    rev = resolve_amounts(client, sid, rev)
     client.post(f"/sessions/{sid}/readback", data={"expected_revision": rev})
     return client, sid, rev
 
@@ -43,7 +52,7 @@ def test_confirmed_parcha_shows_verdict_slip_and_evidence(fake_services):
     confirm(fake_services, client, sid, rev)
     html = client.get(f"/verify/{sid}").text
     assert "असली पर्चा" in html and "Verified electronic record" in html
-    assert "₹650" in html and "₹450" in html and "पार्ट" in html and "लेबर" in html
+    assert "₹1,000" in html and "₹500" in html and "पार्ट" in html and "लेबर" in html
     assert "front brake pad" in html and "KA-01-AB-1234" in html and "DPDP Act 2023" in html
     assert re.search(r'id="manifest-digest"[^>]*>[0-9a-f]{64}<', html)
     assert "मंज़ूर" in html                     # the stamp

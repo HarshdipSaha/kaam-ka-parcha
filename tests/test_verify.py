@@ -27,17 +27,22 @@ def test_verify_html_and_json_responses(fake_services):
         files={"audio": ("estimate.wav", b"fake intake audio", "audio/wav")},
     )
 
+    client.post(f"/sessions/{session_id}/reask/items.part-1.amount_paise", data={"expected_revision": 1},
+                files={"audio": ("part.wav", b"part correction", "audio/wav")})
+    client.post(f"/sessions/{session_id}/reask/items.labour-1.amount_paise", data={"expected_revision": 2},
+                files={"audio": ("labour.wav", b"labour correction", "audio/wav")})
+
     # Readback
     client.post(
         f"/sessions/{session_id}/readback",
-        data={"expected_revision": 1},
+        data={"expected_revision": 3},
     )
 
     # Reply (confirms session)
     fake_services.workflow.prisma.transcribe = lambda wav, mode, **kw: "haan theek hai"
     client.post(
         f"/sessions/{session_id}/reply",
-        data={"expected_revision": 1, "readback_revision": 1},
+        data={"expected_revision": 3, "readback_revision": 3},
         files={"audio": ("reply.wav", b"fake reply audio", "audio/wav")},
     )
 

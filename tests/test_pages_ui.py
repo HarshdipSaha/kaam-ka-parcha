@@ -23,7 +23,7 @@ def test_customer_page_is_a_call_with_unticked_consent(fake_services):
     client, sid, _ = awaiting(fake_services)
     html = client.get(f"/customer/{sid}").text
     assert "यह नकली फ़ोन लाइन है" in html and SIM in html
-    assert "गैराज से कॉल" in html and "₹650" in html and "पार्ट" in html and "Kaam ka Parcha — Customer Estimate Review" in html
+    assert "गैराज से कॉल" in html and "₹1,000" in html and "पार्ट" in html and "Kaam ka Parcha — Customer Estimate Review" in html
     box = re.search(r'<input[^>]*id="dpdp-consent-checkbox"[^>]*>', html).group(0)
     assert "checked" not in box
     assert re.search(r'id="readback-caption"[^>]*>\s*\S', html)

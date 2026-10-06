@@ -45,7 +45,7 @@ def _clip_manifest(clip_id, amount, stratum):
     }
 
 
-def test_money_eval_counts_identical_wrong_amounts_as_accepted():
+def test_money_eval_requires_independent_confirmation_for_agreed_amounts():
     rows = [
         _result("v001", "verbatim", "ब्रेक पैड साढ़े चार सौ लेबर दो सौ"),
         _result("v002", "transcribe", "ब्रेक पैड 350 लेबर 200"),
@@ -60,15 +60,30 @@ def test_money_eval_counts_identical_wrong_amounts_as_accepted():
     )
     [summary] = summarize(outcomes)
 
-    assert [outcome.kind for outcome in outcomes].count("correct") == 3
-    assert [outcome.kind for outcome in outcomes].count("wrong_accepted") == 1
+    assert [outcome.kind for outcome in outcomes].count("abstained") == 4
+    assert all(outcome.reason == "independent_confirmation_required" for outcome in outcomes)
+    assert all(outcome.decided_paise is None for outcome in outcomes)
     assert summary["amounts"] == 4
     assert summary["slice"] == "scripted_estimate"
     assert summary["condition"] == "g711|clean"
-    assert summary["correct"] == 3
-    assert summary["wrong_accepted"] == 1
-    assert summary["wrong_amount_confirmed_rate"] == 0.25
-    assert summary["wrong_amount_confirmed_upper95"] > summary["wrong_amount_confirmed_rate"]
+    assert summary["correct"] == 0
+    assert summary["abstained"] == 4
+    assert summary["wrong_accepted"] == 0
+    assert summary["wrong_amount_confirmed_rate"] == 0
+    assert summary["abstain_reasons"] == {"independent_confirmation_required": 4}
+
+
+def test_money_eval_preserves_parser_abstain_reason():
+    rows = [
+        _result("c000", "transcribe", "450"),
+        _result("c000", "verbatim", "saade"),
+    ]
+
+    [outcome] = score_rows(rows, expected={"c000": [45000]}, slices={"c000": "correction"})
+
+    assert outcome.kind == "abstained"
+    assert outcome.reason == "incomplete_number"
+    assert outcome.decided_paise is None
 
 
 def test_money_eval_provider_error_abstains_for_expected_amount():
@@ -122,8 +137,8 @@ def test_fractional_snr_conditions_do_not_mispair_or_lose_decimal_precision():
     assert {outcome.condition for outcome in outcomes} == {"g711|5.25", "g711|5.75"}
     assert {summary["condition"] for summary in summarize(outcomes)} == {"g711|5.25", "g711|5.75"}
     assert {outcome.condition: outcome.kind for outcome in outcomes} == {
-        "g711|5.25": "correct",
-        "g711|5.75": "wrong_accepted",
+        "g711|5.25": "abstained",
+        "g711|5.75": "abstained",
     }
 
 
@@ -260,9 +275,12 @@ def test_money_eval_cli_reads_bom_manifests_skips_exclusions_and_creates_output(
     by_slice = {summary["slice"]: summary for summary in summaries}
     assert set(by_slice) == {"correction", "scripted_estimate"}
     assert by_slice["correction"]["amounts"] == 1
-    assert by_slice["correction"]["correct"] == 1
+    assert by_slice["correction"]["correct"] == 0
+    assert by_slice["correction"]["abstained"] == 1
+    assert by_slice["correction"]["abstain_reasons"] == {"independent_confirmation_required": 1}
     assert by_slice["scripted_estimate"]["amounts"] == 1
-    assert by_slice["scripted_estimate"]["correct"] == 1
+    assert by_slice["scripted_estimate"]["correct"] == 0
+    assert by_slice["scripted_estimate"]["abstained"] == 1
 
 
 def test_colloquial_amount_renderer_covers_gold_first_amount_phrasings():
@@ -342,3 +360,130 @@ def test_bias_control_clips_use_automotive_bias_words_and_validate_as_clips():
         word for word, _ in BIAS_CONTROL_WORDS
     ]
     assert all(Clip.model_validate(row) for row in rows)
+
+
+def test_readback_words_style_speaks_amounts_as_hindi_words():
+    from parcha.numerals import parse_amounts
+    from parcha.readback import make_readback
+    from tests.test_schema import sample_card
+
+    text = make_readback(sample_card(), amount_style="words")
+
+    assert "\u091a\u093e\u0930 \u0938\u094c \u092a\u091a\u093e\u0938 \u0930\u0941\u092a\u092f\u0947" in text
+    assert "\u20b9" not in text
+    assert [mention.paise for mention in parse_amounts(text)] == [45000, 20000, 65000]
+
+
+def test_echo_scores_each_voice_style_condition_and_reuses_one_synthesis():
+    from parcha.lab.echo import expected_sequence, run_echo, score_echo
+    from tests.test_schema import sample_card
+
+    calls = {"tts": 0}
+
+    def synthesize(text, voice):
+        calls["tts"] += 1
+        return text.encode(), 120.0
+
+    def degrade(wav, condition):
+        return wav.replace("\u20b9450".encode(), "\u20b9350".encode()) if condition == "amr_nb_4750|0" else wav
+
+    rows = run_echo(
+        {"k1": sample_card()},
+        ["Nalini", "Deepak"],
+        ["digits"],
+        ["control", "g711|clean", "amr_nb_4750|0"],
+        synthesize=synthesize,
+        degrade=degrade,
+        transcribe=lambda wav: wav.decode(),
+    )
+
+    assert calls["tts"] == 2 and len(rows) == 6
+    assert [row.passed for row in rows if row.condition == "amr_nb_4750|0"] == [False, False]
+    assert expected_sequence(sample_card()) == (45000, 20000, 65000)
+    assert score_echo(sample_card(), "")[1] is False
+
+
+def test_run_echo_reports_tts_attempt_context_before_synthesis():
+    from parcha.lab.echo import run_echo
+    from parcha.readback import make_readback
+    from tests.test_schema import sample_card
+
+    attempts = []
+    card = sample_card()
+    readback = make_readback(card, amount_style="words")
+
+    run_echo(
+        {"k1": card},
+        ["Nalini"],
+        ["words"],
+        ["control"],
+        synthesize=lambda text, voice: (text.encode(), 10.0),
+        degrade=lambda wav, condition: wav,
+        transcribe=lambda wav: wav.decode(),
+        on_tts_attempt=lambda card_id, voice, style, characters: attempts.append(
+            (card_id, voice, style, characters)
+        ),
+    )
+
+    assert attempts == [("k1", "Nalini", "words", len(readback))]
+
+
+def test_run_echo_emits_completed_rows_before_a_later_transcription_failure():
+    from pytest import raises
+    from parcha.lab.echo import run_echo
+    from tests.test_schema import sample_card
+
+    emitted = []
+    transcriptions = 0
+
+    def transcribe(wav):
+        nonlocal transcriptions
+        transcriptions += 1
+        if transcriptions == 2:
+            raise RuntimeError("provider unavailable")
+        return wav.decode()
+
+    with raises(RuntimeError, match="provider unavailable"):
+        run_echo(
+            {"k1": sample_card()},
+            ["Nalini"],
+            ["digits"],
+            ["control", "amr_nb_4750|0"],
+            synthesize=lambda text, voice: (text.encode(), 120.0),
+            degrade=lambda wav, condition: wav,
+            transcribe=transcribe,
+            on_row=emitted.append,
+        )
+
+    assert len(emitted) == 1
+    assert emitted[0].condition == "control"
+
+
+def test_run_echo_emits_all_three_audio_conditions_after_each_case():
+    from parcha.lab.echo import run_echo
+    from tests.test_schema import sample_card
+
+    completed_cases = []
+    trace = []
+
+    run_echo(
+        {"k1": sample_card()},
+        ["Nalini"],
+        ["digits"],
+        ["control", "g711|clean", "amr_nb_4750|0"],
+        synthesize=lambda text, voice: (b"tts", 120.0),
+        degrade=lambda wav, condition: wav + condition.encode(),
+        transcribe=lambda wav: (trace.append("transcribe") or ""),
+        on_case=lambda rows, audios: completed_cases.append((rows, audios)),
+        on_case_audio=lambda card_id, voice, style, audios: trace.append(("audio", audios)),
+    )
+
+    assert len(completed_cases) == 1
+    assert trace[0][0] == "audio" and trace[1:] == ["transcribe"] * 3
+    rows, audios = completed_cases[0]
+    assert [row.condition for row in rows] == ["control", "g711|clean", "amr_nb_4750|0"]
+    assert audios == {
+        "control": b"tts",
+        "g711|clean": b"tts" + b"g711|clean",
+        "amr_nb_4750|0": b"tts" + b"amr_nb_4750|0",
+    }

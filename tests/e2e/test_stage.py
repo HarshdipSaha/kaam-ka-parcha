@@ -1,7 +1,7 @@
 import pytest
 from playwright.sync_api import expect
 
-from tests.e2e.helpers import SCREENS, speak
+from tests.e2e.helpers import SCREENS, confirm_amounts_in_ui, speak
 
 pytestmark = pytest.mark.e2e
 
@@ -12,7 +12,8 @@ def test_stage_runs_the_whole_loop_on_one_screen(page, world):
     shop = page.frame_locator("#stage-workshop")
     owner = page.frame_locator("#stage-customer")
     speak(shop, "#record", "#stop")
-    expect(shop.locator("#total-cell")).to_have_text("₹650", timeout=15000)
+    expect(shop.locator("#slip")).to_be_visible(timeout=15000)
+    confirm_amounts_in_ui(shop, world)
     shop.locator("#start-readback").click()
     expect(owner.locator("#readback-caption")).not_to_be_empty(timeout=10000)
     owner.locator("#dpdp-consent-checkbox").check()

@@ -33,7 +33,7 @@ def test_query_param_overrides_the_saved_language(page):
 
 
 def test_values_follow_the_language_on_the_customer_slip(page, world):
-    session = new_parcha(world.url)
+    session = new_parcha(world)
     page.goto(f"/customer/{session['id']}")
     chip = page.locator('[data-item="part-1"] .chip')
     expect(chip).to_have_text("Part", use_inner_text=True)

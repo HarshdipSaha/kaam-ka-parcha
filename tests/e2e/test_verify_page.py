@@ -7,7 +7,7 @@ pytestmark = pytest.mark.e2e
 
 
 def test_verify_shows_a_big_verdict_and_folds_the_hashes(page, world):
-    session = new_parcha(world.url)
+    session = new_parcha(world)
     world.prisma.say("हाँ ठीक है")
     reply_by_api(world.url, session)
     page.goto(f"/verify/{session['id']}")

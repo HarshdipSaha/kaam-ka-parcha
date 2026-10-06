@@ -43,7 +43,7 @@ def test_layout_fits_and_targets_are_thumb_sized(page, world, width, height):
 
     world.prisma.reset()
     world.extractor.mode = "complete"
-    session = new_parcha(world.url)
+    session = new_parcha(world)
     page.goto(f"/customer/{session['id']}")
     audit(page, "customer-call", width)
 
@@ -57,7 +57,7 @@ def test_layout_fits_and_targets_are_thumb_sized(page, world, width, height):
 
 def test_reduced_motion_turns_animation_off(page, world):
     page.emulate_media(reduced_motion="reduce")
-    session = new_parcha(world.url)
+    session = new_parcha(world)
     world.prisma.say("हाँ ठीक है")
     reply_by_api(world.url, session)
     page.goto(f"/customer/{session['id']}")

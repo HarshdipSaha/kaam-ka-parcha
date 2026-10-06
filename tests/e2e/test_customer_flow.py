@@ -4,13 +4,13 @@ import httpx
 import pytest
 from playwright.sync_api import expect
 
-from tests.e2e.helpers import SCREENS, new_parcha, speak
+from tests.e2e.helpers import SCREENS, confirm_amounts_by_api, new_parcha, speak
 
 pytestmark = pytest.mark.e2e
 
 
 def open_customer(page, world, *, consent=True, read_back=True):
-    session = new_parcha(world.url, read_back=read_back)
+    session = new_parcha(world, read_back=read_back)
     page.goto(f"/customer/{session['id']}")
     if consent:
         page.locator("#dpdp-consent-checkbox").check()
@@ -70,7 +70,7 @@ def test_correction_shows_the_old_amount_struck_and_a_fresh_call(page, world):
     expect(row.locator("s")).to_have_text("₹450", timeout=15000)
     expect(row).to_contain_text("₹500")
     expect(page.locator("#total-cell")).to_have_text("₹700")
-    expect(page.locator("#readback-player")).to_have_attribute("src", re.compile(r"revision=2"))
+    expect(page.locator("#readback-player")).to_have_attribute("src", re.compile(r"revision=4"))
     expect(page.locator("#customer-status")).to_contain_text("नया पर्चा")
     page.screenshot(path=str(SCREENS / "customer-correction-360.png"), full_page=True)
 
@@ -108,7 +108,8 @@ def test_stale_reply_offers_reload(page, world):
 def test_page_waits_for_the_read_back_then_updates_itself(page, world):
     session = open_customer(page, world, consent=False, read_back=False)
     expect(page.locator("#customer-status")).to_contain_text("गैराज पर्चा तैयार कर रहा है")
-    httpx.post(f"{world.url}/sessions/{session['id']}/readback",
-               data={"expected_revision": session["revision"]}).raise_for_status()
+    with httpx.Client(base_url=world.url, timeout=30) as http:
+        revision = confirm_amounts_by_api(http, world, session["id"], session["revision"])
+        http.post(f"/sessions/{session['id']}/readback", data={"expected_revision": revision}).raise_for_status()
     expect(page.locator("#readback-caption")).not_to_be_empty(timeout=10000)
     expect(page.locator("#readback-player")).to_have_attribute("src", re.compile(r"readback\.wav\?revision=\d+"))
