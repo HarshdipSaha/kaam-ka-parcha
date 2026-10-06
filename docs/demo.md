@@ -181,3 +181,8 @@ When demonstrating or defending the implementation to hackathon evaluators:
 - **Compliance Badges**:
   - *"Simulated Telephony Line: G.711 / AMR-NB + 5 dB noise"*
   - *"All names and vehicle numbers are synthetic"*
+
+
+## Stage view shot list (`/stage`)
+
+Open `http://localhost:8000/stage` at 125% browser zoom. It creates one session and shows the mechanic and owner phones side by side. Shot order: dictation, slip, read-back, "haan", approval stamp on both phones. Screenshots in `docs/ui/` use synthetic data only.

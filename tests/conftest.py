@@ -5,10 +5,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from parcha.app import AppServices, create_app
-from parcha.config import Settings
 from parcha.schema import Delivery, Evidence, JobCard, LineItem
 from parcha.session import SessionStore
 from parcha.workflow import Workflow
+from tests.fakes import fake_settings
 
 
 def make_test_card() -> JobCard:
@@ -150,15 +150,7 @@ class FakeTimbreClient:
 
 @pytest.fixture
 def fake_services() -> AppServices:
-    settings = Settings(
-        api_key="test-api-key",
-        extractor_base_url="http://localhost:8080/v1",
-        extractor_api_key="test-extractor-key",
-        extractor_model="gnani-evon-v3.3",
-        extractor_provider="evon",
-        gnani_base_url="https://api.vachana.ai",
-        tts_voice="Nalini",
-    )
+    settings = fake_settings()
     store = SessionStore()
     prisma = FakePrisma()
     extractor = FakeExtractor()

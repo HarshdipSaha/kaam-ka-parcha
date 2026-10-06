@@ -1,20 +1,6 @@
-const REPEAT_MESSAGE = "आवाज़ साफ़ नहीं आई — कृपया फिर से बोलिए (Please say it again)";
-const ABSTAIN_LABELS = {
-  independent_confirmation_required: "रकम दोबारा बोलकर पक्की करें",
-  incomplete_number: "अधूरी रकम — फिर से पूछेंगे",
-  crosscheck_disagreement: "रकम पक्की नहीं — फिर से पूछेंगे",
-  ambiguous_attachment: "कौन सी रकम किस आइटम की — साफ़ नहीं",
-  empty_transcript: "आवाज़ नहीं आई",
-  provider_504: "नेटवर्क रुका — फिर से बोलिए",
-  provider_429: "बहुत जल्दी-जल्दी — थोड़ा रुककर बोलिए",
-  out_of_range: "रकम सीमा से बाहर",
-};
-
-function describeHttpError(detail, status) {
-  if (detail && typeof detail === "object" && detail.repeat) return REPEAT_MESSAGE;
-  return (typeof detail === "string" && detail) || `Server returned HTTP ${status}`;
-}
-
+// Kaam ka Parcha page flows. Copy, formatting and rendering live in ui.js (window.ParchaUI).
+const UI = window.ParchaUI;
+const $ = (id) => document.getElementById(id);
 function getSupportedMimeType() {
   const candidates = [
     "audio/webm;codecs=opus",
@@ -34,798 +20,460 @@ function getSupportedMimeType() {
   }
   return "";
 }
-
-async function recordOnce(startButton, stopButton) {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    throw new Error("Audio recording is not supported in this browser");
+async function recordOnce(startButton, stopButton, hooks = {}) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === "undefined") {
+    throw new UI.MicError("unsupported");
   }
-
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (err) {
+    throw new UI.MicError(err && err.name === "NotAllowedError" ? "blocked" : "unavailable");
+  }
+  if (navigator.vibrate) navigator.vibrate(10);
   const mimeType = getSupportedMimeType();
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  const options = mimeType ? { mimeType } : undefined;
-  const recorder = new MediaRecorder(stream, options);
+  const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
   const chunks = [];
-
-  recorder.ondataavailable = (event) => {
-    if (event.data && event.data.size > 0) {
-      chunks.push(event.data);
-    }
-  };
-
+  recorder.ondataavailable = (event) => { if (event.data && event.data.size > 0) chunks.push(event.data); };
   if (startButton) startButton.disabled = true;
   if (stopButton) stopButton.disabled = false;
-
+  if (hooks.onStart) hooks.onStart(stream);
   return new Promise((resolve, reject) => {
     let stopped = false;
-
     const cleanup = () => {
       stream.getTracks().forEach((track) => track.stop());
       if (startButton) startButton.disabled = false;
       if (stopButton) stopButton.disabled = true;
+      if (hooks.onEnd) hooks.onEnd();
     };
-
-    recorder.onerror = (event) => {
-      cleanup();
-      reject(event.error || new Error("Recording error"));
-    };
-
-    recorder.onstop = () => {
-      cleanup();
-      const type = recorder.mimeType || mimeType || "audio/webm";
-      const blob = new Blob(chunks, { type });
-      resolve(blob);
-    };
-
-    const stopHandler = () => {
-      if (!stopped) {
-        stopped = true;
-        if (recorder.state !== "inactive") {
-          recorder.stop();
-        }
-      }
-    };
-
+    recorder.onerror = (event) => { cleanup(); reject(event.error || new Error("Recording error")); };
+    recorder.onstop = () => { cleanup(); resolve(new Blob(chunks, { type: recorder.mimeType || mimeType || "audio/webm" })); };
     if (stopButton) {
-      stopButton.addEventListener("click", stopHandler, { once: true });
+      stopButton.addEventListener("click", () => {
+        if (!stopped) { stopped = true; if (recorder.state !== "inactive") recorder.stop(); }
+      }, { once: true });
     }
-
     recorder.start(100);
   });
 }
-
-function formatRupees(amount_paise) {
-  if (amount_paise === null || amount_paise === undefined) {
-    return "₹--";
-  }
-  const rupees = amount_paise / 100;
-  return amount_paise % 100 === 0 ? `₹${rupees.toFixed(0)}` : `₹${rupees.toFixed(2)}`;
+function audioPart(blob, name) {
+  const ext = blob.type.includes("wav") ? "wav" : blob.type.includes("ogg") ? "ogg" : "webm";
+  return [blob, `${name}.${ext}`];
 }
-
-let currentSession = null;
-let isRecording = false;
-
-async function getOrCreateSession() {
-  if (currentSession && currentSession.id) {
-    return currentSession;
+function showError(target, err) {
+  if (err instanceof UI.MicError) {
+    const copy = err.kind === "unsupported" ? UI.COPY.micUnsupported : UI.COPY.micBlocked;
+    UI.say(target, copy.hi, copy.en, "error");
+  } else if (err instanceof UI.HttpError && err.repeat) {
+    UI.say(target, UI.REPEAT_MESSAGE, "", "warn", UI.ABSTAIN_LABELS[err.reason] || "");
+  } else if (err instanceof UI.HttpError && err.status === 409) {
+    UI.stale(target);
+  } else {
+    UI.say(target, UI.COPY.failed.hi, UI.COPY.failed.en, "error", err && err.message);
   }
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const existingId = urlParams.get("session_id");
+}
+/* ---------- workshop (mechanic) ---------- */
+let currentSession = null;
+let stopWaiting = null;
+async function getOrCreateSession() {
+  if (currentSession && currentSession.id) return currentSession;
+  const existingId = new URLSearchParams(window.location.search).get("session_id");
   if (existingId) {
     try {
-      const resp = await fetch(`/sessions/${existingId}`);
-      if (resp.ok) {
-        currentSession = await resp.json();
-        renderSession(currentSession);
-        return currentSession;
-      }
-    } catch (e) {
-      console.warn("Failed to load existing session:", e);
-    }
+      renderSession(await UI.api.get(`/sessions/${existingId}`));
+      return currentSession;
+    } catch (_) { /* fall through to a new session */ }
   }
-
-  const res = await fetch("/sessions", { method: "POST" });
-  if (!res.ok) {
-    throw new Error(`Failed to create session: HTTP ${res.status}`);
-  }
-  currentSession = await res.json();
+  const created = await UI.api.post("/sessions");
   const url = new URL(window.location);
-  url.searchParams.set("session_id", currentSession.id);
+  url.searchParams.set("session_id", created.id);
   window.history.replaceState({}, "", url);
-  renderSession(currentSession);
+  renderSession(created);
   return currentSession;
 }
-
+function toggleListening(on) {
+  $("record").hidden = on;
+  $("stop").hidden = !on;
+}
 function renderSession(data) {
+  const previousStatus = currentSession ? currentSession.status : null;
   currentSession = data;
-
-  const cardSection = document.getElementById("card");
-  const reviewSection = document.getElementById("review-section");
-  const reviewFieldsContainer = document.getElementById("review-fields");
-  const reviewCountBadge = document.getElementById("review-count");
-  const readbackButton = document.getElementById("start-readback");
-  const customerLink = document.getElementById("customer-link");
-
-  const card = data.card;
-  const reviewFields = data.review_fields || [];
-
-  if (card && reviewFields.length === 0) {
-    if (readbackButton) readbackButton.disabled = false;
-    if (customerLink) {
-      customerLink.href = `/customer/${data.id}`;
-      customerLink.style.display = "inline-block";
-    }
+  if (!$("workshop")) return;
+  const stage = UI.stageFor(data);
+  $("workshop").dataset.stage = stage;
+  UI.renderStepper($("stepper"), stage);
+  $("transcript").hidden = !data.mechanic_transcript;
+  $("transcript-content").textContent = data.mechanic_transcript || "";
+  const flags = data.review_fields || [];
+  const count = UI.flagCount(flags.length);
+  $("review-section").hidden = flags.length === 0;
+  $("review-count").replaceChildren(UI.el("span", { class: "hi" }, count.hi), UI.el("span", { class: "en" }, count.en));
+  if (data.card) {
+    UI.renderSlip($("card"), data, { copy: "duplicate", flags: true, onReask: handleReask, stamp: stage === "manzoor" });
   } else {
-    if (readbackButton) readbackButton.disabled = true;
-    if (customerLink) {
-      customerLink.style.display = "none";
-    }
+    $("card").replaceChildren(UI.emptyWorkshop());
   }
-
-  if (reviewFields.length > 0) {
-    if (reviewSection) reviewSection.style.display = "block";
-    if (reviewCountBadge) reviewCountBadge.textContent = `${reviewFields.length} pending`;
-    if (reviewFieldsContainer) {
-      reviewFieldsContainer.innerHTML = "";
-      reviewFields.forEach((field) => {
-        const div = document.createElement("div");
-        div.className = "review-item";
-
-        const labelSpan = document.createElement("span");
-        labelSpan.textContent = `Needs review: ${field}`;
-
-        const reason = (data.abstentions || {})[field];
-        if (reason) {
-          const tag = document.createElement("span");
-          tag.className = "abstain-reason";
-          tag.textContent = ABSTAIN_LABELS[reason] || reason;
-          labelSpan.appendChild(tag);
-        }
-
-        const reaskBtn = document.createElement("button");
-        reaskBtn.className = "reask-btn";
-        reaskBtn.textContent = "Record correction";
-        reaskBtn.dataset.field = field;
-        reaskBtn.onclick = () => handleReask(field, reaskBtn);
-
-        div.appendChild(labelSpan);
-        div.appendChild(reaskBtn);
-        reviewFieldsContainer.appendChild(div);
-      });
-    }
-  } else {
-    if (reviewSection) reviewSection.style.display = "none";
-  }
-
-  if (!card) {
-    if (cardSection) {
-      cardSection.innerHTML = '<div class="empty-state">No estimate recorded yet. Press "Record estimate" above.</div>';
-    }
-    return;
-  }
-
-  let itemsHtml = "";
-  if (card.items && card.items.length > 0) {
-    itemsHtml = card.items
-      .map(
-        (item) => `
-      <tr>
-        <td><strong>${item.id}</strong></td>
-        <td>${item.label || '<em style="color:var(--danger)">(Missing label)</em>'}</td>
-        <td><span class="badge" style="font-size:0.7rem;">${item.kind}</span></td>
-        <td class="amount-cell">${formatRupees(item.amount_paise)}</td>
-      </tr>
-    `
-      )
-      .join("");
-  }
-
-  const totalDisplay =
-    data.total_paise !== null && data.total_paise !== undefined
-      ? formatRupees(data.total_paise)
-      : '<em style="color:var(--text-muted)">Incomplete</em>';
-
-  const deliveryDisplay = card.delivery
-    ? `${card.delivery.date} (${card.delivery.window}) — <em>"${card.delivery.spoken}"</em>`
-    : '<em style="color:var(--danger)">Pending delivery details</em>';
-
-  const statusBadgeClass =
-    data.status === "confirmed"
-      ? "badge-confirmed"
-      : data.status === "review"
-      ? "badge-status"
-      : "badge";
-
-  if (cardSection) {
-    cardSection.innerHTML = `
-      <div class="panel-title">
-        <span>Job Card</span>
-        <div>
-          <span class="badge ${statusBadgeClass}">Status: ${data.status}</span>
-          <span class="badge">Rev ${data.revision}</span>
-        </div>
-      </div>
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Item / Service</th>
-            <th>Kind</th>
-            <th style="text-align:right;">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHtml}
-          <tr class="total-row">
-            <td colspan="3">Estimated Total</td>
-            <td class="amount-cell">${totalDisplay}</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="meta-grid">
-        <div class="meta-item">
-          <span class="meta-label">Promised Delivery</span>
-          <div>${deliveryDisplay}</div>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">Session ID</span>
-          <code style="color:var(--accent); font-size:0.8rem;">${data.id}</code>
-        </div>
-      </div>
-    `;
+  $("dock").hidden = !["bolo", "parcha", "sunao"].includes(stage);
+  $("start-readback").hidden = stage !== "sunao";
+  $("start-readback").disabled = stage !== "sunao";
+  const shareOpen = stage === "haan" || stage === "manzoor";
+  const customerUrl = `${window.location.origin}/customer/${data.id}`;
+  $("share").hidden = !shareOpen;
+  $("customer-link").hidden = !shareOpen;
+  $("customer-link").href = `/customer/${data.id}`;
+  $("whatsapp-open").href = UI.whatsappHref(UI.shareMessage(data, customerUrl));
+  $("copy-link").dataset.url = customerUrl;
+  const sealed = stage === "manzoor";
+  const title = sealed ? ["ग्राहक ने मंज़ूर किया", "Customer approved — the record is sealed"] : ["ग्राहक को भेजिए", "Send to the customer"];
+  $("share-title").replaceChildren(UI.el("span", { class: "hi" }, title[0]), UI.el("span", { class: "en" }, title[1]));
+  ["copy-link", "whatsapp-open", "customer-link", "share-note"].forEach((id) => { $(id).hidden = sealed; });
+  $("sealed-links").hidden = !sealed;
+  $("sealed-verify").href = `/verify/${data.id}`;
+  $("sealed-pdf").href = `/sessions/${data.id}/pdf`;
+  if ((stage === "haan" || sealed) && previousStatus !== data.status) window.scrollTo({ top: 0, behavior: "smooth" });
+  if (stage === "haan") startWaiting();
+  if (stage === "manzoor" && previousStatus && previousStatus !== "confirmed") celebrate();
+  if (previousStatus === "awaiting_reply" && data.status === "review") {
+    UI.say($("message"), UI.COPY.changesAsked.hi, UI.COPY.changesAsked.en, "warn");
   }
 }
-
-async function handleRecordEstimate() {
-  const recordBtn = document.getElementById("record");
-  const stopBtn = document.getElementById("stop");
-  const messageEl = document.getElementById("message");
-
+function startWaiting() {
+  if (stopWaiting) return;
+  UI.say($("message"), UI.COPY.waiting.hi, UI.COPY.waiting.en);
+  stopWaiting = UI.poll(() => UI.api.get(`/sessions/${currentSession.id}`), {
+    every: 3000,
+    onData: (s) => { if (s.status !== currentSession.status || s.revision !== currentSession.revision) renderSession(s); },
+    until: (s) => s.status !== "awaiting_reply" && s.status !== "fallback_ready",
+    onDone: () => { stopWaiting = null; },
+  });
+}
+function celebrate() {
+  UI.say($("message"), UI.COPY.workshopSealed.hi, UI.COPY.workshopSealed.en, "ok");
+  UI.chime();
+  UI.buzz();
+}
+async function recordAndPost(startButton, url, name) {
+  const mic = UI.micDock($("dock"));
+  const message = $("message");
   try {
     const session = await getOrCreateSession();
-    if (messageEl) {
-      messageEl.textContent =
-        "Recording in progress... Speak items, amounts, and delivery date, then click Stop.";
-    }
-    isRecording = true;
-
-    const blob = await recordOnce(recordBtn, stopBtn);
-    isRecording = false;
-    if (messageEl) {
-      messageEl.textContent = "Processing audio with Gnani Prisma and Extractor...";
-    }
-
-    const formData = new FormData();
-    formData.append("expected_revision", session.revision);
-    const ext = blob.type.includes("wav")
-      ? "wav"
-      : blob.type.includes("ogg")
-      ? "ogg"
-      : "webm";
-    formData.append("audio", blob, `estimate.${ext}`);
-
-    const res = await fetch(`/sessions/${session.id}/intake`, {
-      method: "POST",
-      body: formData,
+    $("record").disabled = true;
+    const blob = await recordOnce(startButton, $("stop"), {
+      onStart: (stream) => { toggleListening(true); mic.listening(stream); },
+      onEnd: () => toggleListening(false),
     });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(describeHttpError(err.detail, res.status));
-    }
-
-    const updated = await res.json();
-    renderSession(updated);
-    if (messageEl) {
-      messageEl.textContent =
-        "Estimate processed successfully. Review any highlighted fields below.";
-    }
+    mic.processing();
+    UI.say(message, UI.COPY.processing.hi, UI.COPY.processing.en);
+    const form = new FormData();
+    form.append("expected_revision", session.revision);
+    form.append("audio", ...audioPart(blob, name));
+    renderSession(await UI.api.post(url(session), form));
+    const pending = currentSession.review_fields.length > 0;
+    const next = pending ? UI.COPY.checkRows : UI.COPY.ready;
+    UI.say(message, next.hi, next.en, pending ? "warn" : "ok");
   } catch (err) {
-    console.error("Intake failed:", err);
-    if (messageEl) {
-      messageEl.textContent = `Error: ${err.message}`;
-    }
+    showError(message, err);
   } finally {
-    isRecording = false;
-    if (recordBtn) recordBtn.disabled = false;
-    if (stopBtn) stopBtn.disabled = true;
+    mic.idle();
+    toggleListening(false);
+    $("record").disabled = false;
+    $("stop").disabled = true;
   }
 }
-
-async function handleReask(field, buttonEl) {
-  const stopBtn = document.getElementById("stop");
-  const recordBtn = document.getElementById("record");
-  const messageEl = document.getElementById("message");
-
-  try {
-    const session = await getOrCreateSession();
-    if (messageEl) {
-      messageEl.textContent = `Recording correction for ${field}... Click Stop when done.`;
-    }
-    if (recordBtn) recordBtn.disabled = true;
-    isRecording = true;
-
-    const blob = await recordOnce(buttonEl, stopBtn);
-    isRecording = false;
-    if (messageEl) {
-      messageEl.textContent = `Updating field ${field}...`;
-    }
-
-    const formData = new FormData();
-    formData.append("expected_revision", session.revision);
-    const ext = blob.type.includes("wav")
-      ? "wav"
-      : blob.type.includes("ogg")
-      ? "ogg"
-      : "webm";
-    formData.append("audio", blob, `reask.${ext}`);
-
-    const res = await fetch(`/sessions/${session.id}/reask/${field}`, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(describeHttpError(err.detail, res.status));
-    }
-
-    const updated = await res.json();
-    renderSession(updated);
-    if (messageEl) {
-      messageEl.textContent = `Field ${field} updated successfully.`;
-    }
-  } catch (err) {
-    console.error("Re-ask failed:", err);
-    if (messageEl) {
-      messageEl.textContent = `Error re-asking ${field}: ${err.message}`;
-    }
-  } finally {
-    isRecording = false;
-    if (recordBtn) recordBtn.disabled = false;
-    if (stopBtn) stopBtn.disabled = true;
-    if (buttonEl) buttonEl.disabled = false;
-  }
+function handleRecordEstimate() {
+  return recordAndPost($("record"), (s) => `/sessions/${s.id}/intake`, "estimate");
 }
-
+function handleReask(field, chip) {
+  return recordAndPost(chip, (s) => `/sessions/${s.id}/reask/${field}`, "reask");
+}
 async function handleStartReadback() {
-  const messageEl = document.getElementById("message");
-  const customerLink = document.getElementById("customer-link");
-  const readbackBtn = document.getElementById("start-readback");
   if (!currentSession) return;
-
+  const button = $("start-readback");
+  const message = $("message");
   try {
-    if (readbackBtn) readbackBtn.disabled = true;
-    if (messageEl) messageEl.textContent = "Generating telephony read-back audio...";
-    
-    const formData = new FormData();
-    formData.append("expected_revision", currentSession.revision);
-    const resp = await fetch(`/sessions/${currentSession.id}/readback`, {
-      method: "POST",
-      body: formData,
-    });
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.detail || `HTTP ${resp.status}`);
-    }
-    const data = await resp.json();
-    if (messageEl) {
-      messageEl.textContent =
-        "Estimate confirmed ready for customer read-back. Open the customer link to proceed.";
-    }
-    if (customerLink) {
-      customerLink.href = `/customer/${currentSession.id}`;
-      customerLink.style.display = "inline-block";
-    }
+    button.disabled = true;
+    UI.say(message, "ग्राहक के लिए आवाज़ बन रही है…", "Preparing the customer read-back…");
+    const form = new FormData();
+    form.append("expected_revision", currentSession.revision);
+    await UI.api.post(`/sessions/${currentSession.id}/readback`, form);
+    renderSession(await UI.api.get(`/sessions/${currentSession.id}`));
+    UI.say(message, UI.COPY.sendLink.hi, UI.COPY.sendLink.en, "ok");
   } catch (err) {
-    console.error("Readback failed:", err);
-    if (messageEl) messageEl.textContent = `Error starting read-back: ${err.message}`;
-  } finally {
-    if (readbackBtn) readbackBtn.disabled = false;
+    showError(message, err);
+    button.disabled = UI.stageFor(currentSession) !== "sunao";
   }
 }
-
+function initWorkshopPage() {
+  $("record").addEventListener("click", handleRecordEstimate);
+  $("start-readback").addEventListener("click", handleStartReadback);
+  $("copy-link").addEventListener("click", async (event) => {
+    if (await UI.copyText(event.currentTarget.dataset.url)) UI.toast(`${UI.COPY.copied.hi} · ${UI.COPY.copied.en}`);
+  });
+  if (new URLSearchParams(window.location.search).get("session_id")) {
+    getOrCreateSession().catch((err) => showError($("message"), err));
+  }
+}
+/* ---------- customer (vehicle owner) ---------- */
 let currentCustomerSession = null;
 let isCustomerRecording = false;
-
-function renderCustomerCard(data) {
-  if (!data) return;
-  const statusBadge = document.getElementById("card-status-badge");
-  const revisionBadge = document.getElementById("card-revision-badge");
-  const itemsTbody = document.getElementById("items-tbody");
-  const deliveryInfo = document.getElementById("delivery-info");
-  const confirmedBanner = document.getElementById("confirmed-banner");
-  const recordBtn = document.getElementById("customer-record");
-  const stopBtn = document.getElementById("customer-stop");
-
-  if (statusBadge) {
-    statusBadge.textContent = data.status;
-    statusBadge.className =
-      "badge " +
-      (data.status === "confirmed"
-        ? "badge-confirmed"
-        : data.status === "awaiting_reply"
-        ? "badge-status"
-        : "badge");
-  }
-
-  if (revisionBadge) {
-    revisionBadge.textContent = `Rev ${data.revision}`;
-  }
-
-  const card = data.card;
-  if (itemsTbody) {
-    if (card && card.items && card.items.length > 0) {
-      let rows = card.items
-        .map(
-          (item) => `
-        <tr>
-          <td><strong>${item.label || '<em style="color:var(--danger)">(Missing label)</em>'}</strong></td>
-          <td><span class="badge" style="font-size:0.7rem;">${item.kind}</span></td>
-          <td class="amount-cell">${formatRupees(item.amount_paise)}</td>
-        </tr>
-      `
-        )
-        .join("");
-
-      rows += `
-        <tr class="total-row">
-          <td colspan="2">Estimated Total</td>
-          <td class="amount-cell" id="total-cell">${
-            data.total_paise !== null && data.total_paise !== undefined
-              ? formatRupees(data.total_paise)
-              : '<em style="color:var(--text-muted)">Incomplete</em>'
-          }</td>
-        </tr>
-      `;
-      itemsTbody.innerHTML = rows;
-    } else {
-      itemsTbody.innerHTML = `
-        <tr><td colspan="3" class="empty-state">No items available</td></tr>
-        <tr class="total-row">
-          <td colspan="2">Estimated Total</td>
-          <td class="amount-cell" id="total-cell">${formatRupees(data.total_paise)}</td>
-        </tr>
-      `;
-    }
-  }
-
-  if (deliveryInfo) {
-    if (card && card.delivery) {
-      deliveryInfo.innerHTML = `${card.delivery.date} (${card.delivery.window}) — <em>"${card.delivery.spoken}"</em>`;
-    } else {
-      deliveryInfo.innerHTML = '<em style="color:var(--text-muted)">Pending delivery details</em>';
-    }
-  }
-
-  if (confirmedBanner) {
-    if (data.status === "confirmed") {
-      confirmedBanner.style.display = "block";
-      if (recordBtn) recordBtn.disabled = true;
-      if (stopBtn) stopBtn.disabled = true;
-    } else {
-      confirmedBanner.style.display = "none";
-    }
-  }
-
-  const fallbackBanner = document.getElementById("fallback-banner");
-  if (fallbackBanner) {
-    if (data.status === "fallback_ready") {
-      fallbackBanner.style.display = "block";
-    } else {
-      fallbackBanner.style.display = "none";
-    }
+function renderCustomerCard(data, opts = {}) {
+  currentCustomerSession = data;
+  const sealed = data.status === "confirmed";
+  UI.renderSlip($("slip-slot"), data, { copy: "original", previous: opts.previous, stamp: sealed });
+  const badge = $("card-status-badge");
+  UI.setBoth(badge, ...UI.statusBoth(data.status));
+  badge.className = `pill ${sealed ? "pill--ok" : data.status === "awaiting_reply" ? "pill--wait" : "pill--warn"}`;
+  $("card-revision-badge").textContent = `Rev ${data.revision}`;
+  $("confirmed-banner").hidden = !sealed;
+  $("audio-panel").hidden = sealed;
+  $("receipt-total").textContent = UI.formatRupees(data.total_paise);
+  $("fallback-banner").hidden = data.status !== "fallback_ready";
+  $("dock").hidden = sealed || data.status === "fallback_ready";
+  $("dpdp-consent-box").hidden = sealed;
+  if (data.readback_text) UI.setCaption($("readback-caption"), data.readback_text, 0);
+  enableRecordIfReady();
+}
+function describeCustomerState() {
+  const s = currentCustomerSession;
+  const status = $("customer-status");
+  const message = $("customer-message");
+  if (!s) return;
+  if (s.status === "confirmed") {
+    UI.setBoth(status, "पर्चा मंज़ूर हो चुका है", "The estimate is approved");
+    UI.say(message, "PDF और WhatsApp टेक्स्ट ऊपर हैं।", "The PDF and WhatsApp text are above.", "ok");
+  } else if (s.status === "fallback_ready") {
+    UI.setBoth(status, "लाइन साफ़ नहीं है", "The line is unclear");
+    UI.say(message, "नीचे बटन से जवाब दीजिए।", "Answer with the buttons.", "warn");
+  } else if (s.readback_revision === null || s.readback_revision === undefined) {
+    UI.setBoth(status, "गैराज पर्चा तैयार कर रहा है…", "The workshop is preparing the estimate…");
+    UI.say(message, "तैयार होते ही यहाँ अपने आप दिखेगा।", "It will appear here by itself.");
+  } else {
+    UI.setBoth(status, "पर्चा सुनिए, फिर जवाब दीजिए", "Listen to the estimate, then answer");
+    UI.say(message, "सुनने के बाद ✓ सहमति दीजिए और माइक दबाकर बोलिए।", "Listen, tick consent, then tap the mic and answer.");
   }
 }
-
-
-async function initCustomerPage() {
-  const pathParts = window.location.pathname.replace(/\/+$/, "").split("/");
-  let sessionId = pathParts[pathParts.length - 1];
-  if (!sessionId || sessionId === "customer") {
-    const urlParams = new URLSearchParams(window.location.search);
-    sessionId = urlParams.get("session_id");
+function enableRecordIfReady() {
+  const s = currentCustomerSession;
+  const button = $("customer-record");
+  const consent = $("dpdp-consent-checkbox");
+  if (!button) return;
+  const needConsent = Boolean(s && s.status === "awaiting_reply" && s.readback_revision != null && consent && !consent.checked);
+  const dock = $("dock");
+  dock.dataset.idleHi = needConsent ? "पहले सहमति दें" : "बोलकर जवाब दें";
+  dock.dataset.idleEn = needConsent ? "Tick the consent box first" : "Speak your answer";
+  if (dock.dataset.mic === "idle") {
+    dock.querySelector("[data-mic-title]").textContent = dock.dataset.idleHi;
+    dock.querySelector("[data-mic-sub]").textContent = dock.dataset.idleEn;
   }
-  if (!sessionId) {
-    const statusEl = document.getElementById("customer-status");
-    if (statusEl) statusEl.textContent = "Error: Invalid session URL";
-    return;
-  }
-
-  const player = document.getElementById("readback-player");
-  const recordBtn = document.getElementById("customer-record");
-  const statusEl = document.getElementById("customer-status");
-  const messageEl = document.getElementById("customer-message");
-
-  function enableRecordIfReady() {
-    if (currentCustomerSession && currentCustomerSession.status !== "confirmed") {
-      if (recordBtn && !isCustomerRecording) {
-        recordBtn.disabled = false;
-      }
-    }
-  }
-
-  if (player) {
-    player.addEventListener("canplay", enableRecordIfReady);
-    player.addEventListener("play", enableRecordIfReady);
-    player.addEventListener("ended", enableRecordIfReady);
-  }
-
-  try {
-    const res = await fetch(`/sessions/${sessionId}`);
-    if (!res.ok) {
-      throw new Error(`Failed to load session (HTTP ${res.status})`);
-    }
-    currentCustomerSession = await res.json();
-    renderCustomerCard(currentCustomerSession);
-
-    if (currentCustomerSession.status === "confirmed") {
-      if (statusEl) statusEl.textContent = "Estimate is already confirmed.";
-      if (messageEl) messageEl.textContent = "This estimate has been verified and confirmed.";
-      if (recordBtn) recordBtn.disabled = true;
-      return;
-    }
-
-    if (
-      currentCustomerSession.readback_revision !== null &&
-      currentCustomerSession.readback_revision !== undefined
-    ) {
-      const audioUrl = `/sessions/${sessionId}/readback.wav?revision=${currentCustomerSession.readback_revision}`;
-      if (player && (!player.src || !player.src.endsWith(audioUrl))) {
-        player.src = audioUrl;
-      }
-      if (player && player.readyState >= 2) {
-        enableRecordIfReady();
-      }
-      if (statusEl) statusEl.textContent = "Listen to the estimate read-back above.";
-      if (messageEl) messageEl.textContent = "Click 'Record Reply' to say 'हाँ' or specify a correction.";
-    } else {
-      if (statusEl) statusEl.textContent = "Waiting for estimate read-back from workshop.";
-      if (messageEl) messageEl.textContent = "The workshop is preparing your estimate audio.";
-    }
-  } catch (err) {
-    console.error("Failed to initialize customer page:", err);
-    if (statusEl) statusEl.textContent = `Error: ${err.message}`;
-    return;
-  }
-
-  if (recordBtn) {
-    recordBtn.addEventListener("click", () => handleCustomerRecord(sessionId));
-  }
-
-  const fallbackApproveBtn = document.getElementById("fallback-approve");
-  const fallbackRejectBtn = document.getElementById("fallback-reject");
-
-  if (fallbackApproveBtn) {
-    fallbackApproveBtn.addEventListener("click", async () => {
-      if (!currentCustomerSession) return;
-      try {
-        const formData = new FormData();
-        formData.append("action", "approve");
-        formData.append("expected_revision", currentCustomerSession.revision);
-        const res = await fetch(`/sessions/${sessionId}/fallback`, {
-          method: "POST",
-          body: formData,
-        });
-        if (!res.ok) throw new Error("Fallback confirmation failed");
-        const updated = await res.json();
-        currentCustomerSession = updated;
-        renderCustomerCard(currentCustomerSession);
-        if (statusEl) statusEl.textContent = "Estimate Approved via Digital Fallback!";
-        if (messageEl) messageEl.textContent = "Your estimate has been verified and confirmed.";
-      } catch (err) {
-        if (statusEl) statusEl.textContent = "Error: " + err.message;
-      }
-    });
-  }
-
-  if (fallbackRejectBtn) {
-    fallbackRejectBtn.addEventListener("click", async () => {
-      if (!currentCustomerSession) return;
-      try {
-        const formData = new FormData();
-        formData.append("action", "request_changes");
-        formData.append("expected_revision", currentCustomerSession.revision);
-        const res = await fetch(`/sessions/${sessionId}/fallback`, {
-          method: "POST",
-          body: formData,
-        });
-        if (!res.ok) throw new Error("Fallback request failed");
-        const updated = await res.json();
-        currentCustomerSession = updated;
-        renderCustomerCard(currentCustomerSession);
-        if (statusEl) statusEl.textContent = "Changes requested from workshop.";
-        if (messageEl) messageEl.textContent = "The workshop will review your change request.";
-      } catch (err) {
-        if (statusEl) statusEl.textContent = "Error: " + err.message;
-      }
-    });
-  }
+  button.disabled = !(s && s.status === "awaiting_reply" && s.readback_revision !== null && s.readback_revision !== undefined
+    && consent && consent.checked && !isCustomerRecording);
 }
-
-
+function loadReadback(url) {
+  const player = $("readback-player");
+  player.src = url;
+  player.load();
+  $("play-readback").disabled = true;
+  $("audio-panel").dataset.call = "idle";
+  $("call-progress").style.width = "0%";
+}
+function audioFailed() {
+  if (!$("readback-player").getAttribute("src")) return;
+  $("play-readback").disabled = true;
+  UI.setBoth($("call-status"), "आवाज़ नहीं चली — नीचे लिखा पर्चा पढ़कर जवाब दीजिए।", "Audio didn't play — read the estimate below and answer.");
+  enableRecordIfReady();
+}
+function wireCall() {
+  const player = $("readback-player");
+  const play = $("play-readback");
+  const call = $("audio-panel");
+  const caption = () => (currentCustomerSession && currentCustomerSession.readback_text) || "";
+  player.addEventListener("canplay", () => { play.disabled = false; });
+  play.addEventListener("click", () => { if (player.paused) player.play().catch(audioFailed); else player.pause(); });
+  player.addEventListener("play", () => { call.dataset.call = "talking"; UI.setIcon(play, "pause"); UI.setBoth($("call-status"), "बात चल रही है…", "On the call…"); });
+  player.addEventListener("pause", () => { if (!player.ended) call.dataset.call = "idle"; UI.setIcon(play, "play"); });
+  player.addEventListener("timeupdate", () => {
+    const progress = player.duration ? player.currentTime / player.duration : 0;
+    $("call-progress").style.width = `${Math.round(progress * 100)}%`;
+    UI.setCaption($("readback-caption"), caption(), progress);
+  });
+  player.addEventListener("ended", () => {
+    call.dataset.call = "ended";
+    UI.setCaption($("readback-caption"), caption(), 1);
+    UI.setBoth($("call-status"), "अब नीचे माइक दबाकर जवाब दीजिए", "Now tap the mic below to answer");
+    const consent = $("dpdp-consent-checkbox");
+    if (!consent.checked) $("dpdp-consent-box").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  player.addEventListener("error", audioFailed);
+  if (player.readyState >= 3) play.disabled = false;  // canplay may have fired before this listener existed
+}
+function wireConsent(sessionId) {
+  const box = $("dpdp-consent-checkbox");
+  box.addEventListener("change", async () => {
+    if (box.checked && currentCustomerSession && !currentCustomerSession.dpdp_consent_granted) {
+      try {
+        const form = new FormData();
+        form.append("expected_revision", currentCustomerSession.revision);
+        form.append("granted", "true");
+        await UI.api.post(`/sessions/${sessionId}/consent`, form);
+        currentCustomerSession.dpdp_consent_granted = true;
+        UI.toast(`${UI.COPY.consentSaved.hi} · ${UI.COPY.consentSaved.en}`);
+      } catch (err) {
+        box.checked = false;
+        showError($("customer-message"), err);
+      }
+    }
+    enableRecordIfReady();
+  });
+}
+function showReceipt({ words = "", how = ["फ़ोन पर आवाज़ से मंज़ूर", "Approved by voice"] } = {}) {
+  $("receipt-said").hidden = !words;
+  $("receipt-words").textContent = words;
+  UI.setBoth($("receipt-how"), how[0], how[1]);
+  $("receipt-time").textContent = `· ${UI.timeNow()}`;
+  $("confirmed-banner").scrollIntoView({ behavior: "smooth", block: "start" });
+}
 async function handleCustomerRecord(sessionId) {
-  const player = document.getElementById("readback-player");
-  const recordBtn = document.getElementById("customer-record");
-  const stopBtn = document.getElementById("customer-stop");
-  const statusEl = document.getElementById("customer-status");
-  const messageEl = document.getElementById("customer-message");
-
-  if (!currentCustomerSession) return;
-
-  const consentCheckbox = document.getElementById("dpdp-consent-checkbox");
-  if (consentCheckbox && !consentCheckbox.checked) {
-    if (statusEl) statusEl.textContent = "Statutory Consent Required";
-    if (messageEl) {
-      messageEl.textContent =
-        "Please accept the DPDP Act 2023 Statutory Privacy Notice before recording voice biometric confirmation.";
-    }
+  const s = currentCustomerSession;
+  const message = $("customer-message");
+  if (!s) return;
+  if (!$("dpdp-consent-checkbox").checked) {
+    UI.say(message, UI.COPY.consentNeeded.hi, UI.COPY.consentNeeded.en, "warn");
     return;
   }
-
+  const player = $("readback-player");
+  if (!player.paused) player.pause();
+  const record = $("customer-record");
+  const stop = $("customer-stop");
+  const mic = UI.micDock($("dock"));
+  isCustomerRecording = true;
   try {
-    if (player && !player.paused) {
-      player.pause();
-    }
-
-    isCustomerRecording = true;
-    if (statusEl) statusEl.textContent = "Recording reply...";
-    if (messageEl) {
-      messageEl.textContent =
-        "Speak now: say 'हाँ' to confirm, or state your correction. Click Stop when finished.";
-    }
-
-    const blob = await recordOnce(recordBtn, stopBtn);
-    isCustomerRecording = false;
-
-    if (statusEl) statusEl.textContent = "Processing reply audio...";
-    if (messageEl) messageEl.textContent = "Analyzing speech with Gnani...";
-
-    const formData = new FormData();
-    formData.append("expected_revision", currentCustomerSession.revision);
-    formData.append("readback_revision", currentCustomerSession.readback_revision);
-    formData.append("dpdp_consent", "true");
-    const ext = blob.type.includes("wav")
-      ? "wav"
-      : blob.type.includes("ogg")
-      ? "ogg"
-      : "webm";
-    formData.append("audio", blob, `reply.${ext}`);
-
-    const res = await fetch(`/sessions/${sessionId}/reply`, {
-      method: "POST",
-      body: formData,
+    const blob = await recordOnce(record, stop, {
+      onStart: (stream) => { record.hidden = true; stop.hidden = false; mic.listening(stream); },
+      onEnd: () => { record.hidden = false; stop.hidden = true; },
     });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(err.detail || `Server returned HTTP ${res.status}`);
-    }
-
-    const replyData = await res.json();
-    currentCustomerSession = replyData;
-    renderCustomerCard(currentCustomerSession);
-
-    if (replyData.outcome === "confirmed") {
-      if (statusEl) statusEl.textContent = "Estimate Confirmed!";
-      if (messageEl) {
-        messageEl.textContent = replyData.transcript
-          ? `Recognized: "${replyData.transcript}". The estimate has been confirmed.`
-          : "The estimate has been confirmed.";
-      }
-      if (recordBtn) recordBtn.disabled = true;
-      if (stopBtn) stopBtn.disabled = true;
-    } else if (replyData.outcome === "needs_readback") {
-      if (statusEl) statusEl.textContent = "Correction noted. Generating fresh read-back audio...";
-      if (messageEl) {
-        messageEl.textContent = replyData.transcript
-          ? `Correction recognized: "${replyData.transcript}". Updating estimate...`
-          : "Correction applied. Updating estimate...";
-      }
-      if (recordBtn) recordBtn.disabled = true;
-
-      // Request fresh read-back audio via POST /sessions/{id}/readback
-      const rbFormData = new FormData();
-      rbFormData.append("expected_revision", replyData.revision);
-      const rbRes = await fetch(`/sessions/${sessionId}/readback`, {
-        method: "POST",
-        body: rbFormData,
-      });
-
-      if (!rbRes.ok) {
-        const rbErr = await rbRes.json().catch(() => ({ detail: rbRes.statusText }));
-        throw new Error(rbErr.detail || `Read-back generation failed: HTTP ${rbRes.status}`);
-      }
-
-      const rbData = await rbRes.json();
-      currentCustomerSession.revision = rbData.revision;
-      currentCustomerSession.readback_revision = rbData.readback_revision;
-      currentCustomerSession.status = "awaiting_reply";
-
-      if (player) {
-        const newAudioUrl =
-          rbData.audio_url || `/sessions/${sessionId}/readback.wav?revision=${rbData.revision}`;
-        player.src = newAudioUrl;
-        player.load();
-      }
-
-      if (statusEl) statusEl.textContent = "Updated estimate ready.";
-      if (messageEl) {
-        messageEl.textContent =
-          "Please listen to the updated estimate above and reply ('हाँ' to confirm or specify correction).";
-      }
-    } else if (replyData.outcome === "ask_field") {
-      if (statusEl) statusEl.textContent = "Clarification needed";
-      if (messageEl) {
-        messageEl.textContent =
-          replyData.message || 'Which item would you like to correct? Click "Record Reply" to clarify.';
-      }
-      if (recordBtn) recordBtn.disabled = false;
-    } else if (replyData.outcome === "fallback") {
-      const fbBanner = document.getElementById("fallback-banner");
-      if (fbBanner) fbBanner.style.display = "block";
-      if (statusEl) statusEl.textContent = "Voice quality degraded. Digital confirmation available.";
-      if (messageEl) {
-        messageEl.textContent =
-          replyData.message || "Line audio was unclear. Please approve or request changes below.";
-      }
-      if (recordBtn) recordBtn.disabled = true;
-    } else if (replyData.outcome === "retry") {
-      if (statusEl) statusEl.textContent = "Could not recognize response";
-      if (messageEl) {
-        messageEl.textContent =
-          replyData.message || "Please speak clearly: say 'हाँ' to confirm, or specify what to change.";
-      }
-      if (recordBtn) recordBtn.disabled = false;
-    }
-
+    mic.processing();
+    UI.say(message, UI.COPY.processing.hi, UI.COPY.processing.en);
+    const form = new FormData();
+    form.append("expected_revision", s.revision);
+    form.append("readback_revision", s.readback_revision);
+    form.append("dpdp_consent", "true");
+    form.append("audio", ...audioPart(blob, "reply"));
+    const reply = await UI.api.post(`/sessions/${sessionId}/reply`, form);
+    await handleReplyOutcome(sessionId, reply, s.card);
   } catch (err) {
-    console.error("Customer reply failed:", err);
-    if (statusEl) statusEl.textContent = `Error: ${err.message}`;
-    if (messageEl) {
-      messageEl.textContent = "An error occurred while processing your reply. Please try again.";
-    }
-    if (recordBtn && currentCustomerSession && currentCustomerSession.status !== "confirmed") {
-      recordBtn.disabled = false;
-    }
+    showError(message, err);
   } finally {
     isCustomerRecording = false;
-    if (stopBtn) stopBtn.disabled = true;
+    mic.idle();
+    record.hidden = false;
+    stop.hidden = true;
+    stop.disabled = true;
+    enableRecordIfReady();
   }
 }
-
-window.recordOnce = recordOnce;
-window.formatRupees = formatRupees;
-window.getSupportedMimeType = getSupportedMimeType;
-window.getOrCreateSession = getOrCreateSession;
-window.renderSession = renderSession;
-window.handleRecordEstimate = handleRecordEstimate;
-window.handleReask = handleReask;
-window.handleStartReadback = handleStartReadback;
-window.renderCustomerCard = renderCustomerCard;
-window.initCustomerPage = initCustomerPage;
-window.handleCustomerRecord = handleCustomerRecord;
-
-document.addEventListener("DOMContentLoaded", () => {
-  const recordBtn = document.getElementById("record");
-  const readbackBtn = document.getElementById("start-readback");
-
-  if (recordBtn) {
-    recordBtn.addEventListener("click", handleRecordEstimate);
+async function handleReplyOutcome(sessionId, reply, previousCard) {
+  const status = $("customer-status");
+  const message = $("customer-message");
+  const fresh = () => UI.api.get(`/sessions/${sessionId}`);
+  if (reply.outcome === "confirmed") {
+    renderCustomerCard(await fresh());
+    showReceipt({ words: reply.transcript || "" });
+    UI.setBoth(status, "पर्चा मंज़ूर हुआ", "Estimate approved");
+    UI.say(message, "धन्यवाद! गैराज को पता चल गया है।", "Thank you — the workshop has been told.", "ok");
+  } else if (reply.outcome === "needs_readback") {
+    UI.say(message, "बदलाव दर्ज हुआ — नया पर्चा बन रहा है…", "Change noted — preparing the new estimate…");
+    const form = new FormData();
+    form.append("expected_revision", reply.revision);
+    const readback = await UI.api.post(`/sessions/${sessionId}/readback`, form);
+    renderCustomerCard(await fresh(), { previous: previousCard });
+    loadReadback(readback.audio_url);
+    UI.setBoth(status, "नया पर्चा तैयार — फिर से सुनिए", "New estimate ready — listen again");
+    UI.say(message, "ऊपर नया पर्चा सुनिए, फिर जवाब दीजिए।", "Listen to the updated estimate, then answer.");
+  } else if (reply.outcome === "ask_field") {
+    renderCustomerCard(await fresh());
+    UI.setBoth(status, "किस चीज़ को बदलना है?", "Which item should change?");
+    UI.say(message, "चीज़ का नाम लेकर बोलिए, जैसे “ब्रेक पैड 500”।", reply.message || "Name the item you want to change.", "warn");
+  } else if (reply.outcome === "fallback") {
+    renderCustomerCard(await fresh());
+    UI.setBoth(status, "लाइन साफ़ नहीं है", "The line is unclear");
+    UI.say(message, "नीचे बटन से जवाब दीजिए।", reply.message || "Answer with the buttons.", "warn");
+  } else {
+    UI.setBoth(status, "समझ नहीं आया", "Couldn't understand");
+    UI.say(message, "साफ़ बोलिए: “हाँ, ठीक है” — या क्या बदलना है।", reply.message || "Say yes, or say what to change.", "warn");
   }
-  if (readbackBtn) {
-    readbackBtn.addEventListener("click", handleStartReadback);
+}
+function wireFallback(sessionId) {
+  const send = async (action) => {
+    const form = new FormData();
+    form.append("action", action);
+    form.append("expected_revision", currentCustomerSession.revision);
+    try {
+      await UI.api.post(`/sessions/${sessionId}/fallback`, form);
+      renderCustomerCard(await UI.api.get(`/sessions/${sessionId}`));
+      if (action === "approve") {
+        showReceipt({ how: ["बटन से मंज़ूर", "Approved by button"] });
+        UI.setBoth($("customer-status"), "पर्चा मंज़ूर हुआ", "Estimate approved");
+      } else {
+        UI.setBoth($("customer-status"), "गैराज को बता दिया गया है", "The workshop has been told");
+        UI.say($("customer-message"), "गैराज आपका बदलाव देखकर नया पर्चा भेजेगा।", "The workshop will send an updated estimate.");
+      }
+    } catch (err) {
+      showError($("customer-message"), err);
+    }
+  };
+  $("fallback-approve").addEventListener("click", () => send("approve"));
+  $("fallback-reject").addEventListener("click", () => send("request_changes"));
+}
+async function copyWhatsapp(sessionId) {
+  try {
+    const res = await fetch(`/sessions/${sessionId}/whatsapp`);
+    if (!res.ok) throw new UI.HttpError(res.status, res.statusText);
+    if (await UI.copyText(await res.text())) UI.toast(`${UI.COPY.copied.hi} · ${UI.COPY.copied.en}`);
+  } catch (err) {
+    showError($("customer-message"), err);
   }
-
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get("session_id") && !window.location.pathname.startsWith("/customer/")) {
-    getOrCreateSession().catch((err) => {
-      console.warn("Could not resume session:", err);
-    });
+}
+function waitForReadback(sessionId) {
+  UI.poll(() => UI.api.get(`/sessions/${sessionId}`), {
+    every: 3000,
+    until: (s) => (s.readback_revision !== null && s.readback_revision !== undefined) || s.status === "confirmed",
+    onDone: (s) => {
+      renderCustomerCard(s);
+      if (s.readback_revision !== null && s.readback_revision !== undefined) {
+        loadReadback(`/sessions/${sessionId}/readback.wav?revision=${s.readback_revision}`);
+        UI.setBoth($("call-status"), "पर्चा सुनने के लिए ▶ दबाइए", "Press ▶ to hear the estimate");
+      }
+      describeCustomerState();
+    },
+  });
+}
+async function initCustomerPage() {
+  const root = $("customer-container");
+  if (!root) return;
+  const sessionId = root.dataset.sessionId;
+  wireCall();
+  wireConsent(sessionId);
+  wireFallback(sessionId);
+  $("customer-record").addEventListener("click", () => handleCustomerRecord(sessionId));
+  $("whatsapp-copy").addEventListener("click", () => copyWhatsapp(sessionId));
+  try {
+    renderCustomerCard(await UI.api.get(`/sessions/${sessionId}`));
+  } catch (err) {
+    showError($("customer-message"), err);
+    return;
   }
-
-  if (window.location.pathname.startsWith("/customer/")) {
-    initCustomerPage();
-  }
+  describeCustomerState();
+  if ($("readback-player").error) audioFailed();  // the server-rendered <audio> may fail before the listener exists
+  const s = currentCustomerSession;
+  if ((s.readback_revision === null || s.readback_revision === undefined) && s.status !== "confirmed") waitForReadback(sessionId);
+}
+Object.assign(window, {
+  recordOnce, formatRupees: UI.formatRupees, getSupportedMimeType, getOrCreateSession, renderSession,
+  handleRecordEstimate, handleReask, handleStartReadback,
+  renderCustomerCard, initCustomerPage, handleCustomerRecord,
+  getCurrentSession: () => currentSession,
 });
-
+document.addEventListener("DOMContentLoaded", () => {
+  if ($("workshop")) initWorkshopPage();
+  if ($("customer-container")) initCustomerPage();
+});

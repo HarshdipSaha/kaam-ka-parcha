@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import json
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 import re
@@ -14,6 +15,7 @@ from .workflow import RepeatRequest, Workflow
 from .audio import AudioError, normalize_upload
 from .extract import ExtractionError, Extractor
 from .gnani import PrismaClient, TimbreClient, GnaniError
+from .presentation import latest_log_text, parcha_no, register_filters, status_label
 from .schema import TranscriptLog, review_fields
 from .artefact import audit_manifest_sha256, render_pdf, whatsapp_text
 from .vocabulary import AUTOMOTIVE_BIAS_WORDS
@@ -78,6 +80,17 @@ def abstention_reasons(session) -> dict[str, str]:
     return {field: reason for field, reason in reasons.items() if field in pending}
 
 
+def json_safe(value):
+    """Non-finite floats (SNR = inf when no noise is mixed) become None, so the body stays valid JSON."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {k: json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(v) for v in value]
+    return value
+
+
 def session_payload(session) -> dict:
     card = session.card
     return {
@@ -91,6 +104,11 @@ def session_payload(session) -> dict:
         "total_paise": card.maybe_total_paise if card else None,
         "review_fields": review_fields(card) if card else [],
         "abstentions": abstention_reasons(session),
+        "readback_revision": session.readback_revision,
+        "parcha_no": parcha_no(session.id),
+        "status_label": status_label(session.status),
+        "mechanic_transcript": latest_log_text(session.logs, role="mechanic"),
+        "readback_text": latest_log_text(session.logs, role="system", mode="timbre_readback"),
     }
 
 
@@ -105,6 +123,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
 
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
     templates = Jinja2Templates(directory=templates_dir)
+    register_filters(templates.env)
 
     @app.get("/")
     def index():
@@ -117,6 +136,11 @@ def create_app(services: AppServices | None = None) -> FastAPI:
     @app.get("/workshop", response_class=HTMLResponse)
     def workshop(request: Request):
         return templates.TemplateResponse(request, "workshop.html", {})
+
+    @app.get("/stage", response_class=HTMLResponse)
+    def stage(request: Request):
+        session = services.store.create()
+        return templates.TemplateResponse(request, "stage.html", {"session": session, "parcha_no": parcha_no(session.id)})
 
     @app.get("/customer/{session_id}", response_class=HTMLResponse)
     def customer_view(request: Request, session_id: str):
@@ -136,6 +160,8 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                 "dpdp_consent_granted": session.dpdp_consent_granted,
                 "dpdp_consent_at_utc": session.dpdp_consent_at_utc.isoformat() if session.dpdp_consent_at_utc else None,
                 "dpdp_consent_sha256": session.dpdp_consent_sha256,
+                "parcha_no": parcha_no(session.id),
+                "readback_text": latest_log_text(session.logs, role="system", mode="timbre_readback"),
             },
         )
 
@@ -280,7 +306,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                 "manifest": readback.manifest,
             }
             return Response(
-                content=json.dumps(payload, ensure_ascii=False),
+                content=json.dumps(json_safe(payload), ensure_ascii=False, allow_nan=False),
                 media_type="application/json",
             )
         except KeyError:
@@ -606,6 +632,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                     "audio_url": f"/sessions/{session.id}/reply.wav",
                 },
                 "total_paise": session.card.maybe_total_paise if session.card else None,
+                "parcha_no": parcha_no(session.id),
             },
         )
 

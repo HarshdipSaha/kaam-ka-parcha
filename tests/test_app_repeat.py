@@ -21,7 +21,7 @@ def test_empty_transcripts_return_a_structured_repeat_request(fake_services):
 
 def test_independent_confirmation_abstention_has_actionable_hindi_label(fake_services):
     client = TestClient(create_app(fake_services))
-    response = client.get("/static/app.js")
+    response = client.get("/static/ui.js")
 
     assert response.status_code == 200
     assert 'independent_confirmation_required: "रकम दोबारा बोलकर पक्की करें"' in response.text

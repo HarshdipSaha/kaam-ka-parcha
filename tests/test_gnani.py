@@ -42,3 +42,33 @@ def test_error_redacts_key():
     with pytest.raises(GnaniError) as error:
         PrismaClient("secret-value", http=http).transcribe(b"x", mode="transcribe")
     assert "secret-value" not in str(error.value)
+
+
+def test_rate_limit_is_retried_then_succeeds(monkeypatch):
+    import httpx
+    from parcha import gnani
+
+    monkeypatch.setattr(gnani, "RETRY_DELAYS", (0, 0))
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        if len(calls) < 3:
+            return httpx.Response(429)
+        return httpx.Response(200, json={"success": True, "transcript": "ok"})
+
+    client = gnani.PrismaClient("k", http=httpx.Client(transport=httpx.MockTransport(handler)))
+    assert client.transcribe(b"wav", mode="transcribe") == "ok"
+    assert len(calls) == 3
+
+
+def test_rate_limit_gives_up_after_two_retries(monkeypatch):
+    import httpx
+    import pytest
+    from parcha import gnani
+
+    monkeypatch.setattr(gnani, "RETRY_DELAYS", (0, 0))
+    client = gnani.PrismaClient("k", http=httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(429))))
+    with pytest.raises(gnani.GnaniError) as err:
+        client.transcribe(b"wav", mode="transcribe")
+    assert err.value.status == 429

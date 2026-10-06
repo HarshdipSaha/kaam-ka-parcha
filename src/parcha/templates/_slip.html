@@ -1,0 +1,33 @@
+{% macro slip(card, total_paise, parcha_no, copy="original", stamp=False) -%}
+<article class="slip slip--{{ copy }}" id="slip" aria-label="पर्चा № {{ parcha_no }}">
+  <header class="slip__head">
+    <div class="slip__title"><span class="hi">काम का पर्चा</span><span class="en">Job estimate</span></div>
+    <div class="slip__serial">№ <span id="parcha-no">{{ parcha_no }}</span></div>
+  </header>
+  <ol class="slip__rows" id="items-tbody">
+    {% for item in (card.items if card else []) %}
+    {% set heard = card.evidence | selectattr("field", "equalto", "items." ~ item.id ~ ".amount_paise") | map(attribute="quote") | first %}
+    <li class="row" data-item="{{ item.id }}">
+      <span class="row__icon" aria-hidden="true"><svg focusable="false"><use href="/static/icons.svg#{{ item.kind }}"/></svg></span>
+      <div class="row__main">
+        <div class="row__label">{{ item.label or "—" }}</div>
+        <div class="row__meta"><span class="chip"><span class="lang-hi">{{ item.kind | kind_hi }}</span><span class="lang-en">{{ item.kind | kind_en }}</span></span>{% if heard %}<q class="row__heard">{{ heard }}</q>{% endif %}</div>
+      </div>
+      <div class="row__amount">{{ item.amount_paise | inr }}</div>
+    </li>
+    {% else %}
+    <li class="row row--empty"><span class="hi">अभी कोई चीज़ नहीं</span><span class="en">No items yet</span></li>
+    {% endfor %}
+  </ol>
+  <div class="slip__total">
+    <span class="slip__total-k"><span class="hi">कुल</span><span class="en">Total</span></span>
+    <strong class="slip__total-v" id="total-cell"{% if total_paise is none %} data-incomplete{% endif %}>{% if total_paise is none %}<span class="lang-hi">अधूरा</span><span class="lang-en">Incomplete</span>{% else %}{{ total_paise | inr }}{% endif %}</strong>
+  </div>
+  <div class="slip__delivery" id="delivery-info">
+    <span class="slip__k"><span class="hi">गाड़ी कब मिलेगी</span><span class="en">Vehicle ready</span></span>
+    <strong><span class="lang-hi">{{ (card.delivery if card else none) | hindi_delivery }}</span><span class="lang-en">{{ (card.delivery if card else none) | delivery_en }}</span></strong>
+    {% if card and card.delivery %}<q>{{ card.delivery.spoken }}</q>{% endif %}
+  </div>
+  {% if stamp %}<div class="stamp" role="img" aria-label="मंज़ूर — Approved"><span class="hi">मंज़ूर</span><span class="en">APPROVED</span></div>{% endif %}
+</article>
+{%- endmacro %}

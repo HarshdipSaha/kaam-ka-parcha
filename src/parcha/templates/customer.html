@@ -1,444 +1,90 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kaam ka Parcha — Customer Estimate Review</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --border: #334155;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --primary: #f59e0b;
-      --primary-hover: #d97706;
-      --danger: #ef4444;
-      --danger-hover: #dc2626;
-      --success: #10b981;
-      --success-hover: #059669;
-      --accent: #38bdf8;
-    }
+{% extends "base.html" %}
+{% from "_slip.html" import slip %}
+{% block title %}Kaam ka Parcha — Customer Estimate Review{% endblock %}
+{% block body_class %}page--customer{% endblock %}
+{% block body %}
+<header class="topbar"><div class="brand"><span class="hi">काम का पर्चा</span><span class="en">Kaam ka Parcha</span></div><button id="lang-toggle" class="langtoggle" type="button" aria-label="Language / भाषा"><span>EN</span><span>हिं</span></button></header>
+<div class="disclosure" id="disclosure" role="note">
+  <span class="hi">यह नकली फ़ोन लाइन है — कोई कॉल नहीं हुई। सभी नाम और रकम डेमो के हैं।</span>
+  <span class="en" lang="en">Simulated phone line: audio passed through G.711 + recorded engine ambience at 5 dB. No call was placed. All names and amounts are synthetic.</span>
+</div>
+<main class="sheet" id="customer-container" data-session-id="{{ session.id }}" data-revision="{{ revision }}" data-readback-revision="{{ readback_revision if readback_revision is not none else '' }}" data-status="{{ status }}">
+  <section class="receipt" id="confirmed-banner" role="status"{% if status != "confirmed" %} hidden{% endif %}>
+    <div class="receipt__tick" aria-hidden="true"><svg focusable="false"><use href="/static/icons.svg#check"/></svg></div>
+    <h1 class="receipt__title"><span class="hi">पर्चा मंज़ूर हुआ</span><span class="en">Estimate Confirmed</span></h1>
+    <p class="receipt__total" id="receipt-total">{{ card.maybe_total_paise | inr if card else "₹ —" }}</p>
+    <p class="receipt__said" id="receipt-said" hidden><span class="lang-hi">आपने कहा:</span><span class="lang-en">You said:</span> “<span id="receipt-words"></span>”</p>
+    <p class="receipt__meta"><span id="receipt-how"><span class="lang-hi">फ़ोन पर आवाज़ से मंज़ूर</span><span class="lang-en">Approved by voice</span></span> · № {{ parcha_no }} <span id="receipt-time"></span></p>
+    <div class="receipt__actions">
+      <a id="download-pdf-link" class="btn btn--primary" href="/sessions/{{ session.id }}/pdf" download><span class="hi">PDF डाउनलोड करें</span><span class="en">Download sealed PDF</span></a>
+      <button id="whatsapp-copy" class="btn btn--wa" type="button"><span class="hi">WhatsApp टेक्स्ट कॉपी करें</span><span class="en">Copy WhatsApp text</span></button>
+      <a id="verify-link" class="btn btn--ghost" href="/verify/{{ session.id }}"><span class="hi">असली है? जाँचें</span><span class="en">Verify</span></a>
+      <a id="whatsapp-link" class="btn btn--ghost" href="/sessions/{{ session.id }}/whatsapp" target="_blank" rel="noopener"><span class="hi">टेक्स्ट फ़ाइल</span><span class="en">Text file</span></a>
+    </div>
+    <p class="fineprint"><span class="hi">कॉपी करने से कुछ अपने आप नहीं भेजा जाता।</span><span class="en">Copying sends nothing by itself.</span></p>
+  </section>
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      padding: 1.5rem;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 1.5rem;
-    }
-
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      background-color: rgba(245, 158, 11, 0.15);
-      color: var(--primary);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-
-    .badge-status {
-      background-color: rgba(56, 189, 248, 0.15);
-      color: var(--accent);
-      border-color: rgba(56, 189, 248, 0.3);
-    }
-
-    .badge-confirmed {
-      background-color: rgba(16, 185, 129, 0.15);
-      color: var(--success);
-      border-color: rgba(16, 185, 129, 0.3);
-    }
-
-    .disclosure-banner {
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      color: #fbbf24;
-      padding: 0.85rem 1.25rem;
-      border-radius: 0.5rem;
-      font-size: 0.85rem;
-      line-height: 1.4;
-      margin-bottom: 1.5rem;
-      font-weight: 500;
-    }
-
-    .panel {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 0.75rem;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .panel-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-      color: var(--text);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    #readback-player {
-      width: 100%;
-      height: 44px;
-      margin-bottom: 1rem;
-      border-radius: 0.5rem;
-    }
-
-    .reply-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-
-    button {
-      padding: 0.65rem 1.25rem;
-      font-size: 0.95rem;
-      font-weight: 600;
-      border-radius: 0.5rem;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.2s, opacity 0.2s;
-    }
-
-    button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    #customer-record {
-      background-color: var(--primary);
-      color: #000;
-    }
-
-    #customer-record:hover:not(:disabled) {
-      background-color: var(--primary-hover);
-    }
-
-    #customer-stop {
-      background-color: var(--danger);
-      color: #fff;
-    }
-
-    #customer-stop:hover:not(:disabled) {
-      background-color: var(--danger-hover);
-    }
-
-    #customer-status {
-      font-weight: 600;
-      font-size: 0.95rem;
-      color: var(--accent);
-      margin-bottom: 0.5rem;
-    }
-
-    output#customer-message {
-      display: block;
-      padding: 0.75rem 1rem;
-      border-radius: 0.5rem;
-      background-color: rgba(0, 0, 0, 0.25);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      min-height: 2.75rem;
-      margin-bottom: 1rem;
-    }
-
-    .items-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 0.5rem;
-    }
-
-    .items-table th, .items-table td {
-      padding: 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .items-table th {
-      color: var(--text-muted);
-      font-weight: 500;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .amount-cell {
-      text-align: right;
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .total-row td {
-      font-weight: 700;
-      font-size: 1.15rem;
-      border-top: 2px solid var(--border);
-      border-bottom: none;
-      color: var(--primary);
-    }
-
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border);
-    }
-
-    .meta-item {
-      font-size: 0.9rem;
-    }
-
-    .meta-label {
-      color: var(--text-muted);
-      font-size: 0.8rem;
-      display: block;
-      margin-bottom: 0.25rem;
-    }
-
-    .confirmed-banner {
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.4);
-      border-radius: 0.75rem;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      text-align: center;
-    }
-
-    .confirmed-header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .confirmed-header h2 {
-      font-size: 1.25rem;
-      color: var(--text);
-    }
-
-    .confirmed-desc {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .confirmed-actions {
-      display: flex;
-      justify-content: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      display: inline-block;
-      padding: 0.65rem 1.25rem;
-      font-size: 0.95rem;
-      font-weight: 600;
-      border-radius: 0.5rem;
-      text-decoration: none;
-      transition: background-color 0.2s, opacity 0.2s;
-    }
-
-    .btn-primary {
-      background-color: var(--success);
-      color: #000;
-    }
-
-    .btn-primary:hover {
-      background-color: var(--success-hover);
-    }
-
-    .btn-secondary {
-      background-color: rgba(56, 189, 248, 0.15);
-      color: var(--accent);
-      border: 1px solid rgba(56, 189, 248, 0.4);
-    }
-
-    .btn-secondary:hover {
-      background-color: var(--accent);
-      color: #000;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 2rem 1rem;
-      color: var(--text-muted);
-      font-style: italic;
-    }
-  </style>
-</head>
-<body>
-  <div class="disclosure-banner" id="disclosure">Simulated phone line: audio passed through G.711 + recorded engine ambience at 5 dB. No call was placed. All names and amounts are synthetic.</div>
-
-  <header>
-    <h1>Kaam ka Parcha — Customer Estimate Review</h1>
-    <span id="session-badge" class="badge">Session {{ session.id[:8] }}...</span>
-  </header>
-
-  <main id="customer-container" data-session-id="{{ session.id }}" data-revision="{{ revision }}" data-readback-revision="{{ readback_revision if readback_revision is not none else '' }}" data-status="{{ status }}">
-    <div id="confirmed-banner" class="confirmed-banner" style="{% if status != 'confirmed' %}display: none;{% endif %}">
-      <div class="confirmed-header">
-        <span class="badge badge-confirmed">Confirmed</span>
-        <h2>Estimate Confirmed</h2>
-      </div>
-      <p class="confirmed-desc">The job estimate has been verified and confirmed. You can download the official sealed PDF or share the summary via WhatsApp.</p>
-      <div class="confirmed-actions">
-        <a id="download-pdf-link" class="btn btn-primary" href="/sessions/{{ session.id }}/pdf" download>Download Sealed PDF</a>
-        <a id="whatsapp-link" class="btn btn-secondary" href="/sessions/{{ session.id }}/whatsapp" target="_blank">WhatsApp Text</a>
+  <section class="call" id="audio-panel" data-call="idle" aria-label="गैराज से कॉल"{% if status == "confirmed" %} hidden{% endif %}>
+    <div class="call__who">
+      <div class="call__avatar" aria-hidden="true">गै</div>
+      <div>
+        <div class="call__title"><span class="hi">गैराज से कॉल</span><span class="en">Call from workshop</span></div>
+        <div class="call__status" id="call-status">{% if readback_revision is not none %}<span class="lang-hi">पर्चा सुनने के लिए ▶ दबाइए</span><span class="lang-en">Press ▶ to hear the estimate</span>{% else %}<span class="lang-hi">गैराज पर्चा तैयार कर रहा है…</span><span class="lang-en">The workshop is preparing the estimate…</span>{% endif %}</div>
       </div>
     </div>
+    <div class="call__controls">
+      <button id="play-readback" class="play" type="button" aria-label="सुनें — Listen" disabled><svg aria-hidden="true" focusable="false"><use href="/static/icons.svg#play"/></svg></button>
+      <div class="call__progress" aria-hidden="true"><span id="call-progress"></span></div>
+    </div>
+    <p class="call__caption" id="readback-caption" aria-live="polite">{{ readback_text or "" }}</p>
+    <audio id="readback-player" preload="auto"{% if readback_revision is not none %} src="/sessions/{{ session.id }}/readback.wav?revision={{ readback_revision }}"{% endif %}></audio>
+  </section>
 
-    <div id="fallback-banner" class="panel fallback-panel" style="{% if status != 'fallback_ready' %}display: none;{% endif %}border-color: rgba(245, 158, 11, 0.5); background-color: rgba(245, 158, 11, 0.1);">
-      <div class="panel-title">
-        <span>Digital Estimate Confirmation</span>
-        <span class="badge" style="background-color: rgba(245, 158, 11, 0.2); color: var(--primary); border-color: rgba(245, 158, 11, 0.4);">Voice Degraded Fallback</span>
-      </div>
-      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">
-        Voice line quality was degraded or speech could not be recognized reliably. You can confirm your estimate or request changes using one-tap digital controls:
-      </p>
-      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        <button id="fallback-approve" class="btn btn-primary" type="button">Approve Estimate</button>
-        <button id="fallback-reject" class="btn btn-secondary" type="button">Request Changes</button>
+  <section id="estimate-card" aria-label="आपका पर्चा">
+    <div class="card-head">
+      <span id="card-status-badge" class="pill {{ 'pill--ok' if status == 'confirmed' else ('pill--wait' if status == 'awaiting_reply' else 'pill--warn') }}"><span class="lang-hi">{{ status | status_hi }}</span><span class="lang-en">{{ status | status_en }}</span></span>
+      <span id="card-revision-badge" class="pill">Rev {{ revision }}</span>
+    </div>
+    <div id="slip-slot">{{ slip(card, card.maybe_total_paise if card else none, parcha_no, copy="original", stamp=(status == "confirmed")) }}</div>
+  </section>
+
+  <section class="consent" id="dpdp-consent-box"{% if status == "confirmed" %} hidden{% endif %}>
+    <label class="consent__row"><input type="checkbox" id="dpdp-consent-checkbox"{% if dpdp_consent_granted %} checked{% endif %}>
+      <span><span class="hi">मेरी आवाज़ रिकॉर्ड होकर इस पर्चे के सबूत के तौर पर रखी जाए — मैं सहमत हूँ।</span><span class="en">I agree my voice is recorded as proof for this parcha.</span></span></label>
+    <details class="consent__full">
+      <summary><span class="hi">पूरा नोटिस</span><span class="en">Full notice (DPDP Act 2023)</span></summary>
+      <p><strong>DPDP Act 2023 Statutory Privacy Notice:</strong> I understand and give consent that my spoken voice reply will be recorded, processed, and cryptographically hashed as an electronic biometric confirmation record under the <em>Digital Personal Data Protection Act, 2023</em> and <em>Bharatiya Sakshya Adhiniyam, 2023</em>.</p>
+    </details>
+  </section>
+
+  <section class="fallback" id="fallback-banner"{% if status != "fallback_ready" %} hidden{% endif %}>
+    <h2><span class="hi">लाइन साफ़ नहीं है</span><span class="en">Voice line unclear</span></h2>
+    <p><span class="hi">बटन से जवाब दीजिए।</span><span class="en">Answer with a button instead.</span></p>
+    <div class="fallback__actions">
+      <button id="fallback-approve" class="btn btn--haan" type="button"><span class="hi">मंज़ूर करें</span><span class="en">Approve</span></button>
+      <button id="fallback-reject" class="btn btn--change" type="button"><span class="hi">बदलाव चाहिए</span><span class="en">Request changes</span></button>
+    </div>
+  </section>
+
+  <div id="customer-status" class="status-line" role="status" aria-live="polite"></div>
+  <output id="customer-message" class="notice"><span class="hi">पहले ऊपर पर्चा सुनिए, फिर नीचे माइक दबाकर जवाब दीजिए।</span><span class="en">Listen first, then tap the mic to answer.</span></output>
+</main>
+
+<nav class="dock" id="dock" data-mic="idle" data-idle-hi="बोलकर जवाब दें" data-idle-en="Speak your answer" aria-label="जवाब"{% if status in ("confirmed", "fallback_ready") %} hidden{% endif %}>
+  <div class="dock__inner">
+    <div class="hints"><span class="hint hint--haan"><span class="lang-hi">“हाँ, ठीक है”</span><span class="lang-en">“Haan, theek hai”</span></span><span class="hint hint--change"><span class="lang-hi">“नहीं, ब्रेक पैड 500 था”</span><span class="lang-en">“Nahi, brake pad 500 tha”</span></span></div>
+    <div class="dock__row">
+      <button id="customer-record" class="mic" type="button" disabled aria-label="बोलकर जवाब दें — Speak your answer"><svg aria-hidden="true" focusable="false"><use href="/static/icons.svg#mic"/></svg></button>
+      <button id="customer-stop" class="mic mic--stop" type="button" disabled hidden aria-label="रोकें — Stop"><svg aria-hidden="true" focusable="false"><use href="/static/icons.svg#stop"/></svg></button>
+      <div class="dock__status">
+        <span class="dock__title hi" data-mic-title>बोलकर जवाब दें</span>
+        <span class="en" data-mic-sub>Speak your answer</span>
+        <span class="timer" data-mic-timer></span>
+        <div class="meter" aria-hidden="true"><span></span></div>
       </div>
     </div>
-
-    <section id="audio-panel" class="panel">
-      <div class="panel-title">
-        <span>Simulated Estimate Call</span>
-        <span class="badge badge-status">Audio Read-back</span>
-      </div>
-      <audio id="readback-player" controls preload="auto" {% if readback_revision is not none %}src="/sessions/{{ session.id }}/readback.wav?revision={{ readback_revision }}"{% endif %}></audio>
-      
-      <div id="dpdp-consent-box" style="margin-bottom: 1rem; padding: 0.85rem 1rem; border-radius: 0.5rem; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3);">
-        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; font-size: 0.85rem; line-height: 1.4; color: var(--text);">
-          <input type="checkbox" id="dpdp-consent-checkbox" style="margin-top: 0.2rem; cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent);" checked />
-          <span>
-            <strong style="color: var(--accent);">DPDP Act 2023 Statutory Privacy Notice:</strong>
-            I understand and give consent that my spoken voice reply will be recorded, processed, and cryptographically hashed as an electronic biometric confirmation record under the <em>Digital Personal Data Protection Act, 2023</em> and <em>Bharatiya Sakshya Adhiniyam, 2023</em>.
-          </span>
-        </label>
-      </div>
-
-      <div class="reply-controls">
-        <button id="customer-record" disabled>Record Reply (Say 'हाँ' or correct amount)</button>
-        <button id="customer-stop" disabled>Stop</button>
-      </div>
-
-      <div id="customer-status"></div>
-      <output id="customer-message">Listen to the estimate read-back above. Once audio plays, click "Record Reply" to confirm or correct.</output>
-    </section>
-
-    <section id="estimate-card" class="panel">
-      <div class="panel-title">
-        <span>Itemized Estimate</span>
-        <div>
-          <span id="card-status-badge" class="badge {% if status == 'confirmed' %}badge-confirmed{% elif status == 'awaiting_reply' %}badge-status{% else %}badge{% endif %}">{{ status }}</span>
-          <span id="card-revision-badge" class="badge">Rev {{ revision }}</span>
-        </div>
-      </div>
-      <table class="items-table" id="items-table">
-        <thead>
-          <tr>
-            <th>Item / Service</th>
-            <th>Kind</th>
-            <th style="text-align:right;">Amount</th>
-          </tr>
-        </thead>
-        <tbody id="items-tbody">
-          {% if card and card.items %}
-            {% for item in card.items %}
-            <tr>
-              <td><strong>{{ item.label or '(Missing label)' }}</strong></td>
-              <td><span class="badge" style="font-size:0.7rem;">{{ item.kind }}</span></td>
-              <td class="amount-cell">
-                {% if item.amount_paise is not none %}
-                  {% if item.amount_paise % 100 == 0 %}
-                    ₹{{ item.amount_paise // 100 }}
-                  {% else %}
-                    ₹{{ "%.2f"|format(item.amount_paise / 100) }}
-                  {% endif %}
-                {% else %}
-                  ₹--
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          {% else %}
-            <tr><td colspan="3" class="empty-state">No items available</td></tr>
-          {% endif %}
-          <tr class="total-row">
-            <td colspan="2">Estimated Total</td>
-            <td class="amount-cell" id="total-cell">
-              {% if card and card.maybe_total_paise is not none %}
-                {% if card.maybe_total_paise % 100 == 0 %}
-                  ₹{{ card.maybe_total_paise // 100 }}
-                {% else %}
-                  ₹{{ "%.2f"|format(card.maybe_total_paise / 100) }}
-                {% endif %}
-              {% else %}
-                ₹--
-              {% endif %}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="meta-grid">
-        <div class="meta-item">
-          <span class="meta-label">Promised Delivery Date &amp; Window</span>
-          <div id="delivery-info">
-            {% if card and card.delivery %}
-              {{ card.delivery.date }} ({{ card.delivery.window }}) — <em>"{{ card.delivery.spoken }}"</em>
-            {% else %}
-              <em style="color:var(--text-muted)">Pending delivery details</em>
-            {% endif %}
-          </div>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">Session ID</span>
-          <code id="session-id-display" style="color:var(--accent); font-size:0.8rem;">{{ session.id }}</code>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <script src="/static/app.js"></script>
-</body>
-</html>
+  </div>
+</nav>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+{% endblock %}
+{% block scripts %}<script src="/static/ui.js"></script><script src="/static/app.js"></script>{% endblock %}
