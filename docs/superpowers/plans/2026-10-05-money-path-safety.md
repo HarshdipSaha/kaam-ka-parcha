@@ -1378,11 +1378,11 @@ BIAS_CONTROL_WORDS = (("alternator", "अल्टरनेटर"), ("camshaft"
 
 **Files:** Create `scripts/register_owner_takes.py`, `data/benchmarks/amount_v2/owner_prompt_sheet.md`, `tests/test_register_owner_takes.py`.
 
-- [ ] **Step 1: Failing test.** `register(prompt_rows, take_files)` maps `o001.wav` → `expected_amounts_paise` of prompt `o001`. It sets `source="consented_script"`, `stratum="owner_extempore"`, `voice=None`, and raises `ValueError` for a take without a prompt.
-- [ ] **Step 2:** Run it. Expected: FAIL.
-- [ ] **Step 3:** The prompt sheet lists 80 cards: parts and amounts in digits, never a script to read. The owner records each as natural speech beside a running scooter, on a phone, as `var/benchmark_audio/owner/o001.wav…`. The script writes `var/benchmark_audio/owner/manifest.jsonl` (ignored), normalised to 8 kHz with `normalize_upload(…, sample_rate=8000)`.
-- [ ] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green.
-- [ ] **Step 5:** `git add scripts/register_owner_takes.py data/benchmarks/amount_v2/owner_prompt_sheet.md tests/test_register_owner_takes.py`, then `git commit -m "feat(bench): owner extempore takes registration (kept internal)"`
+- [x] **Step 1: Failing test.** `register(prompt_rows, take_files)` maps `o001.wav` → `expected_amounts_paise` of prompt `o001`. It sets `source="consented_script"`, `stratum="owner_extempore"`, `voice=None`, and raises `ValueError` for a take without a prompt.
+- [x] **Step 2:** Run it. Expected: FAIL.
+- [x] **Step 3:** The prompt sheet lists 80 cards: parts and amounts in digits, never a script to read. The owner records each as natural speech beside a running scooter, on a phone, as `var/benchmark_audio/owner/o001.wav…`. The script writes `var/benchmark_audio/owner/manifest.jsonl` (ignored), normalised to 8 kHz with `normalize_upload(…, sample_rate=8000)`.
+- [x] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green.
+- [x] **Step 5:** `git add scripts/register_owner_takes.py data/benchmarks/amount_v2/owner_prompt_sheet.md tests/test_register_owner_takes.py`, then `git commit -m "feat(bench): owner extempore takes registration (kept internal)"`
 
 ### Task 12: Gramvaani real-telephone slice
 
