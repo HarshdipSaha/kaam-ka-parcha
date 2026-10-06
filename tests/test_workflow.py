@@ -265,7 +265,7 @@ def test_reask_updates_single_field_and_increments_revision():
     session = store.create()
     service = Workflow(
         store=store,
-        prisma=ScriptedPrisma([INTAKE_T, INTAKE_V, "₹500", "paanch sau", "Mangalvaar subah", "rear brake pad"]),
+        prisma=ScriptedPrisma([INTAKE_T, INTAKE_V, "₹450", "saade chaar sau", "Mangalvaar subah", "rear brake pad"]),
         extractor=FakeExtractor(),
         normalize_audio=lambda blob, mime: b"RIFFpcm",
     )
@@ -287,7 +287,7 @@ def test_reask_updates_single_field_and_increments_revision():
     )
     assert s2.revision == 2
     assert s2.card is not None
-    assert s2.card.items[0].amount_paise == 50000
+    assert s2.card.items[0].amount_paise == 45000
     assert s2.card.items[1].amount_paise is None
     assert s2.card.delivery == s1.card.delivery
     assert len(s2.logs) == 5
@@ -306,7 +306,7 @@ def test_reask_updates_single_field_and_increments_revision():
     assert s3.card is not None
     assert s3.card.delivery is not None
     assert s3.card.delivery.spoken == "Mangalvaar subah"
-    assert s3.card.items[0].amount_paise == 50000
+    assert s3.card.items[0].amount_paise == 45000
     assert len(s3.logs) == 6
     assert s3.logs[-1].role == "mechanic"
     assert s3.logs[-1].mode == "reask:delivery"
@@ -322,7 +322,7 @@ def test_reask_updates_single_field_and_increments_revision():
     assert s4.revision == 4
     assert s4.card is not None
     assert s4.card.items[0].label == "rear brake pad"
-    assert s4.card.items[0].amount_paise == 50000
+    assert s4.card.items[0].amount_paise == 45000
     assert len(s4.logs) == 7
     assert s4.logs[-1].mode == "reask:items.part-1.label"
 

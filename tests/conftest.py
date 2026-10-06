@@ -44,9 +44,9 @@ class FakePrisma:
         if len(self.calls) > 2:
             return "₹500" if mode == "transcribe" else "paanch sau"
         return (
-            "front brake pad ₹450, labour ₹200, Somvaar shaam tak"
+            "front brake pad ₹500, labour ₹500, Somvaar shaam tak"
             if mode == "transcribe"
-            else "front brake pad saade chaar sau labour do sau Somvaar shaam tak"
+            else "front brake pad paanch sau labour paanch sau Somvaar shaam tak"
         )
 
 

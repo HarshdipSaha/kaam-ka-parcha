@@ -13,6 +13,7 @@ from .audio import codec_round_trip, mix_at_snr, mulaw_to_wav, normalize_upload
 from .extract import Extractor
 from .gnani import GnaniError, PrismaClient, TimbreClient
 from .money import AbstainReason, AmountDecision, decide_amounts, settle_card_amounts
+from .numerals import parse_amounts
 from .schema import Evidence, JobCard, LineItem, TranscriptLog
 from .session import Conflict, Session, SessionStore
 from .vocabulary import AUTOMOTIVE_BIAS_WORDS
@@ -166,6 +167,26 @@ class Workflow:
             raise RepeatRequest(reason) from exc
         return normalized, verbatim
 
+    @staticmethod
+    def _require_agreeing_recordings(session: Session, field: str, decision: AmountDecision) -> AmountDecision:
+        """A flagged amount is settled only when two consecutive recordings agree.
+
+        The candidate is what the previous recording heard (kept as zero-score evidence). A recording with no
+        candidate, or one that differs from it, becomes the new candidate instead of the amount.
+        """
+        item_id = field.split(".")[1]
+        if decision.reason is not None or any(
+            it.id == item_id and it.amount_paise is not None for it in session.card.items
+        ):
+            return decision
+        quote = next((ev.quote for ev in session.card.evidence if ev.field == field and ev.review_score == 0.0), "")
+        heard = [m.paise for m in parse_amounts(quote) if m.status == "complete"]
+        if len(heard) != 1:
+            return AmountDecision(None, "independent_confirmation_required", decision.quote)
+        if heard[0] != decision.paise:
+            return AmountDecision(None, "recordings_disagree", decision.quote)
+        return decision
+
     def _reask_amount(
         self,
         session: Session,
@@ -190,7 +211,9 @@ class Workflow:
                 recorded_at_utc=recorded_at_utc,
                 audio_sha256=audio_sha256,
             )
-            decision = decide_amounts(verbatim, normalized, expected_count=1)[0]
+            decision = self._require_agreeing_recordings(
+                session, field, decide_amounts(verbatim, normalized, expected_count=1)[0]
+            )
             if decision.reason is None:
                 logs = (reask_log,)
             else:
@@ -209,6 +232,8 @@ class Workflow:
         evidence = [ev for ev in session.card.evidence if ev.field != field]
         if decision.reason is None:
             evidence.append(Evidence(field=field, quote=decision.quote, review_score=1.0))
+        elif decision.quote.strip():
+            evidence.append(Evidence(field=field, quote=decision.quote, review_score=0.0))
         new_card = JobCard(items=items, delivery=session.card.delivery, evidence=tuple(evidence))
         return self.store.set_card(
             session.id,

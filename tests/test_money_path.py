@@ -62,17 +62,22 @@ def test_intake_requires_independent_confirmation_even_when_both_modes_agree():
         "items.labour-1.amount_paise": "independent_confirmation_required",
     }
     assert set(review_fields(s.card)) == set(abstentions(s))
-    assert all(not ev.field.endswith(".amount_paise") for ev in s.card.evidence)
+    # The mechanic sees what was heard, but zero-score evidence never counts as confirmation.
+    heard = {ev.field: ev for ev in s.card.evidence if ev.field.endswith(".amount_paise")}
+    assert set(heard) == set(abstentions(s))
+    assert all(ev.quote.strip() and ev.review_score == 0.0 for ev in heard.values())
 
 
-def test_w2_crosscheck_disagreement_abstains_only_the_disputed_item():
+def test_w2_clock_formatted_fraction_now_agrees_and_awaits_independent_confirmation():
+    # Real transcribe output "04:30 100" is how the formatter writes साढ़े चार सौ; it agrees with the verbatim reading.
     wf, _, sid = service(ScriptedPrisma([T_W2, V_W2]), CardExtractor(card(labels=("फ्रंट ब्रेक पैड", "लेबर"))))
     s = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
     assert [it.amount_paise for it in s.card.items] == [None, None]
     assert abstentions(s) == {
-        "items.part-1.amount_paise": "crosscheck_disagreement",
+        "items.part-1.amount_paise": "independent_confirmation_required",
         "items.labour-1.amount_paise": "independent_confirmation_required",
     }
+    assert decide_amounts(V_W2, T_W2, expected_count=2)[0].paise == 45000
 
 
 def test_incomplete_number_abstains():
@@ -152,12 +157,12 @@ def test_abstained_card_cannot_be_read_back_and_reason_is_in_audit_manifest():
 
 
 def test_amount_reask_uses_grammar_and_keeps_other_fields():
-    prisma = ScriptedPrisma([T_W2, V_W2, "₹350", "साढ़े तीन सौ"])
+    prisma = ScriptedPrisma([T_W2, V_W2, "₹450", "साढ़े चार सौ"])
     wf, _, sid = service(prisma, CardExtractor(card(labels=("फ्रंट ब्रेक पैड", "लेबर"))))
     s1 = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
     s2 = wf.reask(sid, "items.part-1.amount_paise", b"r", "audio/webm", expected_revision=s1.revision)
     assert [it.amount_paise for it in s1.card.items] == [None, None]
-    assert [it.amount_paise for it in s2.card.items] == [35000, None]
+    assert [it.amount_paise for it in s2.card.items] == [45000, None]
     assert s2.card.delivery == s1.card.delivery
     assert review_fields(s2.card) == ["items.labour-1.amount_paise"]
     assert s2.logs[-1].mode == "reask:items.part-1.amount_paise"
@@ -179,3 +184,77 @@ def test_correction_with_two_numbers_abstains():
     assert s2.card.items[0].amount_paise is None
     assert abstentions(s2)["items.part-1.amount_paise"] == "ambiguous_attachment"
 
+
+
+def test_disputed_reask_keeps_what_was_heard_without_confirming_it():
+    wf, _, sid = service(ScriptedPrisma([T_EN, V_EN, "₹300", "चार सौ"]), CardExtractor(card()))
+    s1 = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
+    s2 = wf.reask(sid, "items.part-1.amount_paise", b"r", "audio/webm", expected_revision=s1.revision)
+    field = "items.part-1.amount_paise"
+    assert s2.card.items[0].amount_paise is None
+    assert abstentions(s2)[field] == "crosscheck_disagreement"
+    heard = next(ev for ev in s2.card.evidence if ev.field == field)
+    assert heard.quote.strip() and heard.review_score == 0.0
+    assert field in review_fields(s2.card)
+
+
+@pytest.mark.parametrize("verbatim, transcribe, paise", [
+    ("साढ़े चार सौ रुपये", "04:30 ₹100", 45000),
+    ("साढ़े तीन सौ रुपये।", "03:30 100 रुपये।", 35000),
+    ("डेढ़ सौ", "डेढ़ 100", 15000),
+    ("ढाई सौ रुपए", "ढाई ₹100", 25000),
+    ("पौने दो सौ रुपये", "पौने ₹200", 17500),
+    ("पौने दो हज़ार रुपए", "पौने ₹2,000", 175000),
+    ("साढ़े सात सौ रुपये", "07:30 ₹100", 75000),
+    ("साढ़े तीन हज़ार रुपये", "03:30 ₹1,000", 350000),
+])
+def test_transcribe_pass_fraction_formatting_still_cross_checks_the_spoken_amount(verbatim, transcribe, paise):
+    [decision] = decide_amounts(verbatim, transcribe, expected_count=1)
+    assert (decision.paise, decision.reason) == (paise, None)
+
+
+@pytest.mark.parametrize("verbatim, transcribe", [
+    ("साढ़े चार सौ रुपये", "04:30 ₹200"),   # formatting says 900, speech says 450
+    ("साढ़े चार सौ रुपये", "05:30 ₹100"),
+    ("डेढ़ सौ", "डेढ़ ₹1,000"),
+])
+def test_fraction_normalisation_never_hides_a_real_disagreement(verbatim, transcribe):
+    [decision] = decide_amounts(verbatim, transcribe, expected_count=1)
+    assert decision.paise is None and decision.reason == "crosscheck_disagreement"
+
+
+def _reask(wf, sid, revision, transcribe, verbatim):
+    wf.prisma.script.extend([transcribe, verbatim])
+    return wf.reask(sid, "items.part-1.amount_paise", b"r", "audio/webm", expected_revision=revision)
+
+
+def test_reask_matching_the_intake_candidate_is_two_agreeing_recordings():
+    wf, _, sid = service(ScriptedPrisma([T_EN, V_EN]), CardExtractor(card()))
+    s1 = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
+    s2 = _reask(wf, sid, s1.revision, "₹450", "साढ़े चार सौ")
+    assert s2.card.items[0].amount_paise == 45000
+    assert "items.part-1.amount_paise" not in review_fields(s2.card)
+
+
+def test_reask_that_differs_from_the_candidate_needs_one_more_agreeing_recording():
+    wf, _, sid = service(ScriptedPrisma([T_EN, V_EN]), CardExtractor(card()))
+    s1 = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
+    s2 = _reask(wf, sid, s1.revision, "₹12", "बारह")          # truncated tail: "बारह सौ" heard as "बारह"
+    assert s2.card.items[0].amount_paise is None
+    assert abstentions(s2)["items.part-1.amount_paise"] == "recordings_disagree"
+    s3 = _reask(wf, sid, s2.revision, "₹1,200", "बारह सौ")      # still differs from the last candidate
+    assert s3.card.items[0].amount_paise is None
+    s4 = _reask(wf, sid, s3.revision, "₹1,200", "बारह सौ")      # two consecutive recordings agree
+    assert s4.card.items[0].amount_paise == 120000
+
+
+def test_first_agreeing_reask_without_a_candidate_is_only_a_candidate():
+    incomplete = "front brake pad saade labour do sau Somvaar shaam tak"
+    wf, _, sid = service(ScriptedPrisma([T_EN, incomplete]), CardExtractor(card()))
+    s1 = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
+    assert abstentions(s1)["items.part-1.amount_paise"] == "incomplete_number"
+    s2 = _reask(wf, sid, s1.revision, "₹500", "पाँच सौ")
+    assert s2.card.items[0].amount_paise is None
+    assert abstentions(s2)["items.part-1.amount_paise"] == "independent_confirmation_required"
+    s3 = _reask(wf, sid, s2.revision, "₹500", "पाँच सौ")
+    assert s3.card.items[0].amount_paise == 50000

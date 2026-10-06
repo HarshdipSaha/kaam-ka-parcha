@@ -69,7 +69,12 @@ def test_flagged_amount_is_asked_on_its_row_and_fixed_by_voice(page, world):
     expect(page.locator("#start-readback")).to_be_hidden()
     page.screenshot(path=str(SCREENS / "workshop-flagged-360.png"), full_page=True)
     world.prisma.say("paanch sau")
-    speak(page, row.get_by_role("button", name=re.compile("दोबारा बोलें")), "#stop")
+    again = row.get_by_role("button", name=re.compile("दोबारा बोलें"))
+    speak(page, again, "#stop")
+    # No earlier candidate for this amount: the first recording is only a candidate, shown as what was heard.
+    expect(row).to_contain_text("पक्की करें", timeout=15000)
+    expect(row.locator(".row__heard")).to_contain_text("paanch sau")
+    speak(page, again, "#stop")      # a second agreeing recording settles it
     expect(page.locator('[data-item="part-1"] .row__amount')).to_have_text("₹500", timeout=15000)
     # the single recording of labour still needs its deliberate second recording
     world.prisma.say("do sau")

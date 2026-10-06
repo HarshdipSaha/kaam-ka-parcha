@@ -24,6 +24,7 @@
   const REPEAT_MESSAGE = "आवाज़ साफ़ नहीं आई — कृपया फिर से बोलिए (Please say it again)";
   const ABSTAIN_LABELS = {
     independent_confirmation_required: "रकम दोबारा बोलकर पक्की करें",
+    recordings_disagree: "दोनों बार रकम अलग सुनी — एक बार और बोलें",
     incomplete_number: "अधूरी रकम — फिर से पूछेंगे",
     crosscheck_disagreement: "रकम पक्की नहीं — फिर से पूछेंगे",
     ambiguous_attachment: "कौन सी रकम किस आइटम की — साफ़ नहीं",
@@ -41,6 +42,7 @@
   const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const ABSTAIN_EN = {
     independent_confirmation_required: "Say the amount again to confirm it",
+    recordings_disagree: "The two recordings differ — say it once more",
     incomplete_number: "Incomplete amount — we'll ask again",
     crosscheck_disagreement: "Amount not certain — we'll ask again",
     ambiguous_attachment: "Unclear which amount belongs to which item",
