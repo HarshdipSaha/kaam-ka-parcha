@@ -300,18 +300,16 @@
   function chime() {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
-    const ctx = new AC();
-    const now = ctx.currentTime;
-    [[880, 0], [1320, 0.16]].forEach(([freq, at]) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+    const ctx = new AC(), t = ctx.currentTime;
+    [880, 1320].forEach((freq, n) => {
+      const osc = ctx.createOscillator(), gain = ctx.createGain(), at = t + n * 0.16;
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.0001, now + at);
-      gain.gain.exponentialRampToValueAtTime(0.3, now + at + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.35);
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(0.3, at + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.35);
       osc.connect(gain).connect(ctx.destination);
-      osc.start(now + at);
-      osc.stop(now + at + 0.4);
+      osc.start(at);
+      osc.stop(at + 0.4);
     });
     setTimeout(() => ctx.close(), 900);
   }

@@ -23,7 +23,7 @@
     <p class="fineprint">कॉपी करने से कुछ अपने आप नहीं भेजा जाता।<span class="en">Copying sends nothing by itself.</span></p>
   </section>
 
-  <section class="call" id="audio-panel" data-call="idle" aria-label="गैराज से कॉल">
+  <section class="call" id="audio-panel" data-call="idle" aria-label="गैराज से कॉल"{% if status == "confirmed" %} hidden{% endif %}>
     <div class="call__who">
       <div class="call__avatar" aria-hidden="true">गै</div>
       <div>

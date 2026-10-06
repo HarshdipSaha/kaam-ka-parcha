@@ -216,6 +216,7 @@ function renderCustomerCard(data, opts = {}) {
   badge.className = `pill ${sealed ? "pill--ok" : data.status === "awaiting_reply" ? "pill--wait" : "pill--warn"}`;
   $("card-revision-badge").textContent = `Rev ${data.revision}`;
   $("confirmed-banner").hidden = !sealed;
+  $("audio-panel").hidden = sealed;
   $("receipt-total").textContent = UI.formatRupees(data.total_paise);
   $("fallback-banner").hidden = data.status !== "fallback_ready";
   $("dock").hidden = sealed || data.status === "fallback_ready";
