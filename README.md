@@ -89,14 +89,6 @@ flowchart TD
 | ![Stage view with both phones](docs/ui/stage-sealed-1440.png) |
 | *Mechanic and owner phones side by side; all screenshots use synthetic data* |
 
----:|:---:|
-| ![Workshop Parsed Card](docs/webattack_artifacts/workshop_parsed_card.png) | ![Customer Telephony Review](docs/webattack_artifacts/customer_awaiting_reply.png) |
-| *Real-time Hinglish dictation parsed into paise-accurate items & delivery date* | *Narrowband 8 kHz telephony read-back with simulated line disclosure* |
-
-| Customer Sealed State | Mobile Telephony Viewport (iPhone 14) |
-|:---:|:---:|
-| ![Customer Sealed State](docs/webattack_artifacts/customer_sealed_state.png) | ![Customer Mobile Viewport](docs/webattack_artifacts/customer_Mobile_iPhone14.png) |
-| *Cryptographically sealed job card with tamper-evident PDF & WhatsApp copy* | *Tested responsive layout across desktop, tablet, and mobile viewports* |
 
 ---
 
