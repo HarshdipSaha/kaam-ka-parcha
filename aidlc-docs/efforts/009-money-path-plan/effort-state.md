@@ -16,7 +16,7 @@
 | Plan | Complete | [`2026-10-05-money-path-safety.md`](../../../docs/superpowers/plans/2026-10-05-money-path-safety.md) |
 | Spec sync | Complete | [`money-path-safety-spec.md`](../../../docs/specs/money-path-safety-spec.md) corrected and committed |
 | Audit | Complete | [`audit.md`](audit.md) |
-| Implementation | Active | Task 1 complete; Task 0 owner-only pre-flight remains pending |
+| Implementation | Active | Tasks 1–7 complete; Task 0 owner-only pre-flight remains pending |
 
 ## Implementation Progress
 
@@ -39,6 +39,9 @@
 - **Task 6 — Complete:** Evon extractor wiring with JSON schema enforcement (`CARD_RESPONSE_SCHEMA`) ensuring `amount_paise: null`, thinking off (`enable_thinking: False`), `<think>` stripping, and removal of Groq fallback in configuration. Tested live with real `.env` credentials. Commit subject: `feat(extract): Evon as the line-item extractor; no Groq fallback`.
 - **Validation:** 13 passed in `tests/test_extract_evon.py tests/test_config.py`; 411 passed in full test suite. Live extraction smoke test passed.
 
+- **Task 7 — Complete:** Added canonical benchmark references, explicit provider-error/empty/ok row outcomes, strict expected-amount labels, four-digit clip IDs, BOM-tolerant JSONL reading, unbiased verbatim mode, and stale-row rejection on resume. Added `data/benchmarks/exclusions.json`. Commit subject: `feat(lab): canonical references, explicit empty outcome, amount labels, bias control mode`.
+- **Validation:** 12 passed in `tests/test_lab_v2_runner.py`; 53 passed across the focused lab/dataset regression modules; 423 passed in the full offline suite. Analysis script completed successfully and reported 65 output entries; `var/lab/real_audio_analysis.md` has 110 physical lines because some entries contain embedded newlines. `git diff --check`: PASS.
+
 ## Next
 
-Task 7: Line Noise Lab: canonical references, outcomes, labels, bias control.
+Task 8.

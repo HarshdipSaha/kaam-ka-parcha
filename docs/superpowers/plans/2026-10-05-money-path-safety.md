@@ -1105,7 +1105,7 @@ def test_groq_key_alone_no_longer_configures_an_extractor():
   - runner rows gain `reference_canonical`, `outcome ∈ {"ok","empty_transcript","provider_error"}`, `expected_amounts_paise`, `cer_canonical`
   - `stt_modes` accepts `"verbatim_nobias"`, which calls Prisma verbatim with no bias
 
-- [ ] **Step 1: Write the failing tests** `tests/test_lab_v2_runner.py`. They run without FFmpeg because `codecs=["none"]`:
+- [x] **Step 1: Write the failing tests** `tests/test_lab_v2_runner.py`. They run without FFmpeg because `codecs=["none"]`:
 
 ```python
 import json
@@ -1185,8 +1185,8 @@ def test_bias_control_runs_verbatim_with_and_without_bias(tmp_path):
     assert [r["stt_mode"] for r in rows] == ["verbatim", "verbatim_nobias"]
 ```
 
-- [ ] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_lab_v2_runner.py`. Expected: `ImportError: cannot import name 'canonical_reference'`.
-- [ ] **Step 3: Implement.**
+- [x] **Step 2:** Run `.\.venv\Scripts\python.exe -m pytest -q tests/test_lab_v2_runner.py`. Expected: `ImportError: cannot import name 'canonical_reference'`.
+- [x] **Step 3: Implement.**
   - **`canonical_reference`** in `metrics.py`, with the same rule as `scripts/analyze_real_audio_benchmark.py::clean_reference`: strip `<…>` and `[…]`; drop a Latin-only token that directly follows a Devanagari token.
   - **`Clip`:** widen the pattern and add the three fields. `load_manifest` reads with `encoding="utf-8-sig"`.
   - **Runner:**
@@ -1196,8 +1196,8 @@ def test_bias_control_runs_verbatim_with_and_without_bias(tmp_path):
     - `outcome = "provider_error" if transcription_error else "empty_transcript" if not (transcript or "").strip() else "ok"`;
     - add the four row keys, with `cer_canonical` set only when `outcome == "ok"`.
   - **`data/benchmarks/exclusions.json`:** `{"i036": "reference/audio mismatch (R9 §3)", "y001": "auto-caption pseudo-reference", "y002": "auto-caption pseudo-reference", "y003": "auto-caption pseudo-reference", "y004": "auto-caption pseudo-reference", "y005": "auto-caption pseudo-reference"}`.
-- [ ] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green. Reproduce R9 to confirm nothing moved: `py -3 scripts/analyze_real_audio_benchmark.py data/benchmarks/real_audio_2026-10 var/lab/real_audio_analysis.md` prints `wrote … (65 lines)`.
-- [ ] **Step 5:** `git commit -am "feat(lab): canonical references, explicit empty outcome, amount labels, bias control mode"`
+- [x] **Step 4:** Run `.\.venv\Scripts\python.exe -m pytest -q`. Expected: green. Reproduce R9 to confirm nothing moved: `py -3 scripts/analyze_real_audio_benchmark.py data/benchmarks/real_audio_2026-10 var/lab/real_audio_analysis.md` prints `wrote … (65 lines)`.
+- [x] **Step 5:** `git commit -am "feat(lab): canonical references, explicit empty outcome, amount labels, bias control mode"`
 
 ### Task 8: Money evaluator
 
@@ -1684,3 +1684,8 @@ foreach ($m in "estimates","corrections") {
   - `Clip.expected_amounts_paise` is used in Tasks 7–12.
   - Runner modes `transcribe`, `verbatim`, `verbatim_nobias`.
 - **Proportion:** this plan carries full bodies only where the code is the decision (grammar tables, abstention rules, the resampler) or where the owner asked for working snippets. Everything here was executed in a scratch copy before inclusion, except the live API paths and the FFmpeg-dependent app tests, which run on the owner's laptop.
+
+## Execution status update (2026-10-06)
+
+- [x] Task 7 — Line Noise Lab: canonical references, outcomes, labels, bias control; Steps 1–5 complete. Validation: 12 focused tests, 53 affected lab/dataset tests, 423 full offline tests passed.
+- Next: Task 8.

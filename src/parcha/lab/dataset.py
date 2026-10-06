@@ -5,18 +5,21 @@ from pathlib import Path
 from random import Random
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 
 class Clip(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    id: str = Field(pattern=r"^[a-z][0-9]{3}$")
+    id: str = Field(pattern=r"^[a-z][0-9]{3,4}$")
     text: str
     reference_transcribe: str
     entities: dict[str, str | int]
     audio: str
     kind: Literal["speech", "reply", "engine_only"]
     seed: int
+    expected_amounts_paise: list[StrictInt] = Field(default_factory=list)
+    voice: str | None = None
+    audio_sha256: str | None = None
     source: Literal[
         "timbre", "consented_script", "synthetic_noise", "recorded_ambient",
         "open_dataset", "user_provided_youtube",
@@ -93,7 +96,7 @@ def load_manifest(
     clips: list[Clip] = []
     seen_ids: set[str] = set()
 
-    for line_num, line in enumerate(manifest_path.read_text(encoding="utf-8").splitlines(), 1):
+    for line_num, line in enumerate(manifest_path.read_text(encoding="utf-8-sig").splitlines(), 1):
         line = line.strip()
         if not line:
             continue

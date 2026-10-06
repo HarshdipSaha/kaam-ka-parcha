@@ -9,6 +9,7 @@ from parcha.workflow import classify_reply
 __all__ = [
     "amount_match",
     "cer",
+    "canonical_reference",
     "hallucinated_words",
     "normalize",
     "short_reply_drop",
@@ -58,6 +59,24 @@ ROMAN_AMOUNT_WORDS = {
     "ek lakh": 100000,
     "ek crore": 10000000,
 }
+
+_REFERENCE_TAG = re.compile(r"<[^>]*>|\[[^\]]*\]")
+_LATIN = re.compile(r"[A-Za-z]")
+_DEVANAGARI = re.compile(r"[\u0900-\u097f]")
+
+
+def canonical_reference(text: str) -> str:
+    """Remove annotation tags and Latin glosses that follow Devanagari words."""
+    canonical: list[str] = []
+    previous_was_devanagari = False
+    for token in _REFERENCE_TAG.sub(" ", text).split():
+        has_devanagari = bool(_DEVANAGARI.search(token))
+        is_latin_only = bool(_LATIN.search(token)) and not has_devanagari
+        if is_latin_only and previous_was_devanagari:
+            continue
+        canonical.append(token)
+        previous_was_devanagari = has_devanagari
+    return " ".join(canonical)
 
 
 def normalize(text: str) -> str:

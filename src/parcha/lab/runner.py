@@ -15,7 +15,13 @@ from parcha.audio import _read_pcm, _write_pcm, codec_round_trip, erase_frames, 
 from parcha.credits import BudgetExceeded
 from parcha.gnani import GnaniError
 from parcha.lab.dataset import Clip, load_manifest
-from parcha.lab.metrics import amount_match, cer, hallucinated_words, word_error_rate
+from parcha.lab.metrics import (
+    amount_match,
+    canonical_reference,
+    cer,
+    hallucinated_words,
+    word_error_rate,
+)
 from parcha.lab.noise import IMPULSE_PROFILES, inject_impulses
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -50,7 +56,9 @@ class RunnerConfig:
     impulse_profiles: list[str | None] = field(default_factory=list)
     cache_dir: Path = field(default_factory=lambda: Path("var/lab/cache"))
     ablation: str | None = None
-    stt_modes: list[Literal["transcribe", "verbatim"]] = field(default_factory=lambda: ["transcribe"])
+    stt_modes: list[Literal["transcribe", "verbatim", "verbatim_nobias"]] = field(
+        default_factory=lambda: ["transcribe"]
+    )
     bias_words: list[str] | None = None
     request_interval_seconds: float = 0.0
     resume: bool = False
@@ -64,8 +72,11 @@ class RunnerConfig:
             self.noise_path = Path(self.noise_path)
         if not self.stt_modes:
             raise ValueError("at least one STT mode is required")
-        if any(mode not in {"transcribe", "verbatim"} for mode in self.stt_modes):
-            raise ValueError("STT modes must be transcribe or verbatim")
+        if any(
+            mode not in {"transcribe", "verbatim", "verbatim_nobias"}
+            for mode in self.stt_modes
+        ):
+            raise ValueError("STT modes must be transcribe, verbatim, or verbatim_nobias")
         if self.bias_words and "verbatim" not in self.stt_modes:
             raise ValueError("bias words require verbatim mode")
         if self.request_interval_seconds < 0:
@@ -193,10 +204,22 @@ class Runner:
         prior_rows: list[dict[str, Any]] = []
         completed: set[tuple[str, str, str, float | None, float, str | None]] = set()
         total_spent = 0.0
+        required_row_fields = {
+            "reference_canonical",
+            "cer_canonical",
+            "outcome",
+            "expected_amounts_paise",
+        }
         for line_number, line in enumerate(self.config.output_path.read_text(encoding="utf-8").splitlines(), 1):
             if not line.strip():
                 continue
             row = json.loads(line)
+            missing_fields = sorted(required_row_fields.difference(row))
+            if missing_fields:
+                raise ValueError(
+                    f"saved result line {line_number} is missing required row fields: "
+                    f"{', '.join(missing_fields)}; start a fresh run"
+                )
             if row.get("transcription_error"):
                 raise ValueError("cannot resume after a provider error; start a new run after resolving it")
             key = self._condition_key(
@@ -475,14 +498,19 @@ class Runner:
                                 for audio_chunk in audio_chunks:
                                     attempted_chunks += 1
                                     try:
+                                        api_mode = (
+                                            "verbatim"
+                                            if stt_mode == "verbatim_nobias"
+                                            else stt_mode
+                                        )
                                         bias = self.config.bias_words if stt_mode == "verbatim" else None
                                         if bias:
                                             chunk_transcripts.append(
-                                                prisma.transcribe(audio_chunk, mode=stt_mode, bias=bias)
+                                                prisma.transcribe(audio_chunk, mode=api_mode, bias=bias)
                                             )
                                         else:
                                             chunk_transcripts.append(
-                                                prisma.transcribe(audio_chunk, mode=stt_mode)
+                                                prisma.transcribe(audio_chunk, mode=api_mode)
                                             )
                                     except GnaniError as exc:
                                         chunk_errors.append(str(exc))
@@ -503,8 +531,18 @@ class Runner:
                                 latency_ms = round((time.perf_counter() - t0) * 1000.0, 2)
 
                                 reference = clip.reference_transcribe
+                                reference_canonical = canonical_reference(reference)
                                 cer_score = round(cer(reference, transcript), 4) if transcript is not None else None
                                 wer_score = round(word_error_rate(reference, transcript), 4) if transcript is not None else None
+                                outcome = (
+                                    "provider_error" if transcription_error
+                                    else "empty_transcript" if not (transcript or "").strip()
+                                    else "ok"
+                                )
+                                cer_canonical = (
+                                    round(cer(reference_canonical, transcript), 4)
+                                    if outcome == "ok" else None
+                                )
                                 expected_paise = clip.entities.get("amount_paise") if clip.entities else None
                                 amt_match = (
                                     amount_match(int(expected_paise), transcript)
@@ -549,7 +587,11 @@ class Runner:
                                     "transcription_error": transcription_error,
                                     "api_chunks": attempted_chunks,
                                     "reference": reference,
+                                    "reference_canonical": reference_canonical,
                                     "cer": cer_score,
+                                    "cer_canonical": cer_canonical,
+                                    "outcome": outcome,
+                                    "expected_amounts_paise": clip.expected_amounts_paise,
                                     "wer": wer_score,
                                     "amount_matched": amt_match,
                                     "latency_ms": latency_ms,
@@ -629,7 +671,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--stt-modes",
         default="transcribe",
-        help="Comma-separated STT formats: transcribe,verbatim",
+        help="Comma-separated STT formats: transcribe,verbatim,verbatim_nobias",
     )
     parser.add_argument(
         "--bias-words",
