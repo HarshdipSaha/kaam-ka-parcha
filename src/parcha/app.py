@@ -137,6 +137,11 @@ def create_app(services: AppServices | None = None) -> FastAPI:
     def workshop(request: Request):
         return templates.TemplateResponse(request, "workshop.html", {})
 
+    @app.get("/stage", response_class=HTMLResponse)
+    def stage(request: Request):
+        session = services.store.create()
+        return templates.TemplateResponse(request, "stage.html", {"session": session, "parcha_no": parcha_no(session.id)})
+
     @app.get("/customer/{session_id}", response_class=HTMLResponse)
     def customer_view(request: Request, session_id: str):
         try:

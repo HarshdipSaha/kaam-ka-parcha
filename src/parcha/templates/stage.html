@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Kaam ka Parcha — Stage{% endblock %}
+{% block body_class %}page--stage{% endblock %}
+{% block body %}
+<header class="stage__head">
+  <div class="brand">काम का पर्चा<span class="en">Kaam ka Parcha — one parcha, two phones</span></div>
+  <p>मिस्त्री बोलता है → ग्राहक सुनकर “हाँ” कहता है → पर्चा मंज़ूर<span class="en">Mechanic speaks → customer hears and says “haan” → parcha sealed</span></p>
+  <p class="fineprint">Gnani Prisma सुनता है · Gnani Timbre बोलता है · पर्चा № {{ parcha_no }}<span class="en">Simulated phone line and synthetic demo data. No call is placed and nothing is sent.</span></p>
+</header>
+<main class="stage">
+  <figure class="phone">
+    <figcaption>मिस्त्री<span class="en">Mechanic</span></figcaption>
+    <iframe id="stage-workshop" title="Mechanic phone" src="/workshop?session_id={{ session.id }}" allow="microphone; autoplay; clipboard-write"></iframe>
+  </figure>
+  <figure class="phone">
+    <figcaption>ग्राहक<span class="en">Vehicle owner</span></figcaption>
+    <iframe id="stage-customer" title="Vehicle owner phone" src="/customer/{{ session.id }}" allow="microphone; autoplay; clipboard-write"></iframe>
+  </figure>
+</main>
+{% endblock %}
