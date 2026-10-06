@@ -94,6 +94,14 @@ def settle(http: httpx.Client, sid: str, revision: int, audio) -> int:
     return revision
 
 
+def shoot(page, path: Path) -> None:
+    """Size the viewport to the whole page so the fixed mic dock sits at the bottom instead of mid-slip."""
+    height = page.evaluate("document.documentElement.scrollHeight")
+    page.set_viewport_size({"width": PHONE["width"], "height": max(PHONE["height"], int(height))})
+    page.wait_for_timeout(400)
+    page.screenshot(path=str(path))
+
+
 def with_mic(pw, wav: Path, viewport, actions) -> None:
     browser = pw.chromium.launch(args=[*MEDIA, f"--use-file-for-fake-audio-capture={wav.resolve()}"])
     page = browser.new_context(
@@ -134,7 +142,7 @@ def main() -> int:
                 page.wait_for_timeout(1500)
                 state["sid"] = page.evaluate("window.getCurrentSession().id")
                 state["rev"] = page.evaluate("window.getCurrentSession().revision")
-                page.screenshot(path=str(OUT / "workshop-flagged-360.png"), full_page=True)
+                shoot(page, OUT / "workshop-flagged-360.png")
 
             with_mic(pw, audio["estimate"][0], PHONE, mechanic)
             sid = state["sid"]
@@ -147,7 +155,7 @@ def main() -> int:
             ).new_page()
             page.goto(f"{BASE}/customer/{sid}")
             page.wait_for_timeout(2000)
-            page.screenshot(path=str(OUT / "customer-call-360.png"), full_page=True)
+            shoot(page, OUT / "customer-call-360.png")
             browser.close()
 
             def customer(page):
@@ -160,7 +168,7 @@ def main() -> int:
                 page.locator("#customer-stop").click()
                 expect(page.locator("#confirmed-banner")).to_be_visible(timeout=120000)
                 page.wait_for_timeout(1500)
-                page.screenshot(path=str(OUT / "customer-sealed-360.png"), full_page=True)
+                shoot(page, OUT / "customer-sealed-360.png")
 
             with_mic(pw, audio["reply"][0], PHONE, customer)
 
@@ -168,7 +176,7 @@ def main() -> int:
             page = browser.new_context(viewport=PHONE, locale="hi-IN").new_page()
             page.goto(f"{BASE}/verify/{sid}")
             page.wait_for_timeout(1500)
-            page.screenshot(path=str(OUT / "verify-360.png"), full_page=True)
+            shoot(page, OUT / "verify-360.png")
 
             # Stage: both phones side by side showing one sealed parcha, driven through the same live services.
             stage_sid = re.search(r'src="/customer/([A-Za-z0-9_-]+)"', httpx.get(f"{BASE}/stage").text).group(1)

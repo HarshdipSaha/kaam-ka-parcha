@@ -4,7 +4,7 @@
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
-[![Pytest Passed](https://img.shields.io/badge/tests-170%20passed%20(100%25%20offline)-brightgreen.svg)](tests/)
+[![Pytest Passed](https://img.shields.io/badge/tests-631%20passed%20(100%25%20offline)-brightgreen.svg)](tests/)
 [![Playwright E2E](https://img.shields.io/badge/playwright-E2E%20Passed%20(4%20Viewports)-purple.svg)](scripts/run_webattack_suite.py)
 [![Gnani AI](https://img.shields.io/badge/Gnani%20AI-Prisma%20%7C%20Timbre-orange.svg)](https://vachana.ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -74,10 +74,12 @@ flowchart TD
 
 ### Visual Interface Walkthrough
 
+Captured from a **live run** (`scripts/capture_live_screens.py`): real Gnani Prisma recognition, Evon extraction and Timbre read-back, driven by spoken audio. The speech is synthetic (Timbre voices into a fake microphone) and no real customer data is used. The phone line is simulated and WhatsApp is clipboard copy.
+
 | Leg 1: Mechanic (`/workshop`) — काम का पर्चा | Leg 2: Vehicle owner (`/customer/{id}`) — गैराज से कॉल |
 |:---:|:---:|
 | ![Workshop slip with a row asking for a re-check](docs/ui/workshop-flagged-360.png) | ![Customer call card with unticked consent](docs/ui/customer-call-360.png) |
-| *पीली लाइन पर "दोबारा बोलें" — the slip asks for re-checks row by row* | *कॉल जैसा पेज, सहमति पहले — call-style page, consent starts unticked* |
+| *पीली लाइन पर "दोबारा बोलें" — each amount needs a second recording; what Prisma heard is shown* | *कॉल जैसा पेज, सहमति पहले — call-style page, consent starts unticked* |
 
 | Sealed receipt (`मंज़ूर`) | Verify (`/verify/{id}`) |
 |:---:|:---:|
@@ -87,7 +89,7 @@ flowchart TD
 | Stage view (`/stage`) for the 60-second demo |
 |:---:|
 | ![Stage view with both phones](docs/ui/stage-sealed-1440.png) |
-| *Mechanic and owner phones side by side; all screenshots use synthetic data* |
+| *Mechanic and owner phones side by side, one sealed parcha through the live services* |
 
 
 ---
