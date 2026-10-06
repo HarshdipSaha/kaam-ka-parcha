@@ -34,14 +34,21 @@ def fake_settings() -> Settings:
 
 
 class SilentTimbre:
-    """Fake Timbre: one second of 8 kHz mu-law silence, so browsers get a playable WAV."""
+    """Fake Timbre: one second of 8 kHz PCM silence, so browsers get a playable WAV."""
 
     def __init__(self) -> None:
         self.calls: list[str] = []
 
     def synthesize(self, text: str) -> bytes:
         self.calls.append(text)
-        return bytes([0xFF]) * 8000
+        import io, wave
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(8000)
+            w.writeframes(bytes(2) * 8000)
+        return buf.getvalue()
 
 
 class StagePrisma:

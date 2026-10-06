@@ -1,10 +1,7 @@
 // Kaam ka Parcha UI helpers and components. Rule: server-derived text is only ever set as text, never parsed as HTML.
 (function () {
   "use strict";
-
   const COPY = {
-    micIdle: { hi: "बोलिए", en: "Tap to speak" },
-    customerMicIdle: { hi: "बोलकर जवाब दें", en: "Speak your answer" },
     listening: { hi: "सुन रहा हूँ", en: "Listening — tap to stop" },
     processing: { hi: "समझ रहे हैं…", en: "Understanding…" },
     reask: { hi: "दोबारा बोलें", en: "Say again" },
@@ -24,7 +21,6 @@
     consentNeeded: { hi: "पहले ऊपर सहमति पर ✓ लगाइए।", en: "Tick the consent box first." },
     consentSaved: { hi: "सहमति दर्ज हुई", en: "Consent recorded" },
   };
-  // From the money-path plan: strings unchanged.
   const REPEAT_MESSAGE = "आवाज़ साफ़ नहीं आई — कृपया फिर से बोलिए (Please say it again)";
   const ABSTAIN_LABELS = {
     incomplete_number: "अधूरी रकम — फिर से पूछेंगे",
@@ -42,12 +38,10 @@
   const STAGES = ["bolo", "parcha", "sunao", "haan", "manzoor"];
   const SVG_NS = "http://www.w3.org/2000/svg";
   const INR = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
-
   function describeHttpError(detail, status) {
     if (detail && typeof detail === "object" && detail.repeat) return REPEAT_MESSAGE;
     return (typeof detail === "string" && detail) || `Server returned HTTP ${status}`;
   }
-
   class HttpError extends Error {
     constructor(status, detail) {
       super(describeHttpError(detail, status));
@@ -57,11 +51,9 @@
       this.reason = this.repeat ? detail.reason : null;
     }
   }
-
   class MicError extends Error {
     constructor(kind) { super(`microphone ${kind}`); this.kind = kind; }
   }
-
   async function parse(res) {
     const body = await res.json().catch(() => ({ detail: res.statusText }));
     if (!res.ok) throw new HttpError(res.status, body.detail);
@@ -71,7 +63,6 @@
     get: async (url) => parse(await fetch(url, { headers: { Accept: "application/json" } })),
     post: async (url, body) => parse(await fetch(url, { method: "POST", body })),
   };
-
   function formatRupees(paise) {
     if (paise === null || paise === undefined) return "₹ —";
     const sign = paise < 0 ? "-" : "";
@@ -80,16 +71,13 @@
     const rem = abs % 100;
     return `${sign}₹${INR.format(rupees)}${rem ? "." + String(rem).padStart(2, "0") : ""}`;
   }
-
   function hindiDelivery(delivery) {
     if (!delivery) return "अभी तय नहीं";
     const [y, m, d] = delivery.date.split("-").map(Number);
     const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
     return `${WEEKDAYS_SUN0[weekday]}, ${d} ${MONTHS[m - 1]} · ${WINDOW_HI[delivery.window] || delivery.window}`;
   }
-
   const kindLabel = (kind) => KIND_HI[kind] || kind || "चीज़";
-
   function describeField(path, card) {
     if (path === "delivery") return { ...COPY.deliveryQ };
     const match = /^items\.([^.]+)\.(label|amount_paise)$/.exec(path);
@@ -103,7 +91,6 @@
     }
     return { hi: path, en: path };
   }
-
   function stageFor(s) {
     if (!s || !s.card) return "bolo";
     if (s.status === "confirmed") return "manzoor";
@@ -111,9 +98,7 @@
     if ((s.review_fields || []).length) return "parcha";
     return "sunao";
   }
-
   const flagCount = (n) => ({ hi: n === 1 ? "1 चीज़ जाँचनी है" : `${n} चीज़ें जाँचनी हैं`, en: `${n} to check` });
-
   function diffItems(prev, next) {
     const before = new Map(((prev && prev.items) || []).map((it) => [it.id, it]));
     const changes = new Map();
@@ -127,12 +112,10 @@
     }
     return changes;
   }
-
   function heardQuote(card, field) {
     const ev = ((card && card.evidence) || []).find((e) => e.field === field);
     return ev ? ev.quote : null;
   }
-
   function el(tag, attrs, ...children) {
     const node = document.createElement(tag);
     for (const [key, value] of Object.entries(attrs || {})) {
@@ -145,7 +128,6 @@
     }
     return node;
   }
-
   function icon(name) {
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("aria-hidden", "true");
@@ -159,7 +141,6 @@
     const use = button && button.querySelector("use");
     if (use) use.setAttribute("href", `/static/icons.svg#${name}`);
   }
-
   function askBlock(field, card, reason, onReask) {
     const q = describeField(field, card);
     const chip = el("button", { class: "reask", type: "button", "data-field": field, "aria-label": `${COPY.reask.hi} — ${q.en}` },
@@ -170,8 +151,6 @@
       reason ? el("span", { class: "abstain-reason" }, ABSTAIN_LABELS[reason] || reason) : null,
       chip);
   }
-
-  // Same markup as templates/_slip.html; keep the two in step.
   function renderSlip(target, session, opts = {}) {
     if (!target) return;
     const card = session.card || { items: [], evidence: [] };
@@ -198,14 +177,12 @@
       return row;
     });
     if (!rows.length) rows.push(el("li", { class: "row row--empty" }, "अभी कोई चीज़ नहीं", el("span", { class: "en" }, "No items yet")));
-
     const total = session.total_paise;
     const delivery = el("div", { class: "slip__delivery", id: "delivery-info" },
       el("span", { class: "slip__k" }, "गाड़ी कब मिलेगी", el("span", { class: "en" }, "Vehicle ready")),
       el("strong", {}, hindiDelivery(card.delivery)),
       card.delivery ? el("q", {}, card.delivery.spoken) : null);
     if (flags.has("delivery")) delivery.append(askBlock("delivery", card, reasons.delivery, opts.onReask));
-
     target.replaceChildren(el("article", { class: `slip slip--${opts.copy || "original"}`, id: "slip", "aria-label": `पर्चा № ${session.parcha_no || ""}` },
       el("header", { class: "slip__head" },
         el("div", { class: "slip__title" }, "काम का पर्चा", el("span", { class: "en" }, "Job estimate")),
@@ -218,7 +195,6 @@
       delivery,
       opts.stamp ? el("div", { class: "stamp", role: "img", "aria-label": "मंज़ूर — Approved" }, "मंज़ूर", el("small", {}, "APPROVED")) : null));
   }
-
   function renderStepper(ol, stage) {
     if (!ol) return;
     const at = STAGES.indexOf(stage);
@@ -228,12 +204,9 @@
       if (i === at) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
     });
   }
-
-  const emptyWorkshop = () => el("div", { class: "empty" },
-    el("p", { class: "empty__title" }, "अभी कोई पर्चा नहीं", el("span", { class: "en" }, "No estimate yet")),
-    el("p", {}, "नीचे पीला माइक दबाइए और काम, पार्ट, दाम और गाड़ी कब मिलेगी — बोलिए।",
-      el("span", { class: "en" }, "Tap the yellow mic and say the work, parts, prices and the ready day.")),
-    el("p", { class: "empty__example" }, "“फ्रंट ब्रेक पैड बदला, पार्ट साढ़े चार सौ, लेबर दो सौ, सोमवार शाम तक”"));
+  // The empty state is server-rendered in workshop.html; keep a pristine copy to restore it.
+  const EMPTY = document.querySelector("#card .empty");
+  const emptyWorkshop = () => (EMPTY ? EMPTY.cloneNode(true) : el("div", { class: "empty" }));
 
   function setCaption(node, text, progress) {
     if (!node) return;
@@ -241,20 +214,17 @@
     const n = Math.round(Math.max(0, Math.min(1, progress || 0)) * words.length);
     node.replaceChildren(el("span", { class: "said" }, words.slice(0, n).join(" ")), n < words.length ? " " + words.slice(n).join(" ") : "");
   }
-
   function say(target, hi, en = "", tone = "info", detail = "") {
     if (!target) return;
     target.dataset.tone = tone;
     target.replaceChildren(document.createTextNode(hi), en ? el("span", { class: "en" }, en) : "", detail ? el("small", {}, detail) : "");
   }
-
   function stale(target) {
     say(target, COPY.stale.hi, COPY.stale.en, "error");
     const btn = el("button", { class: "btn btn--ghost", type: "button", id: "reload" }, COPY.reload.hi, el("span", { class: "en" }, COPY.reload.en));
     btn.addEventListener("click", () => window.location.reload());
     target.append(btn);
   }
-
   let toastTimer = 0;
   function toast(text) {
     const node = document.getElementById("toast");
@@ -264,7 +234,6 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { node.hidden = true; }, 2500);
   }
-
   async function copyText(text) {
     try {
       if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
@@ -278,11 +247,9 @@
     area.remove();
     return ok;
   }
-
   const shareMessage = (s, url) =>
     `नमस्ते! आपकी गाड़ी का पर्चा № ${s.parcha_no} तैयार है — कुल ${formatRupees(s.total_paise)}। सुनकर “हाँ, ठीक है” बोलिए: ${url}`;
   const whatsappHref = (text) => `https://wa.me/?text=${encodeURIComponent(text)}`;
-
   function startLevelMeter(stream, node) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC || !stream || !node) return () => {};
@@ -302,7 +269,6 @@
     tick();
     return () => { cancelAnimationFrame(frame); node.style.setProperty("--level", "0"); ctx.close(); };
   }
-
   function startTimer(node) {
     if (!node) return () => {};
     const t0 = Date.now();
@@ -314,7 +280,6 @@
     const id = setInterval(tick, 500);
     return () => clearInterval(id);
   }
-
   function micDock(dock) {
     let stopMeter = () => {};
     let stopTimer = () => {};
@@ -332,7 +297,6 @@
       idle() { stopMeter(); stopTimer(); set("idle", { hi: dock.dataset.idleHi, en: dock.dataset.idleEn }); if (timer) timer.textContent = ""; },
     };
   }
-
   function chime() {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
@@ -351,8 +315,7 @@
     });
     setTimeout(() => ctx.close(), 900);
   }
-  const buzz = () => { if (navigator.vibrate) navigator.vibrate([80, 40, 80]); };
-
+  const buzz = () => navigator.vibrate && navigator.vibrate([80, 40, 80]);
   function poll(fetchOnce, { every = 3000, maxMs = 600000, until, onData, onDone } = {}) {
     const started = Date.now();
     let timer = 0;
@@ -371,9 +334,7 @@
     timer = setTimeout(tick, every);
     return stop;
   }
-
   const timeNow = () => new Intl.DateTimeFormat("hi-IN", { hour: "numeric", minute: "2-digit" }).format(new Date());
-
   window.ParchaUI = {
     COPY, REPEAT_MESSAGE, ABSTAIN_LABELS, describeHttpError, HttpError, MicError, api,
     formatRupees, hindiDelivery, kindLabel, describeField, stageFor, flagCount, diffItems, heardQuote,

@@ -74,8 +74,22 @@ flowchart TD
 
 ### Visual Interface Walkthrough
 
-| Leg 1: Mechanic Workshop Portal (`/workshop`) | Leg 2: Customer Telephony Review (`/customer/{id}`) |
+| Leg 1: Mechanic (`/workshop`) — काम का पर्चा | Leg 2: Vehicle owner (`/customer/{id}`) — गैराज से कॉल |
 |:---:|:---:|
+| ![Workshop slip with a row asking for a re-check](docs/ui/workshop-flagged-360.png) | ![Customer call card with unticked consent](docs/ui/customer-call-360.png) |
+| *पीली लाइन पर "दोबारा बोलें" — the slip asks for re-checks row by row* | *कॉल जैसा पेज, सहमति पहले — call-style page, consent starts unticked* |
+
+| Sealed receipt (`मंज़ूर`) | Verify (`/verify/{id}`) |
+|:---:|:---:|
+| ![Customer sealed receipt](docs/ui/customer-sealed-360.png) | ![Verification page](docs/ui/verify-360.png) |
+| *UPI-रसीद जैसी मुहर — receipt with the approval stamp* | *असली पर्चा — verdict first, hashes folded under "तकनीकी सबूत"* |
+
+| Stage view (`/stage`) for the 60-second demo |
+|:---:|
+| ![Stage view with both phones](docs/ui/stage-sealed-1440.png) |
+| *Mechanic and owner phones side by side; all screenshots use synthetic data* |
+
+---:|:---:|
 | ![Workshop Parsed Card](docs/webattack_artifacts/workshop_parsed_card.png) | ![Customer Telephony Review](docs/webattack_artifacts/customer_awaiting_reply.png) |
 | *Real-time Hinglish dictation parsed into paise-accurate items & delivery date* | *Narrowband 8 kHz telephony read-back with simulated line disclosure* |
 

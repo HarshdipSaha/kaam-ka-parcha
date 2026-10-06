@@ -22,8 +22,6 @@ h1, h2, p { margin: 0; }
 .en { display: block; font-size: .78em; font-weight: 400; line-height: 1.35; color: var(--ink-muted); }
 .btn .en, .mic .en, .call .en, .verdict .en { color: inherit; opacity: .85; }
 :focus-visible { outline: 3px solid var(--neela); outline-offset: 3px; }
-
-/* top bar, pills, notices */
 .topbar { max-width: 480px; margin: 0 auto; padding: 12px 16px 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .brand { font: 800 22px/1.1 var(--font-display); color: var(--neela); }
 .brand .en { font: 600 13px/1.3 var(--font); }
@@ -37,8 +35,6 @@ h1, h2, p { margin: 0; }
 .notice small { display: block; margin-top: 2px; font-size: 13px; color: var(--ink-muted); }
 .notice .btn { margin-top: 8px; }
 .status-line { min-height: 1.6em; font-weight: 800; font-size: 18px; color: var(--neela); }
-
-/* stepper: बोलो → पर्चा → सुनाओ → हाँ → मंज़ूर */
 .stepper { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; counter-reset: step; }
 .stepper li { position: relative; padding-top: 30px; text-align: center; font-weight: 700; font-size: 15px; line-height: 1.2; color: var(--ink-muted); }
 .stepper li::before { counter-increment: step; content: counter(step); position: absolute; top: 0; left: 50%; translate: -50% 0; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); border: 2px solid var(--rule); font-size: 14px; }
@@ -46,14 +42,10 @@ h1, h2, p { margin: 0; }
 .stepper li[data-state="current"] { color: var(--ink); }
 .stepper li[data-state="current"]::before { background: var(--neela); border-color: var(--neela); color: #fff; }
 .stepper li[data-state="done"]::before { content: "✓"; background: var(--hara); border-color: var(--hara); color: #fff; }
-
-/* what Prisma heard, as a WhatsApp-like bubble */
 .heard { background: var(--bubble); border-radius: 4px 16px 16px 16px; padding: 10px 14px; box-shadow: 0 1px 0 rgba(27,36,51,.08); }
 .heard__k { font-weight: 700; font-size: 14px; color: var(--hara); }
 .heard__k .en { display: inline; margin-left: 6px; }
 .heard__text { margin-top: 2px; font-size: 18px; overflow-wrap: anywhere; }
-
-/* the parcha slip: perforated top, red serial, ruled rows, double-ruled total */
 .slip { position: relative; overflow: hidden; background: var(--paper); border-radius: var(--r-card); box-shadow: var(--shadow-paper); padding: 22px 16px 16px; }
 .slip--duplicate { background: var(--paper-pink); }
 .slip::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 10px; background: radial-gradient(circle at 6px 0, var(--counter) 5px, transparent 5.5px) 0 0 / 12px 10px repeat-x; }
@@ -93,8 +85,6 @@ h1, h2, p { margin: 0; }
 .empty__title { font-weight: 800; font-size: 20px; }
 .empty__example { font-style: italic; color: var(--ink-muted); }
 .flagbar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: var(--r-btn); background: var(--paper-yellow); border-left: 6px solid var(--haldi); font-weight: 700; }
-
-/* sticky bottom dock with the big mic */
 .dock { position: fixed; inset: auto 0 0 0; z-index: 10; background: var(--paper); box-shadow: var(--shadow-dock); border-radius: var(--r-sheet) var(--r-sheet) 0 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
 .dock__inner { max-width: 480px; margin: 0 auto; display: grid; gap: 10px; }
 .dock__row { display: flex; align-items: center; gap: 14px; }
@@ -112,8 +102,6 @@ h1, h2, p { margin: 0; }
 .mic--stop::after { animation-delay: .8s; }
 @keyframes ring { from { transform: scale(1); opacity: .55; } to { transform: scale(1.45); opacity: 0; } }
 .dock[data-mic="processing"] .mic { opacity: .6; }
-
-/* buttons */
 .btn { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: var(--tap-primary); padding: 8px 18px; border-radius: var(--r-btn); border: 2px solid transparent; font: 800 20px/1.2 var(--font); text-align: center; text-decoration: none; cursor: pointer; touch-action: manipulation; }
 .btn .en { font-size: 13px; font-weight: 600; }
 .btn--primary { background: var(--neela); color: #fff; }
@@ -122,16 +110,12 @@ h1, h2, p { margin: 0; }
 .btn--wa { background: var(--paper); color: var(--wa); border-color: var(--wa); }
 .btn--ghost { min-height: var(--tap); background: transparent; color: var(--neela); border-color: var(--rule); font-size: 17px; }
 .btn:disabled { background: var(--counter); color: var(--ink-muted); border-color: var(--rule); cursor: not-allowed; }
-
-/* share sheet, toast, disclosure */
 .share { display: grid; gap: 10px; padding: 16px; background: var(--paper); border-radius: var(--r-card); box-shadow: var(--shadow-paper); }
 .share__title { font-weight: 800; font-size: 20px; }
 .fineprint { font-size: 14px; color: var(--ink-muted); }
 .toast { position: fixed; left: 50%; bottom: calc(var(--dock-h) + 16px); translate: -50% 0; z-index: 20; padding: 10px 18px; border-radius: var(--r-pill); background: var(--ink); color: #fff; font-weight: 700; box-shadow: var(--shadow-paper); }
 .disclosure { max-width: 448px; margin: 8px auto 0; padding: 8px 14px; border-radius: var(--r-btn); background: var(--paper-yellow); font-size: 14px; line-height: 1.45; }
 .disclosure .en { font-size: 12px; }
-
-/* customer: the call card */
 .call { display: grid; gap: 12px; padding: 16px; border-radius: var(--r-sheet); background: var(--ink); color: #fff; }
 .call__who { display: flex; align-items: center; gap: 12px; }
 .call__avatar { position: relative; flex: none; width: 56px; height: 56px; border-radius: 50%; background: var(--haldi); color: var(--ink); display: grid; place-items: center; font: 800 22px/1 var(--font-display); }
@@ -146,8 +130,6 @@ h1, h2, p { margin: 0; }
 .call__progress > span { display: block; width: 0; height: 100%; background: var(--haldi); }
 .call__caption { font-size: 18px; line-height: 1.6; color: rgba(255,255,255,.55); overflow-wrap: anywhere; }
 .call__caption .said { color: #fff; }
-
-/* customer: consent, hints, fallback, receipt */
 .consent { padding: 10px 14px; background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-btn); }
 .consent__row { display: flex; align-items: flex-start; gap: 12px; min-height: var(--tap); font-weight: 600; cursor: pointer; }
 .consent__row input { flex: none; width: 28px; height: 28px; margin: 2px 0 0; accent-color: var(--hara); }
@@ -167,8 +149,6 @@ h1, h2, p { margin: 0; }
 .receipt__total { font-size: 48px; font-weight: 800; line-height: 1.05; }
 .receipt__said { font-size: 18px; } .receipt__meta { font-size: 15px; color: var(--ink-muted); }
 .receipt__actions { display: grid; gap: 10px; width: 100%; margin-top: 8px; }
-
-/* verify */
 .verdict { display: grid; justify-items: center; gap: 4px; padding: 22px 16px; border-radius: var(--r-sheet); color: #fff; text-align: center; }
 .verdict--ok { background: var(--hara); } .verdict--pending { background: var(--amber); }
 .verdict__icon { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,.2); display: grid; place-items: center; font-size: 36px; font-weight: 800; }
@@ -184,17 +164,13 @@ h1, h2, p { margin: 0; }
 .kv { display: grid; gap: 2px; margin: 8px 0 12px; } .kv dt { margin-top: 8px; font-size: 14px; font-weight: 700; color: var(--ink-muted); } .kv dd { margin: 0; overflow-wrap: anywhere; }
 .hash { padding: 6px 8px; border-radius: 6px; background: var(--counter); font: 600 13px/1.4 ui-monospace, Consolas, monospace; word-break: break-all; }
 .actions { display: grid; gap: 10px; }
-
-/* stage view: two phones side by side */
 .stage__head { max-width: 1100px; margin: 0 auto; padding: 20px 16px 8px; text-align: center; display: grid; gap: 4px; }
 .stage__head p { font-size: 20px; font-weight: 700; }
 .stage { display: flex; flex-wrap: wrap; justify-content: center; gap: 32px; padding: 8px 16px 24px; }
 .phone { margin: 0; display: grid; justify-items: center; gap: 8px; }
 .phone figcaption { font-weight: 800; font-size: 20px; }
-.phone iframe { width: 360px; height: 760px; border: 10px solid var(--ink); border-radius: 36px; background: var(--counter); box-shadow: var(--shadow-paper); }
-
+.phone iframe { width: 360px; height: min(760px, calc(100dvh - 190px)); min-height: 560px; border: 10px solid var(--ink); border-radius: 36px; background: var(--counter); box-shadow: var(--shadow-paper); }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-
 @media (min-width: 768px) { body { font-size: 19px; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }

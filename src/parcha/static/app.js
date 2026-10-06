@@ -1,7 +1,6 @@
 // Kaam ka Parcha page flows. Copy, formatting and rendering live in ui.js (window.ParchaUI).
 const UI = window.ParchaUI;
 const $ = (id) => document.getElementById(id);
-
 function getSupportedMimeType() {
   const candidates = [
     "audio/webm;codecs=opus",
@@ -21,7 +20,6 @@ function getSupportedMimeType() {
   }
   return "";
 }
-
 async function recordOnce(startButton, stopButton, hooks = {}) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === "undefined") {
     throw new UI.MicError("unsupported");
@@ -39,7 +37,6 @@ async function recordOnce(startButton, stopButton, hooks = {}) {
   if (startButton) startButton.disabled = true;
   if (stopButton) stopButton.disabled = false;
   if (hooks.onStart) hooks.onStart(stream);
-
   return new Promise((resolve, reject) => {
     let stopped = false;
     const cleanup = () => {
@@ -58,16 +55,10 @@ async function recordOnce(startButton, stopButton, hooks = {}) {
     recorder.start(100);
   });
 }
-
 function audioPart(blob, name) {
   const ext = blob.type.includes("wav") ? "wav" : blob.type.includes("ogg") ? "ogg" : "webm";
   return [blob, `${name}.${ext}`];
 }
-
-function formatRupees(paise) {
-  return UI.formatRupees(paise);
-}
-
 function showError(target, err) {
   if (err instanceof UI.MicError) {
     const copy = err.kind === "unsupported" ? UI.COPY.micUnsupported : UI.COPY.micBlocked;
@@ -80,11 +71,9 @@ function showError(target, err) {
     UI.say(target, UI.COPY.failed.hi, UI.COPY.failed.en, "error", err && err.message);
   }
 }
-
 /* ---------- workshop (mechanic) ---------- */
 let currentSession = null;
 let stopWaiting = null;
-
 async function getOrCreateSession() {
   if (currentSession && currentSession.id) return currentSession;
   const existingId = new URLSearchParams(window.location.search).get("session_id");
@@ -92,9 +81,7 @@ async function getOrCreateSession() {
     try {
       renderSession(await UI.api.get(`/sessions/${existingId}`));
       return currentSession;
-    } catch (err) {
-      console.warn("Failed to load existing session:", err);
-    }
+    } catch (_) { /* fall through to a new session */ }
   }
   const created = await UI.api.post("/sessions");
   const url = new URL(window.location);
@@ -103,12 +90,10 @@ async function getOrCreateSession() {
   renderSession(created);
   return currentSession;
 }
-
 function toggleListening(on) {
   $("record").hidden = on;
   $("stop").hidden = !on;
 }
-
 function renderSession(data) {
   const previousStatus = currentSession ? currentSession.status : null;
   currentSession = data;
@@ -116,25 +101,20 @@ function renderSession(data) {
   const stage = UI.stageFor(data);
   $("workshop").dataset.stage = stage;
   UI.renderStepper($("stepper"), stage);
-
   $("transcript").hidden = !data.mechanic_transcript;
   $("transcript-content").textContent = data.mechanic_transcript || "";
-
   const flags = data.review_fields || [];
   const count = UI.flagCount(flags.length);
   $("review-section").hidden = flags.length === 0;
   $("review-count").replaceChildren(count.hi, UI.el("span", { class: "en" }, count.en));
-
   if (data.card) {
     UI.renderSlip($("card"), data, { copy: "duplicate", flags: true, onReask: handleReask, stamp: stage === "manzoor" });
   } else {
     $("card").replaceChildren(UI.emptyWorkshop());
   }
-
   $("dock").hidden = !["bolo", "parcha", "sunao"].includes(stage);
   $("start-readback").hidden = stage !== "sunao";
   $("start-readback").disabled = stage !== "sunao";
-
   const shareOpen = stage === "haan" || stage === "manzoor";
   const customerUrl = `${window.location.origin}/customer/${data.id}`;
   $("share").hidden = !shareOpen;
@@ -142,14 +122,12 @@ function renderSession(data) {
   $("customer-link").href = `/customer/${data.id}`;
   $("whatsapp-open").href = UI.whatsappHref(UI.shareMessage(data, customerUrl));
   $("copy-link").dataset.url = customerUrl;
-
   if (stage === "haan") startWaiting();
   if (stage === "manzoor" && previousStatus && previousStatus !== "confirmed") celebrate();
   if (previousStatus === "awaiting_reply" && data.status === "review") {
     UI.say($("message"), UI.COPY.changesAsked.hi, UI.COPY.changesAsked.en, "warn");
   }
 }
-
 function startWaiting() {
   if (stopWaiting) return;
   UI.say($("message"), UI.COPY.waiting.hi, UI.COPY.waiting.en);
@@ -160,13 +138,11 @@ function startWaiting() {
     onDone: () => { stopWaiting = null; },
   });
 }
-
 function celebrate() {
   UI.say($("message"), UI.COPY.workshopSealed.hi, UI.COPY.workshopSealed.en, "ok");
   UI.chime();
   UI.buzz();
 }
-
 async function recordAndPost(startButton, url, name) {
   const mic = UI.micDock($("dock"));
   const message = $("message");
@@ -187,7 +163,6 @@ async function recordAndPost(startButton, url, name) {
     const next = pending ? UI.COPY.checkRows : UI.COPY.ready;
     UI.say(message, next.hi, next.en, pending ? "warn" : "ok");
   } catch (err) {
-    console.error(`${name} failed:`, err);
     showError(message, err);
   } finally {
     mic.idle();
@@ -196,15 +171,12 @@ async function recordAndPost(startButton, url, name) {
     $("stop").disabled = true;
   }
 }
-
 function handleRecordEstimate() {
   return recordAndPost($("record"), (s) => `/sessions/${s.id}/intake`, "estimate");
 }
-
 function handleReask(field, chip) {
   return recordAndPost(chip, (s) => `/sessions/${s.id}/reask/${field}`, "reask");
 }
-
 async function handleStartReadback() {
   if (!currentSession) return;
   const button = $("start-readback");
@@ -218,12 +190,10 @@ async function handleStartReadback() {
     renderSession(await UI.api.get(`/sessions/${currentSession.id}`));
     UI.say(message, UI.COPY.sendLink.hi, UI.COPY.sendLink.en, "ok");
   } catch (err) {
-    console.error("Readback failed:", err);
     showError(message, err);
     button.disabled = UI.stageFor(currentSession) !== "sunao";
   }
 }
-
 function initWorkshopPage() {
   $("record").addEventListener("click", handleRecordEstimate);
   $("start-readback").addEventListener("click", handleStartReadback);
@@ -234,11 +204,9 @@ function initWorkshopPage() {
     getOrCreateSession().catch((err) => showError($("message"), err));
   }
 }
-
 /* ---------- customer (vehicle owner) ---------- */
 let currentCustomerSession = null;
 let isCustomerRecording = false;
-
 function renderCustomerCard(data, opts = {}) {
   currentCustomerSession = data;
   const sealed = data.status === "confirmed";
@@ -255,7 +223,6 @@ function renderCustomerCard(data, opts = {}) {
   if (data.readback_text) UI.setCaption($("readback-caption"), data.readback_text, 0);
   enableRecordIfReady();
 }
-
 function describeCustomerState() {
   const s = currentCustomerSession;
   const status = $("customer-status");
@@ -275,7 +242,6 @@ function describeCustomerState() {
     UI.say(message, "सुनने के बाद ✓ सहमति दीजिए और माइक दबाकर बोलिए।", "Listen, tick consent, then tap the mic and answer.");
   }
 }
-
 function enableRecordIfReady() {
   const s = currentCustomerSession;
   const button = $("customer-record");
@@ -284,7 +250,6 @@ function enableRecordIfReady() {
   button.disabled = !(s && s.status === "awaiting_reply" && s.readback_revision !== null && s.readback_revision !== undefined
     && consent && consent.checked && !isCustomerRecording);
 }
-
 function loadReadback(url) {
   const player = $("readback-player");
   player.src = url;
@@ -293,14 +258,12 @@ function loadReadback(url) {
   $("audio-panel").dataset.call = "idle";
   $("call-progress").style.width = "0%";
 }
-
 function audioFailed() {
   if (!$("readback-player").getAttribute("src")) return;
   $("play-readback").disabled = true;
   $("call-status").textContent = "आवाज़ नहीं चली — नीचे लिखा पर्चा पढ़कर जवाब दीजिए।";
   enableRecordIfReady();
 }
-
 function wireCall() {
   const player = $("readback-player");
   const play = $("play-readback");
@@ -321,8 +284,8 @@ function wireCall() {
     $("call-status").textContent = "अब नीचे माइक दबाकर जवाब दीजिए";
   });
   player.addEventListener("error", audioFailed);
+  if (player.readyState >= 3) play.disabled = false;  // canplay may have fired before this listener existed
 }
-
 function wireConsent(sessionId) {
   const box = $("dpdp-consent-checkbox");
   box.addEventListener("change", async () => {
@@ -342,7 +305,6 @@ function wireConsent(sessionId) {
     enableRecordIfReady();
   });
 }
-
 function showReceipt({ words = "", how = "फ़ोन पर आवाज़ से मंज़ूर" } = {}) {
   $("receipt-said").hidden = !words;
   $("receipt-words").textContent = words;
@@ -350,7 +312,6 @@ function showReceipt({ words = "", how = "फ़ोन पर आवाज़ �
   $("receipt-time").textContent = `· ${UI.timeNow()}`;
   $("confirmed-banner").scrollIntoView({ behavior: "smooth", block: "start" });
 }
-
 async function handleCustomerRecord(sessionId) {
   const s = currentCustomerSession;
   const message = $("customer-message");
@@ -380,7 +341,6 @@ async function handleCustomerRecord(sessionId) {
     const reply = await UI.api.post(`/sessions/${sessionId}/reply`, form);
     await handleReplyOutcome(sessionId, reply, s.card);
   } catch (err) {
-    console.error("Customer reply failed:", err);
     showError(message, err);
   } finally {
     isCustomerRecording = false;
@@ -391,7 +351,6 @@ async function handleCustomerRecord(sessionId) {
     enableRecordIfReady();
   }
 }
-
 async function handleReplyOutcome(sessionId, reply, previousCard) {
   const status = $("customer-status");
   const message = $("customer-message");
@@ -423,7 +382,6 @@ async function handleReplyOutcome(sessionId, reply, previousCard) {
     UI.say(message, "साफ़ बोलिए: “हाँ, ठीक है” — या क्या बदलना है।", reply.message || "Say yes, or say what to change.", "warn");
   }
 }
-
 function wireFallback(sessionId) {
   const send = async (action) => {
     const form = new FormData();
@@ -446,7 +404,6 @@ function wireFallback(sessionId) {
   $("fallback-approve").addEventListener("click", () => send("approve"));
   $("fallback-reject").addEventListener("click", () => send("request_changes"));
 }
-
 async function copyWhatsapp(sessionId) {
   try {
     const res = await fetch(`/sessions/${sessionId}/whatsapp`);
@@ -456,7 +413,6 @@ async function copyWhatsapp(sessionId) {
     showError($("customer-message"), err);
   }
 }
-
 function waitForReadback(sessionId) {
   UI.poll(() => UI.api.get(`/sessions/${sessionId}`), {
     every: 3000,
@@ -471,7 +427,6 @@ function waitForReadback(sessionId) {
     },
   });
 }
-
 async function initCustomerPage() {
   const root = $("customer-container");
   if (!root) return;
@@ -492,14 +447,12 @@ async function initCustomerPage() {
   const s = currentCustomerSession;
   if ((s.readback_revision === null || s.readback_revision === undefined) && s.status !== "confirmed") waitForReadback(sessionId);
 }
-
 Object.assign(window, {
-  recordOnce, formatRupees, getSupportedMimeType, getOrCreateSession, renderSession,
+  recordOnce, formatRupees: UI.formatRupees, getSupportedMimeType, getOrCreateSession, renderSession,
   handleRecordEstimate, handleReask, handleStartReadback,
   renderCustomerCard, initCustomerPage, handleCustomerRecord,
   getCurrentSession: () => currentSession,
 });
-
 document.addEventListener("DOMContentLoaded", () => {
   if ($("workshop")) initWorkshopPage();
   if ($("customer-container")) initCustomerPage();
