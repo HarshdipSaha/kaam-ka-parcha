@@ -387,3 +387,12 @@ All private outputs are under ignored `var/lab/`; credits are runner estimates, 
 | Held-out re-ask run (fresh amounts, none used to tune the normaliser) | `scripts/run_reask_bench.py --live --held-out --seed 20261008 --output var/lab/reask_heldout.jsonl`, then `--rescore` | 930 rows. Single recording: 96.8% recovered but 20 wrong accepted (2.2%) — still unsafe. Two agreeing recordings: 94.8% settle at the first pair, 2 wrong (0.2%, both G.711 0 dB), 46 need one more recording; clean and control conditions 0 wrong in 558 pairs. |
 
 Offline check of "accept when both modes agree" on the saved Task 14 runs: 475 of 1,344 amounts would be accepted and 19 of those (4.0%, 10.2% at 0 dB) would be wrong, so that rule was not adopted.
+
+### Real workshop speech sanity check (2026-10-07)
+
+`scripts/run_youtube_eval.py --live` over the 5 public YouTube mechanic recordings (1,120 s, 46 chunks of ≤25 s, control and G.711 phone conditions, both Prisma passes; 184 calls, about 896 estimated credits; private output `var/lab/youtube_eval.jsonl` and `.report.json`; audio stays under ignored `var/`).
+
+- **Annotations are not speech-grounded for 3 of 5 videos**: in 003 the speaker says only the total ("साढ़े चौदह सौ", ₹1,450 — Prisma heard it correctly) and in 004 prices are ranges ("तीन हज़ार तीन से पैंतीस सौ"), so the annotated item prices (₹950/150/350, ₹2,850/1,450/850) were never spoken. Scoring against them (5 of 13 recovered) is therefore not a recognition rate and is not used as one.
+- **Where the annotation matches the speech** (001, 002): all annotated prices were recovered by Prisma (1 of 1 and 3 of 3), including ₹3,785 and ₹5,300-range spoken prices amid workshop talk.
+- **Second, weak reference** (YouTube auto-captions, noisy): Prisma also heard 25 of the 36 amounts in the captions; the 11 misses include captions that are themselves wrong (004: "33").
+- Conclusion: a sanity check that real mechanic speech with spoken rupee amounts is recognised well enough to be worth a labelled test. It is **not** an accuracy claim; the owner's own labelled takes remain the real test.
