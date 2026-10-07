@@ -4,6 +4,8 @@ import json
 import wave
 import websockets
 
+from .gnani import KeyPool
+
 __all__ = [
     "WS_URL",
     "pcm_frames",
@@ -33,8 +35,9 @@ def silence_frames(sample_rate: int = 8000, minimum_ms: int = 500) -> list[bytes
 
 
 def telephony_headers(api_key: str) -> dict[str, str]:
+    """`api_key` may be a comma-separated list; the WebSocket has no failover, so it uses the first usable key."""
     return {
-        "x-api-key-id": api_key,
+        "x-api-key-id": KeyPool.from_value(api_key).current(),
         "lang_code": "hi-IN",
         "x-sample-rate": "8000",
         "x-vad-threshold": "0.7",

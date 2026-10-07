@@ -5,7 +5,7 @@ a restart loses sessions (fine for a demo). Browsers only allow the microphone o
 so use a host that terminates TLS.
 
 ## Required settings (platform environment, never committed)
-`API_KEY` (Gnani Prisma/Timbre), `EXTRACTOR_BASE_URL`, `EXTRACTOR_API_KEY`, `EXTRACTOR_MODEL`,
+`API_KEY` (Gnani Prisma/Timbre; several keys may be given separated by commas: a key the API refuses with 401/403, which includes spent credits, is retired for the life of the process and the next one takes over; restart or redeploy to try retired keys again), `EXTRACTOR_BASE_URL`, `EXTRACTOR_API_KEY`, `EXTRACTOR_MODEL`,
 `EXTRACTOR_PROVIDER` (`evon` only if the served model is Gnani Evon; otherwise `openai`). `TTS_VOICE` defaults to `Vikrant` (the measured read-back leader).
 See `.env.example` for the rest. FFmpeg must be present; the Dockerfile installs it.
 

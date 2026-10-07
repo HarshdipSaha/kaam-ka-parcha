@@ -4,7 +4,12 @@ import time
 from typing import Literal
 import httpx
 
-__all__ = ["GnaniError", "PrismaClient", "TimbreClient", "chunk_for_tts"]
+__all__ = ["GnaniError", "KeyPool", "PrismaClient", "TimbreClient", "chunk_for_tts"]
+
+import logging
+from threading import Lock
+
+log = logging.getLogger("parcha.gnani")
 
 # Another entrant's live probe (boli-zero, 2026-10-05) saw Timbre fail somewhere between ~1,500 and ~2,800 characters.
 # Not verified here; long read-backs are split below a conservative limit so a many-item card cannot crash the demo.
@@ -59,11 +64,50 @@ class GnaniError(RuntimeError):
         self.status = status
 
 
+# 401 = bad key; 403 = bad key / org status / out of credits (Gnani docs). Either way that key is no use to us.
+KEY_REFUSED_STATUSES = frozenset({401, 403})
+
+
+class KeyPool:
+    """One or more Gnani API keys, tried in order. A key that is refused (401/403, which includes spent credits)
+    is retired for the life of the process, because credits do not come back on their own; the next key takes over.
+    Shared by every client so a key found spent by one call is not tried again by the others. Keys are never logged."""
+
+    def __init__(self, keys: list[str]):
+        self._keys = list(dict.fromkeys(k.strip() for k in keys if k.strip())) or [""]
+        self._retired: set[str] = set()
+        self._lock = Lock()
+
+    @classmethod
+    def from_value(cls, value: "str | KeyPool") -> "KeyPool":
+        return value if isinstance(value, KeyPool) else cls(value.split(","))
+
+    def current(self) -> str:
+        with self._lock:
+            return next((k for k in self._keys if k not in self._retired), self._keys[-1])
+
+    def retire(self, key: str) -> bool:
+        """Retire `key`; True if another key is left to try."""
+        with self._lock:
+            if key not in self._retired and len(self._retired) < len(self._keys):
+                self._retired.add(key)
+                log.warning("Gnani API key retired after a refusal; %d of %d keys left", len(self._keys) - len(self._retired), len(self._keys))
+            return any(k not in self._retired for k in self._keys)
+
+    @property
+    def remaining(self) -> int:
+        with self._lock:
+            return sum(1 for k in self._keys if k not in self._retired)
+
+    def __repr__(self) -> str:
+        return f"<KeyPool {self.remaining}/{len(self._keys)} keys usable>"
+
+
 RETRY_STATUSES = frozenset({429, 503})
 RETRY_DELAYS = (1.0, 2.5)  # seconds before retry 1 and 2; Gnani rate-limits short bursts
 
 
-def _post(http: httpx.Client, url: str, **kwargs) -> httpx.Response:
+def _post_once(http: httpx.Client, url: str, **kwargs) -> httpx.Response:
     """POST, retrying a rate-limit (429/503) twice with a short pause before giving up."""
     response = http.post(url, **kwargs)
     for delay in RETRY_DELAYS:
@@ -74,6 +118,16 @@ def _post(http: httpx.Client, url: str, **kwargs) -> httpx.Response:
     return response
 
 
+def _post(http: httpx.Client, url: str, *, pool: KeyPool, **kwargs) -> httpx.Response:
+    """_post_once with the pool's current key; a refused key is retired and the request repeats with the next one."""
+    while True:
+        key = pool.current()
+        response = _post_once(http, url, headers={"X-API-Key-ID": key}, **kwargs)
+        if response.status_code in KEY_REFUSED_STATUSES and pool.retire(key):
+            continue
+        return response
+
+
 def _check_response(response: httpx.Response) -> None:
     if response.status_code != 200:
         raise GnaniError(f"Gnani request failed: HTTP {response.status_code}", status=response.status_code)
@@ -82,13 +136,17 @@ def _check_response(response: httpx.Response) -> None:
 class PrismaClient:
     def __init__(
         self,
-        api_key: str,
+        api_key: "str | KeyPool",
         http: httpx.Client | None = None,
         base_url: str = "https://api.vachana.ai",
     ):
-        self.api_key = api_key
+        self.pool = KeyPool.from_value(api_key)
         self.http = http or httpx.Client(timeout=45)
         self.base_url = base_url.rstrip("/")
+
+    @property
+    def api_key(self) -> str:
+        return self.pool.current()
 
     def __repr__(self) -> str:
         return f"<PrismaClient base_url={self.base_url!r}>"
@@ -120,7 +178,7 @@ class PrismaClient:
         response = _post(
             self.http,
             f"{self.base_url}/stt/v3",
-            headers={"X-API-Key-ID": self.api_key},
+            pool=self.pool,
             data=data,
             files={"audio_file": ("clip.wav", wav, "audio/wav")},
         )
@@ -150,14 +208,18 @@ class PrismaClient:
 class TimbreClient:
     def __init__(
         self,
-        api_key: str,
+        api_key: "str | KeyPool",
         voice: str = "Vikrant",
         http: httpx.Client | None = None,
         base_url: str = "https://api.vachana.ai",
     ):
-        self.api_key, self.voice = api_key, voice
+        self.pool, self.voice = KeyPool.from_value(api_key), voice
         self.http = http or httpx.Client(timeout=45)
         self.base_url = base_url.rstrip("/")
+
+    @property
+    def api_key(self) -> str:
+        return self.pool.current()
 
     def __repr__(self) -> str:
         return f"<TimbreClient voice={self.voice!r} base_url={self.base_url!r}>"
@@ -186,7 +248,7 @@ class TimbreClient:
         response = _post(
             self.http,
             f"{self.base_url}/api/v1/tts/inference",
-            headers={"X-API-Key-ID": self.api_key},
+            pool=self.pool,
             json=body,
         )
         _check_response(response)

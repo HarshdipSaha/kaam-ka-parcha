@@ -102,3 +102,65 @@ def test_chunking_breaks_an_unpunctuated_run_at_word_boundaries():
     chunks = chunk_for_tts(text, limit=100)
     assert all(len(c) <= 100 for c in chunks) and " ".join(chunks) == text
     assert chunk_for_tts("chhota sa") == ["chhota sa"]
+
+
+def _client_for(statuses_by_key: dict[str, list[int]], seen: list[str], cls=PrismaClient, *keys: str):
+    """Fake Gnani: each key answers with its scripted statuses (last one repeats); 200 carries a transcript/audio."""
+    def handler(request):
+        key = request.headers["x-api-key-id"]
+        seen.append(key)
+        queue = statuses_by_key[key]
+        status = queue.pop(0) if len(queue) > 1 else queue[0]
+        if status != 200:
+            return httpx.Response(status, json={"success": False})
+        return httpx.Response(200, json={"success": True, "transcript": "₹450"}, headers={}) if cls is PrismaClient \
+            else httpx.Response(200, content=b"\xff" * 10)
+    return cls(",".join(keys), http=httpx.Client(transport=httpx.MockTransport(handler)))
+
+
+def test_spent_key_is_retired_and_the_next_key_takes_over_for_good():
+    seen: list[str] = []
+    client = _client_for({"k1": [403], "k2": [200]}, seen, PrismaClient, "k1", "k2")
+    assert client.transcribe(b"x", mode="transcribe") == "₹450"
+    assert seen == ["k1", "k2"]                       # one refused call, retried on the next key
+    seen.clear()
+    assert client.transcribe(b"x", mode="transcribe") == "₹450"
+    assert seen == ["k2"]                              # the spent key is never tried again
+    assert client.api_key == "k2" and "k1" not in repr(client)
+
+
+def test_all_keys_spent_raises_a_gnani_403():
+    seen: list[str] = []
+    client = _client_for({"k1": [403], "k2": [403]}, seen, PrismaClient, "k1", "k2")
+    with pytest.raises(GnaniError) as error:
+        client.transcribe(b"x", mode="transcribe")
+    assert error.value.status == 403 and seen == ["k1", "k2"]
+    assert "k1" not in str(error.value) and "k2" not in str(error.value)
+
+
+def test_timbre_and_prisma_share_one_pool_and_a_single_key_still_works():
+    seen: list[str] = []
+    prisma = _client_for({"k1": [401], "k2": [200]}, seen, PrismaClient, "k1", "k2")
+    timbre = TimbreClient(prisma.pool, http=httpx.Client(transport=httpx.MockTransport(
+        lambda r: (seen.append(r.headers["x-api-key-id"]), httpx.Response(200, content=b"\xff" * 5))[1])))
+    prisma.transcribe(b"x", mode="transcribe")          # retires k1 (401), moves to k2
+    seen.clear()
+    assert timbre.synthesize("namaste") == b"\xff" * 5 and seen == ["k2"]   # TTS skips the key Prisma found spent
+
+    single: list[str] = []
+    one = _client_for({"only": [403]}, single, PrismaClient, "only")
+    with pytest.raises(GnaniError):
+        one.transcribe(b"x", mode="transcribe")
+    assert single == ["only"]                           # no key to switch to: one attempt, no loop
+
+
+def test_keys_are_trimmed_deduplicated_and_validated():
+    from parcha.config import Settings
+    from parcha.gnani import KeyPool
+    from parcha.gnani_ws import telephony_headers
+
+    assert KeyPool.from_value(" a , b,,a ").current() == "a" and KeyPool.from_value(" a , b,,a ").remaining == 2
+    assert telephony_headers("first,second")["x-api-key-id"] == "first"
+    Settings(api_key="replace_me, real").require_gnani()
+    with pytest.raises(ValueError):
+        Settings(api_key="replace_me, ").require_gnani()

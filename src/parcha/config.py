@@ -33,7 +33,7 @@ def _int(raw: str | None, default: int) -> int:
 
 @dataclass(frozen=True)
 class Settings:
-    api_key: str = field(default="", repr=False)
+    api_key: str = field(default="", repr=False)   # one Gnani key, or several separated by commas (used in order)
     extractor_base_url: str = ""
     extractor_api_key: str = field(default="", repr=False)
     extractor_model: str = ""
@@ -97,7 +97,7 @@ class Settings:
     def require_gnani(self) -> None:
         if self.mock:
             return
-        if not self.api_key or self.api_key == "replace_me":
+        if not any(k.strip() and k.strip() != "replace_me" for k in self.api_key.split(",")):
             raise ValueError("API_KEY is required for live Gnani calls")
 
     def require_extractor(self) -> None:

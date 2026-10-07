@@ -19,7 +19,7 @@ from .session import CapacityError, Conflict, SessionStore
 from .workflow import NothingToConfirm, RepeatRequest, Workflow
 from .audio import AudioError, normalize_upload, stt_normalizer
 from .extract import ExtractionError, Extractor
-from .gnani import PrismaClient, TimbreClient, GnaniError
+from .gnani import GnaniError, KeyPool, PrismaClient, TimbreClient
 from .presentation import latest_log_text, parcha_no, register_filters, status_label
 from .schema import TranscriptLog, review_fields
 from .artefact import audit_manifest_sha256, render_pdf, whatsapp_text
@@ -36,18 +36,20 @@ class AppServices:
     workflow: Workflow
     timbre: TimbreClient | None = None
     caption_connect: object | None = None   # websocket opener for live captions; tests inject a fake
+    key_pool: KeyPool | None = None         # shared Gnani key pool (captions follow whichever key REST is on)
 
 
 def default_services() -> AppServices:
     settings = Settings.load()
     store = SessionStore(max_total=settings.max_total_sessions)
+    key_pool = KeyPool.from_value(settings.api_key)
     if settings.mock:
         prisma = MockPrisma()
         extractor = MockExtractor()
         timbre = MockTimbre(prisma)
         log.warning("PARCHA_MOCK is on: scripted speech services, no credits used, nothing here measures recognition")
     else:
-        prisma = PrismaClient(settings.api_key, base_url=settings.gnani_base_url)
+        prisma = PrismaClient(key_pool, base_url=settings.gnani_base_url)
         extractor = Extractor(
             settings.extractor_base_url,
             settings.extractor_api_key,
@@ -55,7 +57,7 @@ def default_services() -> AppServices:
             provider=settings.extractor_provider,
         )
         timbre = TimbreClient(
-            settings.api_key,
+            key_pool,
             voice=settings.tts_voice,
             base_url=settings.gnani_base_url,
         )
@@ -80,7 +82,7 @@ def default_services() -> AppServices:
         noise_wav=noise_wav,
         noise_source="recorded_engine_idle",
     )
-    return AppServices(settings, store, workflow, timbre)
+    return AppServices(settings, store, workflow, timbre, key_pool=key_pool)
 
 
 def abstention_reasons(session) -> dict[str, str]:
@@ -232,7 +234,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
 
         options = {"connect": services.caption_connect} if services.caption_connect else {}
         try:
-            await relay_captions(audio(), emit, api_key=settings.api_key, partials=settings.caption_partials, **options)
+            await relay_captions(audio(), emit, api_key=services.key_pool.current() if services.key_pool else settings.api_key, partials=settings.caption_partials, **options)
         except Exception:
             log.exception("caption relay failed")
             await emit({"type": "error"})
