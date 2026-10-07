@@ -13,7 +13,7 @@ import time
 from typing import Callable
 
 ACCESS_COOKIE = "demo_access"
-GUARDED_PATH_PARTS = ("/intake", "/reask/", "/readback", "/reply", "/fallback", "/consent")
+GUARDED_PATH_PARTS = ("/intake", "/reask/", "/readback", "/reply", "/fallback", "/consent", "/telephony/call")
 
 
 class SlidingWindow:

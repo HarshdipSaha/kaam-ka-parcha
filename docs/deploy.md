@@ -45,6 +45,29 @@ locally and set in `render.yaml`:
 
 Unexpected server errors return a generic body; details are logged server-side only.
 
+## Real customer phone call (Twilio, optional)
+
+`src/parcha/telephony.py` adds a second leg alongside the in-browser simulated line: an actual phone call to the
+customer, placed through Twilio's REST API, with plain TwiML webhooks (no Twilio SDK dependency).
+
+1. Create a Twilio account (free trial: $15 credit, no card, calls only to verified numbers — add your own number
+   under Phone Numbers -> Verified Caller IDs). Buy a trial phone number.
+2. Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` (the Twilio number, E.164) and
+   `PUBLIC_BASE_URL` (this service's own `https://...onrender.com` URL) in the platform environment.
+3. From the workshop, once the card is ready for read-back:
+   `POST /sessions/{id}/telephony/call` with `expected_revision`, `to_number` (E.164) and optional `language`.
+   Twilio calls `to_number`, plays the read-back, records the reply, and the call follows the same
+   confirm/correct/retry/fallback logic as the browser leg — `<Redirect>` back to a fresh read-back after a
+   correction, another `<Record>` on an ambiguous or unclear reply, `<Hangup/>` once confirmed or on fallback.
+4. Every Twilio webhook (`/telephony/twilio/voice`, `/telephony/twilio/recording`, `/telephony/twilio/status`) is
+   signature-checked (`X-Twilio-Signature`, verified against Twilio's own published algorithm and test vector) and
+   is exempt from `DEMO_ACCESS_CODE` (Twilio can't carry that cookie); an unsigned or tampered request gets a 403.
+5. A real call already passes through a real phone codec, so `start_readback`/`reply` skip the simulated
+   noise+codec degradation for this leg (`degrade=False`) — that layer is for the in-browser line only.
+6. Trial-account limits apply: only verified numbers, a prefixed "trial account" announcement, 30-day expiry.
+   Say so plainly if you demo with this; it is real telephone audio, not simulated.
+7. No UI button yet — call the endpoint directly (curl, Postman, or the browser devtools) until one is added.
+
 ## Live captions (display only)
 While the mechanic records, the workshop page streams the microphone (8 kHz PCM16) to `WS /sessions/{id}/captions`, which relays it
 to Gnani's realtime STT and sends the transcripts back. Captions are shown in a dashed "display only" panel and never reach the card:

@@ -30,6 +30,10 @@ def fake_settings() -> Settings:
         extractor_provider="evon",
         gnani_base_url="https://api.vachana.ai",
         tts_voice="Nalini",
+        twilio_account_sid="AC_test_sid",
+        twilio_auth_token="test-twilio-token",
+        twilio_from_number="+15550001234",
+        public_base_url="https://test.example",
     )
 
 

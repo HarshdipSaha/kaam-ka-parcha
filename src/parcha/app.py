@@ -14,6 +14,7 @@ from .captions import relay_captions
 from .config import Settings
 from .languages import supported_codes
 from .mock import MockExtractor, MockPrisma, MockTimbre
+from . import telephony
 from .guard import ACCESS_COOKIE, SlidingWindow, access_ok, access_token, client_ip, is_guarded
 from .session import CapacityError, Conflict, SessionStore
 from .workflow import NothingToConfirm, RepeatRequest, Workflow
@@ -37,6 +38,8 @@ class AppServices:
     timbre: TimbreClient | None = None
     caption_connect: object | None = None   # websocket opener for live captions; tests inject a fake
     key_pool: KeyPool | None = None         # shared Gnani key pool (captions follow whichever key REST is on)
+    place_call: object | None = None        # telephony.place_call-shaped callable; tests inject a fake
+    download_recording: object | None = None  # telephony.download_recording-shaped callable; tests inject a fake
 
 
 def default_services() -> AppServices:
@@ -83,6 +86,19 @@ def default_services() -> AppServices:
         noise_source="recorded_engine_idle",
     )
     return AppServices(settings, store, workflow, timbre, key_pool=key_pool)
+
+
+def _twilio_outcome_speech(outcome: str, session, message: str | None) -> str:
+    """Hindi phrase for a reply outcome, read back to the customer on the call."""
+    if outcome == "confirmed":
+        total = session.card.maybe_total_paise if session.card else None
+        amount = f" Kul {total // 100} rupaye." if total is not None else ""
+        return f"Dhanyavaad.{amount} Aapka parcha confirm ho gaya. Likhit parcha aapko bhej diya jaayega."
+    if outcome == "fallback":
+        return "Aapka jawab phone par saaf nahi suna. Hum aapko link bhejenge jahan aap likh kar confirm kar sakte hain."
+    if outcome == "ask_field":
+        return "Kaunsa item badalna hai? Kripya naam leke boliye."
+    return "Samajh nahi aaya. Kripya phir se boliye."
 
 
 def abstention_reasons(session) -> dict[str, str]:
@@ -167,7 +183,12 @@ def create_app(services: AppServices | None = None) -> FastAPI:
     @app.middleware("http")
     async def public_demo_guards(request: Request, call_next):
         path = request.url.path
-        if settings.demo_access_code and path not in ("/health", "/gate") and not path.startswith("/static/"):
+        if (
+            settings.demo_access_code
+            and path not in ("/health", "/gate")
+            and not path.startswith("/static/")
+            and not path.startswith("/telephony/twilio/")  # Twilio can't carry our access-code cookie; its own signature check guards it
+        ):
             if not access_ok(settings.demo_access_code, request.cookies.get(ACCESS_COOKIE)):
                 if request.method == "GET" and "text/html" in request.headers.get("accept", ""):
                     return RedirectResponse("/gate", status_code=303)
@@ -587,6 +608,135 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             raise HTTPException(503, str(exc))
         except GnaniError as exc:
             raise HTTPException(502, str(exc))
+
+    # --- Real customer phone call (Twilio) -------------------------------------------------
+    # An additional leg alongside the in-browser simulated line; see src/parcha/telephony.py.
+
+    @app.post("/sessions/{session_id}/telephony/call")
+    def place_telephony_call(
+        session_id: str,
+        expected_revision: int = Form(...),
+        to_number: str = Form(...),
+        language: str = Form("hi-IN"),
+    ):
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+            raise HTTPException(404, "unknown session")
+        if not re.fullmatch(r"\+[1-9]\d{6,14}", to_number):
+            raise HTTPException(422, "to_number must be E.164, e.g. +919876543210")
+        if language not in supported_codes():
+            raise HTTPException(422, "unsupported read-back language")
+        try:
+            services.settings.require_twilio()
+            services.settings.require_gnani()
+            session = services.store.get(session_id)
+        except ValueError as exc:
+            raise HTTPException(503, str(exc))
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+        if session.revision != expected_revision:
+            raise HTTPException(409, "stale revision")
+        if session.card is None or session.card.needs_review:
+            raise HTTPException(409, "card needs review")
+
+        base = services.settings.public_base_url
+        voice_url = f"{base}/telephony/twilio/voice?session_id={session_id}&revision={expected_revision}&language={language}"
+        placer = services.place_call or telephony.place_call
+        try:
+            sid = placer(
+                account_sid=services.settings.twilio_account_sid,
+                auth_token=services.settings.twilio_auth_token,
+                to=to_number,
+                from_=services.settings.twilio_from_number,
+                voice_url=voice_url,
+                status_callback=f"{base}/telephony/twilio/status",
+            )
+        except telephony.TwilioError as exc:
+            raise HTTPException(502, str(exc))
+        return {"call_sid": sid}
+
+    def _twilio_request_url(request: Request) -> str:
+        base = services.settings.public_base_url.rstrip("/")
+        query = f"?{request.url.query}" if request.url.query else ""
+        return f"{base}{request.url.path}{query}"
+
+    async def _twilio_verified_form(request: Request) -> dict | None:
+        """The POST form, only if Twilio's signature on this exact request checks out."""
+        form = dict(await request.form())
+        signature = request.headers.get("x-twilio-signature", "")
+        if not telephony.signature_valid(services.settings.twilio_auth_token, _twilio_request_url(request), form, signature):
+            return None
+        return form
+
+    def _twiml_response(body: str) -> Response:
+        return Response(content=telephony.twiml(body), media_type="application/xml")
+
+    @app.post("/telephony/twilio/voice")
+    async def twilio_voice(request: Request, session_id: str = Query(...), revision: int = Query(...), language: str = Query("hi-IN")):
+        if await _twilio_verified_form(request) is None:
+            return Response(status_code=403)
+        try:
+            session = services.store.get(session_id)
+            if session.card is None or session.card.needs_review:
+                return _twiml_response(telephony.say("Is waqt estimate poori tarah taiyaar nahi hai.", language="hi-IN") + telephony.hangup())
+            readback = services.workflow.start_readback(session_id, expected_revision=revision, language=language, degrade=False)
+        except (KeyError, Conflict, ValueError, GnaniError):
+            return _twiml_response(telephony.say("Maaf kijiye, is waqt estimate nahi sunaya ja saka.", language="hi-IN") + telephony.hangup())
+
+        base = services.settings.public_base_url
+        audio_url = f"{base}/sessions/{session_id}/readback.wav?revision={readback.revision}"
+        action_url = (
+            f"{base}/telephony/twilio/recording?session_id={session_id}"
+            f"&expected_revision={readback.revision}&readback_revision={readback.readback_revision}&language={language}"
+        )
+        return _twiml_response(telephony.play(audio_url) + telephony.record(action_url))
+
+    @app.post("/telephony/twilio/recording")
+    async def twilio_recording(
+        request: Request,
+        session_id: str = Query(...),
+        expected_revision: int = Query(...),
+        readback_revision: int = Query(...),
+        language: str = Query("hi-IN"),
+    ):
+        form = await _twilio_verified_form(request)
+        if form is None:
+            return Response(status_code=403)
+        base = services.settings.public_base_url
+        same_recording_again = (
+            f"{base}/telephony/twilio/recording?session_id={session_id}"
+            f"&expected_revision={expected_revision}&readback_revision={readback_revision}&language={language}"
+        )
+        recording_url = form.get("RecordingUrl")
+        if not recording_url:
+            return _twiml_response(telephony.say("Kuch suna nahi.", language="hi-IN") + telephony.record(same_recording_again))
+        try:
+            downloader = services.download_recording or telephony.download_recording
+            blob = downloader(
+                account_sid=services.settings.twilio_account_sid,
+                auth_token=services.settings.twilio_auth_token,
+                recording_url=recording_url,
+            )
+            result = services.workflow.reply(
+                session_id, blob, "audio/wav",
+                expected_revision=expected_revision, readback_revision=readback_revision, degrade=False,
+            )
+        except (telephony.TwilioError, KeyError, Conflict, AudioError, ExtractionError, GnaniError, ValueError):
+            return _twiml_response(telephony.say("Maaf kijiye, kuch galat ho gaya.", language="hi-IN") + telephony.hangup())
+
+        speech = _twilio_outcome_speech(result.outcome, result.session, result.message)
+        if result.outcome == "needs_readback":
+            redirect_url = f"{base}/telephony/twilio/voice?session_id={session_id}&revision={result.session.revision}&language={language}"
+            return _twiml_response(telephony.say(speech, language="hi-IN") + f'<Redirect method="POST">{redirect_url}</Redirect>')
+        if result.outcome in ("ask_field", "retry"):
+            return _twiml_response(telephony.say(speech, language="hi-IN") + telephony.record(same_recording_again))
+        return _twiml_response(telephony.say(speech, language="hi-IN") + telephony.hangup())
+
+    @app.post("/telephony/twilio/status")
+    async def twilio_status(request: Request):
+        form = await _twilio_verified_form(request)
+        if form is not None:
+            log.info("twilio call status: %s", form.get("CallStatus"))
+        return Response(status_code=204)
 
     @app.post("/sessions/{session_id}/fallback")
     def digital_fallback(

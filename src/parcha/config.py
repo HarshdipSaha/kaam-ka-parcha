@@ -53,6 +53,10 @@ class Settings:
     max_speech_calls_per_day: int = 0   # app-wide cap on credit-spending POSTs per rolling 24 h
     demo_access_code: str = field(default="", repr=False)
     audio_cleanup: bool = False      # AUDIO_CLEANUP=1: high-pass + denoise recordings before Prisma (unmeasured; see audio.py)
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = field(default="", repr=False)
+    twilio_from_number: str = ""
+    public_base_url: str = ""        # this app's own public HTTPS URL, needed so Twilio can fetch audio back from it
     mock: bool = False               # PARCHA_MOCK=1: scripted offline speech services (src/parcha/mock.py)
     trust_proxy: bool = False
     caption_partials: bool = True    # interim transcripts via the x-partials header (live probe 2026-10-07: ~0.6 s cadence)
@@ -81,6 +85,10 @@ class Settings:
             max_speech_calls_per_day=_int(values.get("MAX_SPEECH_CALLS_PER_DAY"), 0),
             demo_access_code=(values.get("DEMO_ACCESS_CODE") or "").strip(),
             audio_cleanup=(values.get("AUDIO_CLEANUP") or "").strip().casefold() in {"1", "true", "yes", "on"},
+            twilio_account_sid=(values.get("TWILIO_ACCOUNT_SID") or "").strip(),
+            twilio_auth_token=(values.get("TWILIO_AUTH_TOKEN") or "").strip(),
+            twilio_from_number=(values.get("TWILIO_FROM_NUMBER") or "").strip(),
+            public_base_url=(values.get("PUBLIC_BASE_URL") or "").strip().rstrip("/"),
             mock=(values.get("PARCHA_MOCK") or "").strip().casefold() in {"1", "true", "yes", "on"},
             caption_partials=(values.get("CAPTION_PARTIALS") or "1").strip().casefold() not in {"0", "false", "no", "off"},
             trust_proxy=(values.get("TRUST_PROXY") or "").strip().casefold() in {"1", "true", "yes", "on"},
@@ -99,6 +107,10 @@ class Settings:
             return
         if not any(k.strip() and k.strip() != "replace_me" for k in self.api_key.split(",")):
             raise ValueError("API_KEY is required for live Gnani calls")
+
+    def require_twilio(self) -> None:
+        if not (self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number and self.public_base_url):
+            raise ValueError("TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER and PUBLIC_BASE_URL are all required for a phone call")
 
     def require_extractor(self) -> None:
         if self.mock:

@@ -30,3 +30,12 @@ services:
         sync: false   # optional; leave empty to keep the demo open
       - key: TTS_VOICE
         value: Vikrant
+      # Real customer phone call via Twilio (optional; leave unset and the simulated line keeps working).
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false   # this service's own onrender.com URL (or custom domain)

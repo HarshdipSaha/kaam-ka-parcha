@@ -47,6 +47,7 @@ FFmpeg must be on `PATH` for audio processing. G.711 uses `pcm_mulaw`; AMR-NB su
 | Domain and state | `src/parcha/schema.py`: frozen validated models and review requirements; `src/parcha/session.py`: revisions, transitions, confirmation, consent logs |
 | Extraction | `src/parcha/extract.py`, `vocabulary.py`: source-backed fields, Hinglish amounts, automotive terminology |
 | Speech integrations | `src/parcha/gnani.py`, `gnani_ws.py`, `readback.py`: REST/WebSocket clients, TTS, reply classification |
+| Real phone calls | `src/parcha/telephony.py`: Twilio TwiML webhooks and signature validation for an actual customer call, alongside the simulated line |
 | Offline demo and privacy | `src/parcha/mock.py`: scripted speech services for `PARCHA_MOCK=1` (never for accuracy claims); `src/parcha/redact.py`: identifier masking before text reaches the external extractor; `src/parcha/guard.py`: rate, session and daily spend limits |
 | Audio and evaluation | `src/parcha/audio.py`, `credits.py`, `lab/`: degradation, budgeting, datasets, metrics, guarded reports |
 | Artefacts | `src/parcha/artefact.py`: canonical audit manifest, hashes, embedded PDF evidence, WhatsApp text |

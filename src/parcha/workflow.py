@@ -407,6 +407,7 @@ class Workflow:
         *,
         include_consent: bool = True,
         language: str | None = None,
+        degrade: bool = True,
     ) -> Readback:
         session = self.store.get(session_id)
         if session.card is None or session.card.needs_review:
@@ -425,15 +426,17 @@ class Workflow:
             raw_mulaw = self.timbre.synthesize(text, language=pack.code, voice=voice)
         wav = mulaw_to_wav(raw_mulaw)
 
-        if self.noise_wav and self.target_snr_db is not None:
+        if degrade and self.noise_wav and self.target_snr_db is not None:
             degraded_wav, measured_snr = mix_at_snr(wav, self.noise_wav, self.target_snr_db)
         else:
             degraded_wav, measured_snr = wav, float("inf")
 
-        final_wav = codec_round_trip(degraded_wav, self.codec)
+        # A real telephone call (Twilio) already degrades audio on its own codec; our simulated
+        # degradation is for the in-browser line only, so a real call skips this second pass.
+        final_wav = codec_round_trip(degraded_wav, self.codec) if degrade else degraded_wav
 
         manifest = {
-            "codec": self.codec,
+            "codec": self.codec if degrade else "none (real telephone call; not simulated)",
             "sample_rate": 8000,
             "noise_source": self.noise_source,
             "target_snr_db": self.target_snr_db,
@@ -487,6 +490,7 @@ class Workflow:
         expected_revision: int,
         readback_revision: int,
         recorded_at_utc: datetime | None = None,
+        degrade: bool = True,
     ) -> ReplyResult:
         session = self.store.get(session_id)
         if session.status != "awaiting_reply":
@@ -499,7 +503,7 @@ class Workflow:
         except TypeError:
             wav = self.normalize_audio(blob, mime)
 
-        if self.noise_wav and self.target_snr_db is not None:
+        if degrade and self.noise_wav and self.target_snr_db is not None:
             wav, _ = mix_at_snr(wav, self.noise_wav, self.target_snr_db)
             wav = codec_round_trip(wav, self.codec)
 
