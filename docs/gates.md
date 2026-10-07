@@ -333,13 +333,13 @@ record sample counts, credit estimates, and dry-run forecasts, not console
 billing. Runner estimates are row-summed; echo totals use the runner's validated
 usage accounting.
 The owner-reported balance is approximately 235,000 credits; it was not read
-from the account console during these runs. Absolute Gramvaani speech metrics
-remain private because written publication permission is not recorded.
+from the account console during these runs. An internal Gramvaani telephone-speech diagnostic existed (2026-10-06); it is excluded from the project, demo and
+submission under the contest data rule (no recorded calls), and its index and tooling were removed from the repo.
+A separate internal mechanic-video set is likewise not part of the submission.
 
 | Date | Reproduction reference | Output | Completed N | Credit estimate |
 |---|---|---|---:|---:|
 | 2026-10-06 | Amount-labelled runner settings and command in [`BENCHMARK_CARD.md`](benchmarks/BENCHMARK_CARD.md): estimates and corrections, G.711/AMR-NB 4.75, clean/0 dB, transcribe/verbatim, 1 s request spacing, 5,000 per-run forecast cap | `var/lab/v2_estimates.jsonl`, `var/lab/v2_corrections.jsonl` | 1,280 result rows | 1,141.24 row-summed credits |
-| 2026-10-06 | Gramvaani runner command in [`BENCHMARK_CARD.md`](benchmarks/BENCHMARK_CARD.md): 8 kHz telephone slice, transcribe/verbatim, 1 s spacing, 5,000 per-run forecast cap | `var/lab/gramvaani_resumed.jsonl` | 2,064 result rows | 4,025.43 row-summed credits |
 | 2026-10-06 | Synthetic bias-control command in [`BENCHMARK_CARD.md`](benchmarks/BENCHMARK_CARD.md): verbatim with/without bias, clean condition, 1 s spacing | `var/lab/bias_control.jsonl` | 40 result rows | 12.86 row-summed credits |
 | 2026-10-06 | `scripts/run_echo_test.py --stage screen --resume-from var/lab/echo_screen_resumed3_20261006.jsonl --request-interval-seconds 1 --output var/lab/echo_screen_resumed4_20261006.jsonl --live` | `var/lab/echo_screen_resumed4_20261006.jsonl` and matching summary | 2,886 result rows; 2,890 STT attempts | Prisma 6,147.27; Timbre accounted lower bound 6,728.30 |
 | 2026-10-06 | `scripts/run_echo_test.py --stage confirm --from var/lab/echo_screen_resumed4_20261006.jsonl --request-interval-seconds 1 --output var/lab/echo_confirm_live2_20261006.jsonl --live` | `var/lab/echo_confirm_live2_20261006.jsonl` (interrupted, HTTP 503) | 1,044 rows | Prisma 3,064.78; Timbre accounted 3,384.65 |
@@ -353,8 +353,7 @@ one-pass counterfactual showed it can turn otherwise wrong parser accepts into
 abstentions; detailed results are in private `var/lab/transcribe_crosscheck_analysis_replay.json`.
 
 The Task 16 award decision is **Real Deal**. The owner-takes manifest is absent,
-Task 13 human listening is still pending, and Gramvaani publication permission
-is not recorded. No absolute speech-quality metrics or public Gramvaani claims
+and Task 13 human listening is still pending. No absolute speech-quality metrics
 are included here.
 
 **Read-back decision (Task 16 Step 2, 2026-10-06).** Confirm-stage results on
