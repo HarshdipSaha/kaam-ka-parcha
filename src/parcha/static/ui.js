@@ -5,6 +5,8 @@
     listening: { hi: "सुन रहा हूँ", en: "Listening — tap to stop" },
     processing: { hi: "समझ रहे हैं…", en: "Understanding…" },
     reask: { hi: "दोबारा बोलें", en: "Say again" },
+    confirmAll: { hi: "पूरा पर्चा दोबारा बोलें", en: "Say the whole estimate again" },
+    heardOnce: { hi: "2 में से 1 बार सुनी", en: "1 of 2 heard" },
     deliveryQ: { hi: "गाड़ी कब मिलेगी?", en: "When will the vehicle be ready?" },
     ready: { hi: "पर्चा तैयार है — नीचे “ग्राहक को सुनाएँ” दबाइए।", en: "The parcha is ready — tap “Read to customer”." },
     checkRows: { hi: "पीली लाइन पर “दोबारा बोलें” दबाकर ठीक कीजिए।", en: "Fix each yellow row with “Say again”." },
@@ -16,6 +18,8 @@
     micBlocked: { hi: "माइक की इजाज़त दें — ऊपर ताले 🔒 पर टैप करके \"Allow\" चुनें।", en: "Allow the microphone in your browser." },
     micUnsupported: { hi: "यह ब्राउज़र रिकॉर्ड नहीं कर सकता — Chrome में खोलें।", en: "This browser can't record — open in Chrome." },
     failed: { hi: "कुछ गड़बड़ हुई — फिर से कोशिश करें।", en: "Something went wrong — try again." },
+    tooMany: { hi: "बहुत ज़्यादा कोशिशें — थोड़ी देर रुककर फिर कोशिश करें।", en: "Too many requests — wait a moment and try again." },
+    tooLarge: { hi: "रिकॉर्डिंग बहुत बड़ी है — छोटी बोलिए।", en: "Recording too large — keep it shorter." },
     stale: { hi: "पर्चा बदल गया है — पेज ताज़ा करें।", en: "The parcha changed — reload." },
     reload: { hi: "ताज़ा करें", en: "Reload" },
     consentNeeded: { hi: "पहले ऊपर सहमति पर ✓ लगाइए।", en: "Tick the consent box first." },
@@ -25,6 +29,7 @@
   const ABSTAIN_LABELS = {
     independent_confirmation_required: "रकम दोबारा बोलकर पक्की करें",
     recordings_disagree: "दोनों बार रकम अलग सुनी — एक बार और बोलें",
+    confusable_needs_third: "मिलती-जुलती गिनती (जैसे इक्कीस/इकतीस) — एक बार और साफ़ बोलें",
     incomplete_number: "अधूरी रकम — फिर से पूछेंगे",
     crosscheck_disagreement: "रकम पक्की नहीं — फिर से पूछेंगे",
     ambiguous_attachment: "कौन सी रकम किस आइटम की — साफ़ नहीं",
@@ -43,6 +48,7 @@
   const ABSTAIN_EN = {
     independent_confirmation_required: "Say the amount again to confirm it",
     recordings_disagree: "The two recordings differ — say it once more",
+    confusable_needs_third: "Easily confused number (e.g. 21 vs 31) — say it once more, clearly",
     incomplete_number: "Incomplete amount — we'll ask again",
     crosscheck_disagreement: "Amount not certain — we'll ask again",
     ambiguous_attachment: "Unclear which amount belongs to which item",
@@ -195,11 +201,21 @@
       reason ? el("span", { class: "abstain-reason" }, both(ABSTAIN_LABELS[reason] || reason, ABSTAIN_EN[reason] || reason)) : null,
       chip);
   }
+  // One recording for every flagged amount; shown only while an amount is flagged (the per-row buttons stay).
+  function confirmAllButton(session, opts) {
+    const pending = (session.review_fields || []).some((f) => f.endsWith(".amount_paise"));
+    if (!opts.flags || !opts.onConfirmEstimate || !pending) return null;
+    const button = el("button", { class: "reask reask--all", type: "button", id: "confirm-estimate", "aria-label": `${COPY.confirmAll.hi} — ${COPY.confirmAll.en}` },
+      icon("mic"), el("span", {}, both(COPY.confirmAll.hi, COPY.confirmAll.en)));
+    button.addEventListener("click", () => opts.onConfirmEstimate(button));
+    return button;
+  }
   function renderSlip(target, session, opts = {}) {
     if (!target) return;
     const card = session.card || { items: [], evidence: [] };
     const flags = new Set(opts.flags ? session.review_fields || [] : []);
     const reasons = session.abstentions || {};
+    const heardOnce = new Set(session.heard_once || []);
     const changes = opts.previous ? diffItems(opts.previous, card) : new Map();
     const rows = (card.items || []).map((item) => {
       const amountField = `items.${item.id}.amount_paise`;
@@ -217,7 +233,11 @@
         el("div", { class: "row__amount" },
           change && change.amountFrom !== undefined ? el("s", { class: "row__was" }, formatRupees(change.amountFrom)) : null,
           formatRupees(item.amount_paise)));
-      flagged.forEach((field) => row.append(askBlock(field, card, reasons[field], opts.onReask)));
+      flagged.forEach((field) => {
+        const block = askBlock(field, card, reasons[field], opts.onReask);
+        if (heardOnce.has(field)) block.insertBefore(el("span", { class: "row__heard-count" }, both(COPY.heardOnce.hi, COPY.heardOnce.en)), block.lastChild);
+        row.append(block);
+      });
       return row;
     });
     if (!rows.length) rows.push(el("li", { class: "row row--empty" }, el("span", { class: "hi" }, "अभी कोई चीज़ नहीं"), el("span", { class: "en" }, "No items yet")));
@@ -231,6 +251,7 @@
       el("header", { class: "slip__head" },
         el("div", { class: "slip__title" }, el("span", { class: "hi" }, "काम का पर्चा"), el("span", { class: "en" }, "Job estimate")),
         el("div", { class: "slip__serial" }, "№ ", el("span", { id: "parcha-no" }, session.parcha_no || ""))),
+      confirmAllButton(session, opts),
       el("ol", { class: "slip__rows", id: "items-tbody" }, rows),
       el("div", { class: "slip__total" },
         el("span", { class: "slip__total-k" }, el("span", { class: "hi" }, "कुल"), el("span", { class: "en" }, "Total")),

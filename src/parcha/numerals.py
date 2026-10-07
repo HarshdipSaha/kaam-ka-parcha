@@ -101,6 +101,36 @@ for _n, _w in enumerate(_ROMAN_1_99, 1):
     _WORDS[_key(_w)] = _n
 for _w, _n in {**_DEVA_VARIANTS, **_ROMAN_VARIANTS}.items():
     _WORDS[_key(_w)] = _n
+
+
+def _spelling_variants(word: str) -> set[str]:
+    """Spellings Prisma uses for the standard 1-99 words that the table above lacks.
+
+    Observed in live runs: उन्तीस (उनतीस), तेंतीस/तेतीस (तैंतीस), उन्चास (उनचास), अट्ठारह/अठ्ठाराह (अठारह), चौतीस
+    (चौंतीस). Rules: drop the anusvara; ai-matra nasal forms; the उन- prefix with a conjunct; अठ/अट्ठ/अठ्ठ stems; a long
+    -राह ending. Without these an unknown number word is skipped and its unit alone reads as a one-unit amount.
+    """
+    base = _fold_deva(word)
+    forms = {base, base.replace("ं", "")}
+    for nasal in ("ें", "े", "ै"):
+        forms.add(base.replace("ैं", nasal))
+    for form in list(forms):
+        if form.startswith("उन") and not form.startswith("उन्"):
+            forms.add("उन्" + form[2:])
+    for form in list(forms):
+        for stem in ("अठ", "अट्ठ", "अठ्ठ"):
+            if form.startswith(stem):
+                forms.update(other + form[len(stem):] for other in ("अठ", "अट्ठ", "अठ्ठ"))
+    for form in list(forms):
+        if form.endswith("रह"):
+            forms.add(form[:-2] + "राह")
+    forms.discard(base)
+    return forms
+
+
+for _n, _w in enumerate(_DEVA_1_99, 1):
+    for _variant in _spelling_variants(_w):
+        _WORDS.setdefault(_key(_variant), _n)      # never override a standard word or an explicit variant
 _MULT = {_key(w): v for w, v in _MULTIPLIERS.items()}
 _FRAC = {_key(w): v for w, v in _FRACTIONS.items()}
 _CUR = {_key(w) for w in _CURRENCY}
