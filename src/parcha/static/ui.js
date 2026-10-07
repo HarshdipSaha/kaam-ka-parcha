@@ -16,6 +16,8 @@
     micBlocked: { hi: "माइक की इजाज़त दें — ऊपर ताले 🔒 पर टैप करके \"Allow\" चुनें।", en: "Allow the microphone in your browser." },
     micUnsupported: { hi: "यह ब्राउज़र रिकॉर्ड नहीं कर सकता — Chrome में खोलें।", en: "This browser can't record — open in Chrome." },
     failed: { hi: "कुछ गड़बड़ हुई — फिर से कोशिश करें।", en: "Something went wrong — try again." },
+    tooMany: { hi: "बहुत ज़्यादा कोशिशें — थोड़ी देर रुककर फिर कोशिश करें।", en: "Too many requests — wait a moment and try again." },
+    tooLarge: { hi: "रिकॉर्डिंग बहुत बड़ी है — छोटी बोलिए।", en: "Recording too large — keep it shorter." },
     stale: { hi: "पर्चा बदल गया है — पेज ताज़ा करें।", en: "The parcha changed — reload." },
     reload: { hi: "ताज़ा करें", en: "Reload" },
     consentNeeded: { hi: "पहले ऊपर सहमति पर ✓ लगाइए।", en: "Tick the consent box first." },
