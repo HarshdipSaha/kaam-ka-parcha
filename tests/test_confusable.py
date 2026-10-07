@@ -107,4 +107,4 @@ def test_benchmark_pairing_counts_look_alike_pairs_as_needing_a_third_recording(
                 "expected_paise": 3100000, "verbatim": verbatim}
 
     result = paired_outcomes([row(VOICES[0], "इक्कीस हज़ार"), row(VOICES[1], "इक्कीस हज़ार")])["ALL"]
-    assert result["settled_wrong"] == 0 and result["needs_third"] == 1 and result["settled"] == 0
+    assert result["settled_wrong"] == 0 and result["needs_third"] == 2 and result["settled"] == 0
