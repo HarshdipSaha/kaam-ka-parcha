@@ -29,6 +29,7 @@
   const ABSTAIN_LABELS = {
     independent_confirmation_required: "रकम दोबारा बोलकर पक्की करें",
     recordings_disagree: "दोनों बार रकम अलग सुनी — एक बार और बोलें",
+    confusable_needs_third: "मिलती-जुलती गिनती (जैसे इक्कीस/इकतीस) — एक बार और साफ़ बोलें",
     incomplete_number: "अधूरी रकम — फिर से पूछेंगे",
     crosscheck_disagreement: "रकम पक्की नहीं — फिर से पूछेंगे",
     ambiguous_attachment: "कौन सी रकम किस आइटम की — साफ़ नहीं",
@@ -47,6 +48,7 @@
   const ABSTAIN_EN = {
     independent_confirmation_required: "Say the amount again to confirm it",
     recordings_disagree: "The two recordings differ — say it once more",
+    confusable_needs_third: "Easily confused number (e.g. 21 vs 31) — say it once more, clearly",
     incomplete_number: "Incomplete amount — we'll ask again",
     crosscheck_disagreement: "Amount not certain — we'll ask again",
     ambiguous_attachment: "Unclear which amount belongs to which item",
