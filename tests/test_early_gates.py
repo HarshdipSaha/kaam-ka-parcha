@@ -191,7 +191,7 @@ def test_early_gates_live_fails_if_budget_exceeded(monkeypatch, tmp_path):
         encoding="utf-8"
     )
 
-    monkeypatch.setenv("GNANI_API_KEY", "test-key")
+    monkeypatch.setenv("API_KEY", "test-key")
 
     ret = early_gates.main([
         "--live",
@@ -221,7 +221,7 @@ def test_early_gates_live_garage_mock(monkeypatch, tmp_path):
         def transcribe(self, wav, mode, bias=None, score=1.0):
             return "कुल 450 रुपये हुआ"
 
-    monkeypatch.setenv("GNANI_API_KEY", "test-key")
+    monkeypatch.setenv("API_KEY", "test-key")
     monkeypatch.setattr(early_gates, "PrismaClient", FakePrisma)
 
     ret = early_gates.main([
@@ -259,7 +259,7 @@ def test_early_gates_live_stops_on_403(monkeypatch, tmp_path):
         def transcribe(self, wav, mode, bias=None, score=1.0):
             raise GnaniError("Gnani request failed: HTTP 403 Forbidden")
 
-    monkeypatch.setenv("GNANI_API_KEY", "test-key")
+    monkeypatch.setenv("API_KEY", "test-key")
     monkeypatch.setattr(early_gates, "PrismaClient", FailingPrisma)
 
     ret = early_gates.main([
@@ -296,7 +296,7 @@ def test_early_gates_live_short_replies_mock(monkeypatch, tmp_path):
         def transcribe(self, wav, mode, bias=None, score=1.0):
             return "हाँ"
 
-    monkeypatch.setenv("GNANI_API_KEY", "test-key")
+    monkeypatch.setenv("API_KEY", "test-key")
     monkeypatch.setattr(early_gates, "PrismaClient", FakePrisma)
 
     ret = early_gates.main([
