@@ -1,7 +1,7 @@
 # AI-DLC Effort Registry
 
 **Project:** Kaam ka Parcha (Phone-Sealed)  
-**Last Updated:** 2026-10-06
+**Last Updated:** 2026-10-07
 **Baseline:** `aidlc-docs/inception/` (Locked & Signed Off)  
 
 ---
@@ -20,7 +20,10 @@
 | **008** | `real-audio-analysis-council-spec` | Real-Audio Benchmark Analysis (R9), Council Re-run & Money-Path Safety Spec | **complete** (docs; spec committed, GitHub issue pending) | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/008-real-audio-analysis-council-spec/`](efforts/008-real-audio-analysis-council-spec/effort-state.md) |
 | **009** | `money-path-plan` | Money-Path Safety & Benchmark v2 Implementation Plan (writing-plans) | **active** | 2026-10-05 | Pending | [`aidlc-docs/efforts/009-money-path-plan/`](efforts/009-money-path-plan/effort-state.md) |
 | **010** | `ui-digital-parcha-plan` | UI Research (R10–R14), "Digital Parcha" Spec & Implementation Plan (runs after 009) | **complete** (plan; implementation not started) | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/010-ui-digital-parcha-plan/`](efforts/010-ui-digital-parcha-plan/effort-state.md) |
+| **011** | `ui-digital-parcha-build` | Build of the 010 plan: presentation helpers, payload contract, design system, workshop/customer/stage/verify pages | **complete** | 2026-10-05 | 2026-10-05 | [`aidlc-docs/efforts/011-ui-digital-parcha-build/`](efforts/011-ui-digital-parcha-build/construction.md) |
 | **012** | `deploy-ready` | Container + deploy files, owner-take recorder, bounded sessions | **complete** (repo side; deployment is a user step) | 2026-10-07 | 2026-10-07 | [`aidlc-docs/efforts/012-deploy-ready/`](efforts/012-deploy-ready/effort-state.md) |
+| **013** | `deploy-hardening` | CI, LICENSE, offline mock mode, spend/length/privacy guards, Gnani key failover; deployed live to Render (free plan) | **complete** | 2026-10-07 | 2026-10-07 | [`aidlc-docs/efforts/013-deploy-hardening/`](efforts/013-deploy-hardening/effort-state.md) |
+| **014** | `twilio-phone-leg` | Real customer phone call via Twilio alongside the simulated line; live-verified with a real call (confirmed, PDF sealed) | **complete** | 2026-10-07 | 2026-10-07 | [`aidlc-docs/efforts/014-twilio-phone-leg/`](efforts/014-twilio-phone-leg/effort-state.md) |
 
 ---
 
@@ -35,3 +38,5 @@
 ## Active & Next Efforts
 - **Concurrent Active Effort:** `006-real-api-real-audio-benchmark` — User-requested budgeted real-API speech evaluation.
 - **Active Effort:** `004-enterprise-telephony-compliance` — Resolves GitHub Issues #3, #4, #5, #6, #7, and Epic #1.
+- **Follow-up from 014:** no `/workshop` UI button for the Twilio call yet (API-only); no automatic WhatsApp/SMS
+  delivery after a phone confirmation; real-call accuracy scoring (~20 calls) not yet run.

@@ -21,3 +21,26 @@ B8 native-speaker review of `src/parcha/languages.py` before showing Tamil/Benga
 
 **Known limits worth remembering:** evidence is synthetic speech; residual wrong-settle risk is look-alike pairs outside the flagged set (-ty twins, तैंतीस/पैंतीस); Tamil/Kannada echo cannot be scored by digits;
 REST STT rejects clips of about 30 s or more (the 60 s doc claim does not hold); CSS+JS is 69 KB vs the 60 KB spec.
+
+---
+
+# Handoff 2026-10-07: deploy hardening + real Twilio phone leg
+
+**Status:** deployed live at `https://kaam-ka-parcha.onrender.com` (Render free plan). Offline suite 776 passed.
+See `aidlc-docs/efforts/013-deploy-hardening/effort-state.md` and `aidlc-docs/efforts/014-twilio-phone-leg/effort-state.md`.
+
+**What's new:** CI, MIT `LICENSE`, `PARCHA_MOCK=1` offline demo mode, `src/parcha/redact.py` (masks phone/Aadhaar/PAN
+before the external extractor), Gnani `API_KEY` can list several comma-separated keys with automatic failover on
+401/403 (`src/parcha/gnani.py:KeyPool`), `MAX_SPEECH_CALLS_PER_DAY` app-wide spend cap, 29.5 s Prisma recording cap,
+optional `AUDIO_CLEANUP` (unmeasured). A real customer phone call via Twilio (`src/parcha/telephony.py`,
+`/telephony/twilio/*`) now runs alongside the simulated line — **live-verified with a real call**: session
+`PjN3-GlUfgLocLvsiihW4NMB` reached `confirmed`, total ₹650, parcha no. `644793`.
+
+**Do next:** `/workshop` has no button yet for the phone call (API-only: `POST /sessions/{id}/telephony/call`);
+no automatic WhatsApp/SMS delivery after a phone confirmation; real-call accuracy scoring (~20 calls via
+`parcha.lab`) not yet run; `AUDIO_CLEANUP` A/B not yet measured.
+
+**Known limits worth remembering:** Twilio trial plays its own disclaimer and requires an actual on-screen keypad
+tap (a phone side button does nothing) before it calls our webhook at all; trial calls are capped at 10 minutes,
+verified numbers only, 30-day account expiry. `aidlc-docs/`, `docs/raw/`, `docs/webattack_artifacts/` are still
+tracked in the repo; several docs link into them, so moving them needs its own pass.
