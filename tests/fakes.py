@@ -38,9 +38,11 @@ class SilentTimbre:
 
     def __init__(self) -> None:
         self.calls: list[str] = []
+        self.languages: list[str] = []
 
-    def synthesize(self, text: str) -> bytes:
+    def synthesize(self, text: str, *, language: str = "hi-IN", voice: str | None = None) -> bytes:
         self.calls.append(text)
+        self.languages.append(language)
         import io, wave
         buf = io.BytesIO()
         with wave.open(buf, "wb") as w:
@@ -61,6 +63,7 @@ class StagePrisma:
 
     def __init__(self) -> None:
         self.calls: list[tuple[bytes, str]] = []
+        self.languages: list[str] = []
         self.reset()
 
     def reset(self) -> None:
@@ -73,8 +76,51 @@ class StagePrisma:
     def say(self, text: str) -> None:
         self.heard = text
 
-    def transcribe(self, wav: bytes, *, mode: str, bias=None, score: float = 1.0) -> str:
+    def transcribe(self, wav: bytes, *, mode: str, bias=None, score: float = 1.0, language_code: str = "hi-IN") -> str:
         self.calls.append((wav, mode))
+        self.languages.append(language_code)
         if self.heard is not None:
             return self.heard
         return self.by_mode.get(mode, self.by_mode["verbatim"])
+
+
+class CaptionSocket:
+    """Fake Gnani realtime socket for caption tests: answers with scripted events once trailing silence arrives."""
+
+    SILENCE = bytes(1024)
+
+    def __init__(self, events=()):
+        import asyncio
+        self.events = list(events)
+        self.sent: list[bytes] = []
+        self.headers = None
+        self._queue = asyncio.Queue()
+        self._flushed = False
+
+    def connect(self, url, additional_headers=None, open_timeout=None):
+        self.headers = additional_headers
+        return self
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+    async def send(self, frame):
+        import json
+        self.sent.append(frame)
+        if frame == self.SILENCE and not self._flushed:
+            self._flushed = True
+            for event in self.events:
+                self._queue.put_nowait(json.dumps(event))
+            self._queue.put_nowait(None)
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        item = await self._queue.get()
+        if item is None:
+            raise StopAsyncIteration
+        return item

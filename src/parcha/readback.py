@@ -4,6 +4,7 @@ import re
 from typing import Literal
 import unicodedata
 
+from .languages import LanguagePack, pack_for
 from .numerals import render_hindi_amount
 from .schema import JobCard
 
@@ -42,6 +43,7 @@ def make_readback(
     *,
     include_consent: bool = False,
     amount_style: Literal["digits", "words"] = "words",
+    language: str | None = None,
 ) -> str:
     """Synthesize structured read-back prompt with phrasal affirmation instructions.
     
@@ -51,6 +53,9 @@ def make_readback(
     """
     if amount_style not in {"digits", "words"}:
         raise ValueError(f"unsupported amount style: {amount_style}")
+    pack = pack_for(language)
+    if pack is not None:
+        return _regional_readback(card, pack, include_consent=include_consent)
 
     def money(paise: int) -> str:
         if amount_style == "words":
@@ -77,12 +82,53 @@ def make_readback(
 
 
 
-def classify_reply(text: str) -> ReplyClass:
+def _regional_readback(card: JobCard, pack: LanguagePack, *, include_consent: bool) -> str:
+    """Fixed per-language strings with digit amounts; item labels are spoken as extracted (see languages.py)."""
+    items = ", ".join(
+        f"{item.label}: {format_rupees(item.amount_paise if item.amount_paise is not None else 0)}" for item in card.items
+    )
+    delivery = ""
+    if card.delivery:
+        d = card.delivery
+        delivery = f"{pack.delivery_word} {d.date.day}/{d.date.month}/{d.date.year} {pack.windows[d.window]}. "
+    consent = f"{pack.consent_notice} " if include_consent else ""
+    prefix = f"{items}. " if items else ""
+    return f"{consent}{prefix}{pack.total_word} {format_rupees(card.total_paise)}. {delivery}{pack.closing_prompt}"
+
+
+def _regional_words(text: str) -> list[str]:
+    """Whitespace tokens with punctuation and symbols stripped; combining vowel signs are kept."""
+    out = []
+    for token in unicodedata.normalize("NFKC", text).casefold().split():
+        word = "".join(ch for ch in token if unicodedata.category(ch)[0] not in "PS")
+        if word:
+            out.append(word)
+    return out
+
+
+def _classify_regional(text: str, pack: LanguagePack) -> ReplyClass:
+    """Accept only a clear yes ("yes", "yes, ok"); any negation is a reject; everything else is unclear."""
+    words = _regional_words(text)
+    if not words:
+        return "unclear"
+    if any(w in pack.no_words for w in words):
+        return "reject"
+    if words[0] in pack.yes_words:
+        tail = [w for w in words[1:] if w not in pack.modifiers]
+        if len(tail) <= 2 and all(w in pack.ok_words for w in tail):
+            return "accept"
+    return "unclear"
+
+
+def classify_reply(text: str, language: str | None = None) -> ReplyClass:
     """Classify customer speech into accept, correction, reject, or unclear.
     
     Recognizes both elicited 3-word phrasal affirmations and legacy affirmations,
     while enforcing strict negation priority and refusing ambiguous discourse markers.
     """
+    pack = pack_for(language)
+    if pack is not None:
+        return _classify_regional(text, pack)
     normalized = unicodedata.normalize("NFKC", text).casefold()
     words = re.findall(r"[a-z0-9\u0900-\u097f]+", normalized)
     if not words:
