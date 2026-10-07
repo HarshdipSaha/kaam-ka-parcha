@@ -14,11 +14,10 @@ Never commit `.env`, `var/`, private audio. Two unrelated untracked files stay o
 
 # Handoff 2026-10-07: sug.md Part A
 
-**Open PRs (nothing merged; the merge was blocked in the session).** Suggested order: #45, #47 (numeral fixes), #34 (A0), #35 (A12), then #42 (A9, base is #35's branch: retarget to main),
-#37 (A1; its branch already contains the #45/#47 fixes), #36 (A2), #43 (A10), #38, #39, #40, #41. Expect small conflicts in `app.py`, `workflow.py`, `ui.js` between #35/#37/#36/#43/#42.
+**Status:** all Part A PRs (#34-#43, #45, #47, #48, #49) are merged into `main`; combined main passes the offline suite (743) and the e2e suite.
 
 **Do next:** run the full offline suite and `tests/e2e -m e2e` after merging; B1 record the owner takes, then A3; B2 deploy then A6; B3 organiser consent before the public A14 report;
-B8 native-speaker review of `src/parcha/languages.py` before showing Tamil/Bengali/Kannada to real customers; refresh `docs/submission/*` numbers after the merges.
+B8 native-speaker review of `src/parcha/languages.py` before showing Tamil/Bengali/Kannada to real customers; refresh `docs/submission/*` numbers if anything changes.
 
 **Known limits worth remembering:** evidence is synthetic speech; residual wrong-settle risk is look-alike pairs outside the flagged set (-ty twins, तैंतीस/पैंतीस); Tamil/Kannada echo cannot be scored by digits;
 REST STT rejects clips of about 30 s or more (the 60 s doc claim does not hold); CSS+JS is 69 KB vs the 60 KB spec.
