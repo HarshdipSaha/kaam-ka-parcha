@@ -374,6 +374,13 @@ Spend is runner-estimated, not console-billed; an interrupted resume attempt
 its small unrecorded duplicate spend is not included above. Private report:
 `.\.venv\Scripts\python.exe -m parcha.lab.bench_report --echo var/lab/echo_screen_resumed4_20261006.jsonl --echo var/lab/echo_confirm_resumed2_20261006.jsonl` → `var/lab/benchmark_report.md`.
 
+### Look-alike and lost-tail guard, fresh held-out run (2026-10-07, A2)
+
+`scripts/run_reask_bench.py --count 100 --held-out --seed 20261010 --live --max-credits 5000 --output var/lab/reask_heldout2.jsonl`, then `--rescore`: 930 rows (fresh amounts, 2 Timbre voices, 5 conditions),
+about 2,900 credits (forecast, not console billing). Synthetic speech. Pair rule with the third-recording step for look-alike number words and amounts under Rs 100:
+**0 wrong settled in 930 pairs at every condition** (Wilson upper 0.41%); 76.8% settle on the first pair, 3.7% need another recording, 19.6% need a third. Single recording alone: 98.2% recovered but 13 wrong accepted (1.4%).
+Offline replay of the earlier runs (free): 0 wrong settled (was 4 of 1,000 and 2 of 930); 15.2% and 18.9% of pairs need a third recording. Residual risk: look-alikes outside the flagged set (the -ty twins, e.g. पंद्रह heard as पचास; तैंतीस heard as पैंतीस seen once in the A1 run).
+
 ### Follow-up hardening (2026-10-07)
 
 All private outputs are under ignored `var/lab/`; credits are runner estimates, not console billing.
