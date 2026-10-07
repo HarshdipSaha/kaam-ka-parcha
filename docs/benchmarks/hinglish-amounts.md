@@ -13,7 +13,7 @@ evidence, not real-speech accuracy. Each links to its row in [`docs/gates.md`](.
 |---|---|---|
 | डेढ़ सौ / डेढ़ हज़ार | 150 / 1,500 | fixed 1.5 |
 | ढाई सौ / ढाई हज़ार | 250 / 2,500 | fixed 2.5 |
-| साढ़े चार सौ | 450 | N + 0.5, N from 3 to 99 |
+| साढ़े चार सौ | 450 | N + 0.5 |
 | सवा सौ / सवा दो हज़ार | 125 / 2,250 | N + 0.25 |
 | पौने दो सौ / पौने दो हज़ार | 175 / 1,750 | N - 0.25 |
 | बारह सौ, चौदह सौ | 1,200 / 1,400 | hundreds used for 11-19 |
@@ -40,7 +40,7 @@ against `04:30 ₹200` still abstains (`crosscheck_disagreement`).
 
 ## Why one recording is never enough
 
-Even at 96-97% recovery, a single recording's accepted amount was wrong about 2.3% of the time (24 of 1,000
+Even at 96-97% recovery, a single recording's accepted amount was wrong 2.2-2.4% of the time (24 of 1,000
 main rows, 20 of 930 held-out rows, all at 0 dB SNR). Accepting an amount just because the two Prisma passes on
 *one* recording agree was also tested offline on the saved runs: 475 of 1,344 amounts would have been accepted
 and 19 (4.0%; 10.2% at 0 dB) would have been wrong, so that rule was rejected.

@@ -96,7 +96,7 @@ Captured from a **live run** (`scripts/capture_live_screens.py`): real Gnani Pri
 
 ## Hinglish Rupee Amounts
 
-Amounts come from a deterministic numeral grammar (डेढ़, ढाई, साढ़े, सवा, पौने, "बारह सौ"), never from a language model. Prisma's formatted pass writes "साढ़े चार सौ" as `04:30 100`; normalising that string lifted single-amount re-ask recovery from 73.3% to 96.3% on 1,000 live synthetic-speech rows (96.8% on a held-out run). Because a single recording still mis-accepts about 2.3% of amounts at 0 dB, an amount is settled only when **two separate recordings agree**. Details, evidence links and limits: [`docs/benchmarks/hinglish-amounts.md`](docs/benchmarks/hinglish-amounts.md).
+Amounts come from a deterministic numeral grammar (डेढ़, ढाई, साढ़े, सवा, पौने, "बारह सौ"), never from a language model. Prisma's formatted pass writes "साढ़े चार सौ" as `04:30 100`; normalising that string lifted single-amount re-ask recovery from 73.3% to 96.3% on 1,000 live synthetic-speech rows (96.8% on a held-out run). Because a single recording still mis-accepts 2.2-2.4% of amounts at 0 dB, an amount is settled only when **two separate recordings agree**. Details, evidence links and limits: [`docs/benchmarks/hinglish-amounts.md`](docs/benchmarks/hinglish-amounts.md).
 
 ---
 
