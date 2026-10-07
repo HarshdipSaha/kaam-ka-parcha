@@ -41,3 +41,11 @@ locally and set in `render.yaml`:
 | `TRUST_PROXY=1` | Behind a single trusted proxy, key limits by the rightmost `X-Forwarded-For` entry. |
 
 Unexpected server errors return a generic body; details are logged server-side only.
+
+## Live captions (display only)
+While the mechanic records, the workshop page streams the microphone (8 kHz PCM16) to `WS /sessions/{id}/captions`, which relays it
+to Gnani's realtime STT and sends the transcripts back. Captions are shown in a dashed "display only" panel and never reach the card:
+amounts still come from the two REST Prisma passes over the finished recording (`tests/test_captions.py` proves a caption cannot
+create a card, log or amount). The socket honours `DEMO_ACCESS_CODE`, the per-client rate limit and the 60 s cap. Realtime STT emits
+a transcript per speech segment (after a short pause); Interim text is requested by default through an undocumented header (`x-partials`; a live probe on 2026-10-07 showed a partial about every 0.6 s and a `final_transcript` at the end); set `CAPTION_PARTIALS=0` for per-segment finals only.
+Every browser or upstream failure is silent: recording works without captions.

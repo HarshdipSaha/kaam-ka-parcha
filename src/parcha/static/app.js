@@ -94,6 +94,61 @@ async function getOrCreateSession() {
   renderSession(created);
   return currentSession;
 }
+/* ---------- live captions (display only) ----------
+ * Streams the microphone to /sessions/{id}/captions as 8 kHz mono PCM16 and shows what Gnani's realtime STT hears.
+ * They never reach the card: amounts still come from the two REST passes over the finished recording. Every failure
+ * is silent, the recording flow does not depend on this. */
+function downsampleTo8k(input, ratio) {
+  const out = new Int16Array(Math.floor(input.length / ratio));
+  for (let i = 0; i < out.length; i++) {
+    const start = Math.floor(i * ratio), end = Math.min(input.length, Math.floor((i + 1) * ratio));
+    let sum = 0;
+    for (let j = start; j < end; j++) sum += input[j];
+    const v = Math.max(-1, Math.min(1, sum / Math.max(1, end - start)));
+    out[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
+  }
+  return out;
+}
+function startCaptions(stream, sessionId) {
+  const box = $("captions"), text = $("captions-text");
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!box || !text || !window.WebSocket || !Ctx) return () => {};
+  let ws, ctx, node, source;
+  const lines = [];
+  let partial = "";
+  box.hidden = true;
+  text.textContent = "";
+  const paint = () => {
+    const shown = [...lines.slice(-2), partial].filter(Boolean).join(" ");
+    box.hidden = !shown;
+    text.textContent = shown;
+  };
+  try {
+    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/sessions/${sessionId}/captions`);
+    ws.binaryType = "arraybuffer";
+    ctx = new Ctx();
+    source = ctx.createMediaStreamSource(stream);
+    node = ctx.createScriptProcessor(4096, 1, 1);
+    const ratio = ctx.sampleRate / 8000;
+    node.onaudioprocess = (event) => {
+      if (ws.readyState === 1) ws.send(downsampleTo8k(event.inputBuffer.getChannelData(0), ratio).buffer);
+    };
+    source.connect(node);
+    node.connect(ctx.destination);
+  } catch (_) { return () => {}; }
+  ws.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data);
+      if (message.type !== "caption" || typeof message.text !== "string") return;
+      if (message.final) { lines.push(message.text); partial = ""; } else { partial = message.text; }
+      paint();
+    } catch (_) { /* captions are best-effort */ }
+  };
+  return function stopCaptions() {
+    try { node.disconnect(); source.disconnect(); ctx.close(); } catch (_) { /* already closed */ }
+    try { if (ws.readyState === 1) ws.send("stop"); setTimeout(() => { try { ws.close(); } catch (_) { /* gone */ } }, 2000); } catch (_) { /* gone */ }
+  };
+}
 function toggleListening(on) {
   $("record").hidden = on;
   $("stop").hidden = !on;
@@ -156,14 +211,15 @@ function celebrate() {
   UI.buzz();
 }
 async function recordAndPost(startButton, url, name) {
+  let stopCaptions = () => {};
   const mic = UI.micDock($("dock"));
   const message = $("message");
   try {
     const session = await getOrCreateSession();
     $("record").disabled = true;
     const blob = await recordOnce(startButton, $("stop"), {
-      onStart: (stream) => { toggleListening(true); mic.listening(stream); },
-      onEnd: () => toggleListening(false),
+      onStart: (stream) => { toggleListening(true); mic.listening(stream); stopCaptions = startCaptions(stream, session.id); },
+      onEnd: () => { toggleListening(false); stopCaptions(); },
     });
     mic.processing();
     UI.say(message, UI.COPY.processing.hi, UI.COPY.processing.en);
@@ -177,6 +233,7 @@ async function recordAndPost(startButton, url, name) {
   } catch (err) {
     showError(message, err);
   } finally {
+    stopCaptions();   // the panel stays until the next recording starts, so the last live words remain readable
     mic.idle();
     toggleListening(false);
     $("record").disabled = false;

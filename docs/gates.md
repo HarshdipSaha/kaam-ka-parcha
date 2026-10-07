@@ -373,6 +373,14 @@ Spend is runner-estimated, not console-billed; an interrupted resume attempt
 its small unrecorded duplicate spend is not included above. Private report:
 `.\.venv\Scripts\python.exe -m parcha.lab.bench_report --echo var/lab/echo_screen_resumed4_20261006.jsonl --echo var/lab/echo_confirm_resumed2_20261006.jsonl` → `var/lab/benchmark_report.md`.
 
+### Live captions and the REST length limit (2026-10-07, A9)
+
+Live probes with one synthetic Timbre clip (10 s, Vikrant) on the realtime socket `wss://api.vachana.ai/stt/v3/stream` and on REST `/stt/v3`; roughly 100 credits (estimate, not console billing).
+- **Without** `x-partials`: only one `transcript` event, after the whole phrase (about 12.8 s into a 10 s clip including the silence flush). Not useful as live captions.
+- **With** the undocumented `x-partials: true` header: a `partial_transcript` about every 0.6 s (first words at about 1 s) and a `final_transcript` (not `transcript`) at segment end. Through the product's own relay (`parcha.captions.relay_captions`, real socket, 40 ms chunks): first caption at 1.03 s, last partial at 3.91 s, final at 4.59 s. The relay now handles `final_transcript` and requests partials by default (`CAPTION_PARTIALS=0` to disable).
+- Display only: the final text is Prisma's formatted pass ("04:30 100 रुपये"), which is exactly why amounts still come only from the two REST passes over the finished recording.
+- **REST length**: single requests of about 30 s, 41 s, 50 s and 60 s all returned HTTP 400, so the documented 60 s limit is **not** usable; the code's 29 s chunk limit (`REST_MAX_AUDIO_SECONDS`) is left unchanged.
+
 ### Follow-up hardening (2026-10-07)
 
 All private outputs are under ignored `var/lab/`; credits are runner estimates, not console billing.

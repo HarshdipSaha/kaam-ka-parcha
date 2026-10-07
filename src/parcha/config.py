@@ -52,6 +52,7 @@ class Settings:
     max_upload_bytes: int = 8 * 1024 * 1024
     demo_access_code: str = field(default="", repr=False)
     trust_proxy: bool = False
+    caption_partials: bool = True    # interim transcripts via the x-partials header (live probe 2026-10-07: ~0.6 s cadence)
 
     @classmethod
     def from_mapping(cls, values: Mapping[str, str | None]) -> "Settings":
@@ -75,6 +76,7 @@ class Settings:
             max_total_sessions=_int(values.get("MAX_TOTAL_SESSIONS"), 0),
             max_upload_bytes=_int(values.get("MAX_UPLOAD_BYTES"), 8 * 1024 * 1024),
             demo_access_code=(values.get("DEMO_ACCESS_CODE") or "").strip(),
+            caption_partials=(values.get("CAPTION_PARTIALS") or "1").strip().casefold() not in {"0", "false", "no", "off"},
             trust_proxy=(values.get("TRUST_PROXY") or "").strip().casefold() in {"1", "true", "yes", "on"},
             telephony_noise_path=resolve_project_path(
                 (values.get("TELEPHONY_NOISE_PATH") or "").strip()

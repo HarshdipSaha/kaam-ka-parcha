@@ -5,11 +5,12 @@ import math
 from datetime import datetime, timezone
 from pathlib import Path
 import re
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request, Query, Response
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request, Query, Response, WebSocket
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from .captions import relay_captions
 from .config import Settings
 from .guard import ACCESS_COOKIE, SlidingWindow, access_ok, access_token, client_ip, is_guarded
 from .session import CapacityError, Conflict, SessionStore
@@ -32,6 +33,7 @@ class AppServices:
     store: SessionStore
     workflow: Workflow
     timbre: TimbreClient | None = None
+    caption_connect: object | None = None   # websocket opener for live captions; tests inject a fake
 
 
 def default_services() -> AppServices:
@@ -165,6 +167,55 @@ def create_app(services: AppServices | None = None) -> FastAPI:
     async def unexpected_error(request: Request, exc: Exception):
         log.exception("unhandled error on %s %s", request.method, request.url.path)
         return JSONResponse({"detail": "internal error"}, status_code=500)
+
+    @app.websocket("/sessions/{session_id}/captions")
+    async def captions(ws: WebSocket, session_id: str):
+        """Display-only live captions. The HTTP middleware does not see websockets, so the same guards are applied here."""
+        try:
+            services.store.get(session_id)
+        except KeyError:
+            await ws.close(code=4404)
+            return
+        if not access_ok(settings.demo_access_code, ws.cookies.get(ACCESS_COOKIE)):
+            await ws.close(code=4401)
+            return
+        ip = client_ip(ws.headers, ws.client.host if ws.client else None, settings.trust_proxy)
+        if rate.hit(ip):
+            await ws.close(code=4429)
+            return
+        try:
+            settings.require_gnani()
+        except ValueError:
+            await ws.close(code=4503)
+            return
+        await ws.accept()
+
+        async def audio():
+            while True:
+                message = await ws.receive()
+                if message["type"] == "websocket.disconnect":
+                    return
+                if message.get("bytes"):
+                    yield message["bytes"]
+                elif message.get("text") == "stop":
+                    return
+
+        async def emit(event: dict) -> None:
+            try:
+                await ws.send_json(event)
+            except Exception:  # the browser went away; captions are best-effort
+                pass
+
+        options = {"connect": services.caption_connect} if services.caption_connect else {}
+        try:
+            await relay_captions(audio(), emit, api_key=settings.api_key, partials=settings.caption_partials, **options)
+        except Exception:
+            log.exception("caption relay failed")
+            await emit({"type": "error"})
+        try:
+            await ws.close()
+        except Exception:
+            pass
 
     @app.get("/gate", response_class=HTMLResponse)
     def gate_page():
