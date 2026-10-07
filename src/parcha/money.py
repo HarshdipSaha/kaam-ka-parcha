@@ -35,7 +35,8 @@ _RS = r"(?:₹\s?)?(\d[\d,]*)"
 _CLOCK_FRACTION = re.compile(rf"(?<!\d)(\d{{1,2}}):30\s+{_RS}(?![\d,])")          # साढ़े H N is formatted as a clock time
 _BIG_UNIT = {"हज़ार": 1000, "हजार": 1000, "लाख": 100000}
 _CLOCK_WORD = re.compile(r"(?<!\d)(\d{1,2}):30\s+(हज़ार|हजार|लाख)")                     # साढ़े H हज़ार -> "H:30 हज़ार"
-_SADHE_NUMBER = re.compile(rf"(?:^|(?<=\s))साढ़े\s+{_RS}(?:\s*(हज़ार|हजार|लाख))?(?![\d,])")  # "साढ़े 4,000" / "साढ़े 23 हज़ार"
+# A comma after the unit word ("साढ़े 30 हज़ार, सर्विस ...") separates items; only a digit group ("4,000") must not match
+_SADHE_NUMBER = re.compile(rf"(?:^|(?<=\s))साढ़े\s+{_RS}(?:\s*(हज़ार|हजार|लाख))?(?!\d|,\d)")  # "साढ़े 4,000" / "साढ़े 23 हज़ार"
 _WORD_FRACTION = re.compile(rf"(?:^|(?<=\s))(डेढ़|ढाई)\s+{_RS}(?![\d,])")
 _QUARTER = re.compile(rf"(?:^|(?<=\s))(सवा|पौने)\s+{_RS}(?![\d,])")
 
