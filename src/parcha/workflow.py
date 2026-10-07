@@ -18,6 +18,7 @@ from .schema import Evidence, JobCard, LineItem, TranscriptLog
 from .session import Conflict, Session, SessionStore
 from .vocabulary import AUTOMOTIVE_BIAS_WORDS
 
+SMALL_AMOUNT_PAISE = 10_000   # ₹100
 REASK_FIELD_PATTERN = re.compile(r"^items\.[a-z]+-[0-9]+\.(label|amount_paise)$")
 
 
@@ -186,9 +187,10 @@ class Workflow:
             return AmountDecision(None, "independent_confirmation_required", decision.quote)
         if heard[0] != decision.paise:
             return AmountDecision(None, "recordings_disagree", decision.quote)
-        if confusable_amount(decision.quote):
-            # Look-alike number words can fool two recordings the same way, so the pair is not enough: settle only
-            # on a third agreeing recording, i.e. when the previous recording already ended in this same state.
+        if confusable_amount(decision.quote) or decision.paise < SMALL_AMOUNT_PAISE:
+            # Look-alike number words can fool two recordings the same way, and so can a lost tail: "तेरह सौ" and "तेईस सौ"
+            # heard twice as "तेरह" / "तेईस" (₹13, ₹23) at 0 dB. A repair line under ₹100 is rare, so it also gets a
+            # third look. Settle only on a third agreeing recording, i.e. when the previous recording ended in this state.
             last = next((log.text for log in reversed(session.logs) if log.mode == f"abstain:{field}"), None)
             if last != "confusable_needs_third":
                 return AmountDecision(None, "confusable_needs_third", decision.quote)

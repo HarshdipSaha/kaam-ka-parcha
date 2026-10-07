@@ -124,7 +124,8 @@ def paired_outcomes(rows: Iterable[Mapping]) -> dict[str, dict]:
                 continue
             ok1, ok2 = first["paise"] is not None, second["paise"] is not None
             if ok1 and ok2 and first["paise"] == second["paise"]:
-                if confusable_amount(first.get("verbatim", "")) or confusable_amount(second.get("verbatim", "")):
+                if (confusable_amount(first.get("verbatim", "")) or confusable_amount(second.get("verbatim", ""))
+                        or first["paise"] < 10_000):
                     outcome = "needs_third"          # look-alike number words: the product asks for a third recording
                 else:
                     outcome = "settled" if first["paise"] == first["expected_paise"] else "settled_wrong"

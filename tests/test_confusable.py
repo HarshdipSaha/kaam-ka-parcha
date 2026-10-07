@@ -108,3 +108,14 @@ def test_benchmark_pairing_counts_look_alike_pairs_as_needing_a_third_recording(
 
     result = paired_outcomes([row(VOICES[0], "इक्कीस हज़ार"), row(VOICES[1], "इक्कीस हज़ार")])["ALL"]
     assert result["settled_wrong"] == 0 and result["needs_third"] == 2 and result["settled"] == 0
+
+
+def test_a_lost_tail_amount_under_100_rupees_needs_a_third_recording():
+    """At 0 dB 'तेईस सौ' came back twice as 'तेईस' and settled ₹23 for ₹2,300."""
+    t_in, v_in = "front brake pad ₹23, labour ₹200, Somvaar", "front brake pad तेईस labour do sau Somvaar"
+    wf, _, sid = service(ScriptedPrisma([t_in, v_in]), CardExtractor(card()))
+    s1 = wf.intake(sid, b"a", "audio/webm", expected_revision=0)
+    s2 = _reask(wf, sid, s1.revision, "₹23", "तेईस")
+    assert s2.card.items[0].amount_paise is None and abstentions(s2)[PART] == "confusable_needs_third"
+    s3 = _reask(wf, sid, s2.revision, "₹23", "तेईस")
+    assert s3.card.items[0].amount_paise == 2300
