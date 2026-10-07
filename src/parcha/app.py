@@ -679,6 +679,12 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             if session.card is None or session.card.needs_review:
                 return _twiml_response(telephony.say("Is waqt estimate poori tarah taiyaar nahi hai.", language="hi-IN") + telephony.hangup())
             readback = services.workflow.start_readback(session_id, expected_revision=revision, language=language, degrade=False)
+            base_dir = Path("var/sessions").resolve()
+            wav_path = (base_dir / session_id / f"{readback.revision}.wav").resolve()
+            if not wav_path.is_relative_to(base_dir):
+                raise ValueError("invalid path")
+            wav_path.parent.mkdir(parents=True, exist_ok=True)
+            wav_path.write_bytes(readback.audio_wav)
         except (KeyError, Conflict, ValueError, GnaniError):
             return _twiml_response(telephony.say("Maaf kijiye, is waqt estimate nahi sunaya ja saka.", language="hi-IN") + telephony.hangup())
 

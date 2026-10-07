@@ -163,6 +163,15 @@ def test_voice_webhook_plays_the_readback_and_records_a_reply(fake_services):
     assert r.status_code == 200 and r.headers["content-type"].startswith("application/xml")
     assert "<Play>" in r.text and "readback.wav" in r.text and "<Record" in r.text
 
+    # The <Play> URL must actually be fetchable — a real Twilio call failed with "an application error has
+    # occurred" because this earlier returned 404 (the voice webhook built the readback but never saved the
+    # WAV to disk; only the browser-facing /sessions/{id}/readback route did that).
+    import re
+    play_url = re.search(r"<Play>(.*?)</Play>", r.text).group(1).replace("&amp;", "&")
+    audio_path = play_url.removeprefix("https://test.example")
+    audio = client.get(audio_path)
+    assert audio.status_code == 200 and audio.headers["content-type"] == "audio/wav" and len(audio.content) > 0
+
 
 def test_voice_webhook_apologizes_when_the_card_still_needs_review(fake_services):
     client = TestClient(create_app(fake_services))
