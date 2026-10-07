@@ -16,6 +16,10 @@
     <li data-step="manzoor"><span class="hi">मंज़ूर</span><span class="en">Approved</span></li>
   </ol>
   <output id="message" class="notice" role="status" aria-live="polite"><span class="hi">पीला माइक दबाइए और पर्चा बोलिए।</span><span class="en">Tap the yellow mic and speak the estimate.</span></output>
+  <section id="captions" class="heard heard--live" hidden>
+    <div class="heard__k"><span class="hi">लाइव कैप्शन — सिर्फ़ दिखाने के लिए</span><span class="en">Live captions — display only; amounts come from the finished recording</span></div>
+    <p class="heard__text" id="captions-text"></p>
+  </section>
   <section id="transcript" class="heard" hidden>
     <div class="heard__k"><span class="hi">आपने कहा</span><span class="en">You said — Gnani Prisma heard</span></div>
     <p class="heard__text" id="transcript-content"></p>
@@ -52,6 +56,15 @@
         <div class="meter" aria-hidden="true"><span></span></div>
       </div>
     </div>
+    <label id="language-field" class="langfield" hidden>
+      <span class="hi">ग्राहक की भाषा</span><span class="en">Customer's language</span>
+      <select id="readback-language" name="language">
+        <option value="hi-IN">हिन्दी</option>
+        <option value="ta-IN">தமிழ் (preview)</option>
+        <option value="bn-IN">বাংলা (preview)</option>
+        <option value="kn-IN">ಕನ್ನಡ (preview)</option>
+      </select>
+    </label>
     <button id="start-readback" class="btn btn--primary" type="button" disabled hidden><span class="hi">ग्राहक को सुनाएँ</span><span class="en">Read to customer</span></button>
   </div>
 </nav>

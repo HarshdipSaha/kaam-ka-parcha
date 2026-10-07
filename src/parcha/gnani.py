@@ -54,6 +54,7 @@ class PrismaClient:
         mode: Literal["transcribe", "verbatim"],
         bias: list[str] | None = None,
         score: float = 1.0,
+        language_code: str = "hi-IN",
     ) -> str:
         words = bias or []
         if words and mode != "verbatim":
@@ -64,7 +65,7 @@ class PrismaClient:
             raise ValueError("bias_list must contain at most 100 single words")
         if score not in {0.0, 0.5, 1.0, 1.5, 2.0}:
             raise ValueError("unsupported bias_score")
-        data = {"language_code": "hi-IN", "format": mode}
+        data = {"language_code": language_code, "format": mode}
         if words:
             data.update(
                 bias_list=json.dumps(words, ensure_ascii=False),
@@ -94,8 +95,9 @@ class PrismaClient:
         mode: Literal["transcribe", "verbatim"] = "transcribe",
         bias: list[str] | None = None,
         score: float = 1.0,
+        language_code: str = "hi-IN",
     ) -> tuple[str, float]:
-        transcript = self.transcribe(wav, mode=mode, bias=bias, score=score)
+        transcript = self.transcribe(wav, mode=mode, bias=bias, score=score, language_code=language_code)
         return transcript, getattr(self, "last_confidence", 1.0)
 
 
@@ -114,14 +116,14 @@ class TimbreClient:
     def __repr__(self) -> str:
         return f"<TimbreClient voice={self.voice!r} base_url={self.base_url!r}>"
 
-    def synthesize(self, text: str) -> bytes:
+    def synthesize(self, text: str, *, language: str = "hi-IN", voice: str | None = None) -> bytes:
         if not text.strip():
             raise ValueError("TTS text is empty")
         body = {
             "text": text,
-            "voice": self.voice,
+            "voice": voice or self.voice,
             "model": "timbre-v2.5",
-            "language": "hi-IN",
+            "language": language,
             "speed": 1.0,
             "audio_config": {
                 "sample_rate": 8000,

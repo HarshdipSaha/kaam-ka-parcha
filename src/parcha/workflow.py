@@ -12,12 +12,13 @@ import unicodedata
 from .audio import codec_round_trip, mix_at_snr, mulaw_to_wav, normalize_upload
 from .extract import Extractor
 from .gnani import GnaniError, PrismaClient, TimbreClient
-from .money import AbstainReason, AmountDecision, decide_amounts, settle_card_amounts
+from .money import AbstainReason, AmountDecision, confusable_amount, decide_amounts, settle_card_amounts, spoken_item_order
 from .numerals import parse_amounts
 from .schema import Evidence, JobCard, LineItem, TranscriptLog
 from .session import Conflict, Session, SessionStore
 from .vocabulary import AUTOMOTIVE_BIAS_WORDS
 
+SMALL_AMOUNT_PAISE = 10_000   # ₹100
 REASK_FIELD_PATTERN = re.compile(r"^items\.[a-z]+-[0-9]+\.(label|amount_paise)$")
 
 
@@ -29,6 +30,10 @@ class RepeatRequest(RuntimeError):
         self.reason = reason
 
 
+class NothingToConfirm(ValueError):
+    """Every amount on the card is already settled; there is nothing for a whole-estimate repeat to do."""
+
+
 def provider_reason(exc: GnaniError) -> AbstainReason | None:
     return {504: "provider_504", 429: "provider_429"}.get(exc.status)
 
@@ -37,6 +42,7 @@ def abstain_logs(abstentions: dict[str, AbstainReason], when: datetime) -> tuple
     return tuple(TranscriptLog(role="system", mode=f"abstain:{field}", text=reason, recorded_at_utc=when)
                  for field, reason in sorted(abstentions.items()))
 
+from .languages import DEFAULT_LANGUAGE, pack_for
 from .readback import (
     DATE_WORDS,
     NO,
@@ -98,6 +104,7 @@ class Workflow:
         target_snr_db: float | None = None,
         noise_wav: bytes | None = None,
         noise_source: str = "synthetic",
+        language_voices: dict[str, str] | None = None,
     ):
         self.store = store
         self.prisma = prisma
@@ -110,6 +117,7 @@ class Workflow:
         self.target_snr_db = target_snr_db
         self.noise_wav = noise_wav
         self.noise_source = noise_source if noise_wav else "none"
+        self.language_voices = dict(language_voices or {})
 
     def intake(
         self,
@@ -172,7 +180,8 @@ class Workflow:
         """A flagged amount is settled only when two consecutive recordings agree.
 
         The candidate is what the previous recording heard (kept as zero-score evidence). A recording with no
-        candidate, or one that differs from it, becomes the new candidate instead of the amount.
+        candidate, or one that differs from it, becomes the new candidate instead of the amount. An amount with
+        look-alike number words (see `money.confusable_amount`) needs a third agreeing recording.
         """
         item_id = field.split(".")[1]
         if decision.reason is not None or any(
@@ -185,6 +194,13 @@ class Workflow:
             return AmountDecision(None, "independent_confirmation_required", decision.quote)
         if heard[0] != decision.paise:
             return AmountDecision(None, "recordings_disagree", decision.quote)
+        if confusable_amount(decision.quote) or decision.paise < SMALL_AMOUNT_PAISE:
+            # Look-alike number words can fool two recordings the same way, and so can a lost tail: "तेरह सौ" and "तेईस सौ"
+            # heard twice as "तेरह" / "तेईस" (₹13, ₹23) at 0 dB. A repair line under ₹100 is rare, so it also gets a
+            # third look. Settle only on a third agreeing recording, i.e. when the previous recording ended in this state.
+            last = next((log.text for log in reversed(session.logs) if log.mode == f"abstain:{field}"), None)
+            if last != "confusable_needs_third":
+                return AmountDecision(None, "confusable_needs_third", decision.quote)
         return decision
 
     def _reask_amount(
@@ -241,6 +257,81 @@ class Workflow:
             card=new_card,
             logs=logs,
         )
+
+    def confirm_estimate(
+        self,
+        session_id: str,
+        blob: bytes,
+        mime: str,
+        *,
+        expected_revision: int,
+        recorded_at_utc: datetime | None = None,
+    ) -> Session:
+        """One repeat of the whole estimate settles every flagged amount whose value both recordings agree on.
+
+        Same two-recording rule as a per-amount re-ask, applied per item in spoken order. Settled items are
+        left untouched; a flagged item that disagrees (or has no candidate yet) stays flagged and keeps what
+        this recording heard as its new candidate.
+        """
+        session = self.store.get(session_id)
+        if session.card is None:
+            raise ValueError("cannot confirm estimate on session without card")
+        if session.status == "confirmed":
+            raise Conflict("confirmed session is immutable")
+        if session.revision != expected_revision:
+            raise Conflict(f"stale revision: expected {expected_revision}, current {session.revision}")
+        card = session.card
+        flagged = [it.id for it in card.items if it.amount_paise is None]
+        if not flagged:
+            raise NothingToConfirm("no flagged amount to confirm")
+
+        recorded_at_utc = recorded_at_utc or datetime.now(timezone.utc)
+        if recorded_at_utc.tzinfo is None:
+            recorded_at_utc = recorded_at_utc.replace(tzinfo=timezone.utc)
+        wav = self.normalize_audio(blob, mime)
+        audio_sha256 = hashlib.sha256(wav).hexdigest()
+
+        by_id: dict[str, AmountDecision] = {}
+        log_text = ""
+        try:
+            normalized, verbatim = self._two_passes(wav)
+            if not normalized.strip() and not verbatim.strip():
+                raise RepeatRequest("empty_transcript")
+        except RepeatRequest as exc:
+            by_id = {item_id: AmountDecision(None, exc.reason, "") for item_id in flagged}
+        else:
+            log_text = verbatim
+            order = spoken_item_order(card, [t for t in (normalized, verbatim) if t]) or [it.id for it in card.items]
+            decisions = decide_amounts(verbatim, normalized, expected_count=len(card.items))
+            for item_id, decision in zip(order, decisions):
+                if item_id in flagged:
+                    by_id[item_id] = self._require_agreeing_recordings(
+                        session, f"items.{item_id}.amount_paise", decision
+                    )
+
+        items = tuple(
+            LineItem(id=it.id, label=it.label, kind=it.kind,
+                     amount_paise=by_id[it.id].paise if it.id in by_id else it.amount_paise)
+            for it in card.items
+        )
+        evidence = list(card.evidence)
+        abstentions: dict[str, AbstainReason] = {}
+        for item_id, decision in by_id.items():
+            field = f"items.{item_id}.amount_paise"
+            if decision.reason is None:
+                evidence = [ev for ev in evidence if ev.field != field]
+                evidence.append(Evidence(field=field, quote=decision.quote, review_score=1.0))
+            else:
+                abstentions[field] = decision.reason
+                if decision.quote.strip():
+                    evidence = [ev for ev in evidence if ev.field != field]
+                    evidence.append(Evidence(field=field, quote=decision.quote, review_score=0.0))
+        logs = (
+            TranscriptLog(role="mechanic", mode="confirm_estimate", text=log_text,
+                          recorded_at_utc=recorded_at_utc, audio_sha256=audio_sha256),
+        ) + abstain_logs(abstentions, recorded_at_utc)
+        new_card = JobCard(items=items, delivery=card.delivery, evidence=tuple(evidence))
+        return self.store.set_card(session_id, expected_revision=expected_revision, card=new_card, logs=logs)
 
     def reask(
         self,
@@ -315,17 +406,23 @@ class Workflow:
         recorded_at_utc: datetime | None = None,
         *,
         include_consent: bool = True,
+        language: str | None = None,
     ) -> Readback:
         session = self.store.get(session_id)
         if session.card is None or session.card.needs_review:
             raise Conflict("card needs review")
 
-        text = make_readback(session.card, include_consent=include_consent)
+        pack = pack_for(language)          # None: Hindi, the original path
+        text = make_readback(session.card, include_consent=include_consent, language=language)
 
         if not self.timbre:
             raise ValueError("Timbre client required for readback")
 
-        raw_mulaw = self.timbre.synthesize(text)
+        if pack is None:
+            raw_mulaw = self.timbre.synthesize(text)
+        else:
+            voice = self.language_voices.get(pack.code, pack.voices[0])
+            raw_mulaw = self.timbre.synthesize(text, language=pack.code, voice=voice)
         wav = mulaw_to_wav(raw_mulaw)
 
         if self.noise_wav and self.target_snr_db is not None:
@@ -360,6 +457,14 @@ class Workflow:
         updated_session = self.store.start_readback(
             session_id, expected_revision=expected_revision, log=log
         )
+        if pack is not None:
+            # The reply is recognised and classified in the language that was read back; the audit trail records it.
+            updated_session = self.store.record_observation(
+                session_id,
+                expected_revision=updated_session.revision,
+                readback_revision=updated_session.readback_revision,
+                log=TranscriptLog(role="system", mode="readback_language", text=pack.code, recorded_at_utc=rec_time),
+            )
 
         return Readback(
             text=text,
@@ -398,11 +503,13 @@ class Workflow:
             wav, _ = mix_at_snr(wav, self.noise_wav, self.target_snr_db)
             wav = codec_round_trip(wav, self.codec)
 
+        language = next((log.text for log in reversed(session.logs) if log.mode == "readback_language"), DEFAULT_LANGUAGE)
+        stt_options = {} if language == DEFAULT_LANGUAGE else {"language_code": language}
         confidence = 1.0
         if hasattr(self.prisma, "transcribe_detailed"):
-            transcript, confidence = self.prisma.transcribe_detailed(wav, mode="transcribe")
+            transcript, confidence = self.prisma.transcribe_detailed(wav, mode="transcribe", **stt_options)
         else:
-            transcript = self.prisma.transcribe(wav, mode="transcribe")
+            transcript = self.prisma.transcribe(wav, mode="transcribe", **stt_options)
             if hasattr(self.prisma, "confidence"):
                 confidence = float(self.prisma.confidence)
             elif hasattr(self.prisma, "last_confidence"):
@@ -457,7 +564,7 @@ class Workflow:
                 },
             )
 
-        classification = classify_reply(transcript)
+        classification = classify_reply(transcript, None if language == DEFAULT_LANGUAGE else language)
 
         if classification == "accept":
             updated_session = self.store.confirm(

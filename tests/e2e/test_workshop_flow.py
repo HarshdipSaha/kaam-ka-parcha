@@ -144,3 +144,41 @@ def test_customer_approval_stamps_the_mechanics_slip(page, world):
     expect(page.locator("#message")).to_contain_text("ग्राहक ने मंज़ूर किया")
     expect(page.locator('#stepper li[data-step="manzoor"]')).to_have_attribute("data-state", "done")
     page.screenshot(path=str(SCREENS / "workshop-sealed-360.png"), full_page=True)
+
+
+def test_mechanic_picks_a_tamil_read_back_and_the_customer_confirms_in_tamil(page, world):
+    page.goto("/workshop")
+    speak(page, "#record", "#stop")
+    expect(page.locator("#slip")).to_be_visible(timeout=15000)
+    confirm_amounts_in_ui(page, world)
+    expect(page.locator("#language-field")).to_be_visible()
+    page.select_option("#readback-language", "ta-IN")
+    page.locator("#start-readback").click()
+    expect(page.locator("#message")).to_contain_text("लिंक", timeout=15000)
+    assert world.services.timbre.languages[-1] == "ta-IN"
+    sid = page.evaluate("() => new URL(window.location).searchParams.get('session_id')")
+    session = world.services.store.get(sid)
+    world.prisma.say("ஆமா சரி")
+    reply = reply_by_api(world.url, {"id": sid, "revision": session.revision, "readback_revision": session.readback_revision})
+    assert reply["outcome"] == "confirmed" and world.prisma.languages[-1] == "ta-IN"
+def test_one_whole_estimate_repeat_settles_every_flagged_amount(page, world):
+    dictate(page)
+    button = page.locator("#confirm-estimate")
+    expect(button).to_be_visible()
+    expect(page.locator('[data-item="part-1"]')).to_contain_text("2 में से 1 बार सुनी")
+    speak(page, button, "#stop")          # StagePrisma replays the intake words: both amounts agree
+    expect(page.locator('[data-item="part-1"] .row__amount')).to_have_text("₹450", timeout=15000)
+    expect(page.locator('[data-item="labour-1"] .row__amount')).to_have_text("₹200", timeout=15000)
+    expect(page.locator("#total-cell")).to_have_text("₹650")
+    expect(page.locator("#confirm-estimate")).to_have_count(0)
+    expect(page.locator("#start-readback")).to_be_enabled()
+def test_live_captions_appear_while_speaking_and_never_become_amounts(page, world):
+    world.prisma.script_intake(transcribe=INTAKE_T, verbatim=INCOMPLETE_V)
+    page.goto("/workshop")
+    speak(page, "#record", "#stop", seconds=1.5)
+    expect(page.locator("#slip")).to_be_visible(timeout=15000)
+    expect(page.locator("#captions")).to_be_visible(timeout=10000)
+    expect(page.locator("#captions-text")).to_contain_text("front brake pad paanch sau")
+    # the caption said "paanch sau" but amounts come only from the finished recording's two REST passes
+    expect(page.locator('[data-item="part-1"] .row__amount')).not_to_contain_text("₹500")
+    expect(page.locator("#total-cell")).to_have_text("Incomplete", use_inner_text=True)
