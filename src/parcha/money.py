@@ -9,11 +9,28 @@ from typing import Literal
 from .numerals import MAX_ITEM_PAISE, parse_amounts
 from .schema import Evidence, JobCard, LineItem
 
-__all__ = ["AbstainReason", "AmountDecision", "decide_amounts", "settle_card_amounts", "spoken_item_order"]
+__all__ = ["AbstainReason", "AmountDecision", "confusable_amount", "decide_amounts", "settle_card_amounts",
+           "spoken_item_order"]
 
 AbstainReason = Literal["incomplete_number", "crosscheck_disagreement", "empty_transcript",
                         "provider_504", "provider_429", "ambiguous_attachment", "out_of_range",
-                        "independent_confirmation_required", "recordings_disagree"]
+                        "independent_confirmation_required", "recordings_disagree", "confusable_needs_third"]
+
+# Number words a noisy line turns into a different number while both recordings agree: इकतीस/इक्कीस, तैंतालीस/पैंतालीस,
+# अस्सी/अड़तीस, and the teens (तेरह..उन्नीस) that lose their tail next to their -ty twins. Observed at 0 dB: इकतीस हज़ार
+# heard twice as इक्कीस हज़ार, and तेरह सौ heard twice as तेरह. The -ty twins (तीस, चालीस, पचास, साठ, सत्तर, नब्बे) are
+# not flagged themselves: on the benchmark they are in most everyday amounts, so flagging them would add a recording
+# to nearly every estimate. That leaves a residual risk (e.g. पंद्रह heard as पचास) recorded in docs/gates.md.
+CONFUSABLE_WORDS = frozenset({
+    "इकतीस", "इक्कीस", "तैंतालीस", "तैंतालिस", "पैंतालीस", "पैंतालिस", "अस्सी", "अडतीस",
+    "तेरह", "चौदह", "पंद्रह", "पन्द्रह", "सोलह", "सत्रह", "अठारह", "उन्नीस",
+})
+
+
+def confusable_amount(quote: str) -> bool:
+    """True when the spoken amount contains a number word that look-alikes make unsafe to settle on two recordings."""
+    folded = unicodedata.normalize("NFKC", quote).replace("़", "")   # drop the nukta, so अड़तीस == अडतीस
+    return any(word in CONFUSABLE_WORDS for word in re.findall(r"[ऀ-ॿ]+", folded))
 
 
 @dataclass(frozen=True)

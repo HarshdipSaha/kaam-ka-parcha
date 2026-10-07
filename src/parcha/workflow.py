@@ -12,7 +12,7 @@ import unicodedata
 from .audio import codec_round_trip, mix_at_snr, mulaw_to_wav, normalize_upload
 from .extract import Extractor
 from .gnani import GnaniError, PrismaClient, TimbreClient
-from .money import AbstainReason, AmountDecision, decide_amounts, settle_card_amounts
+from .money import AbstainReason, AmountDecision, confusable_amount, decide_amounts, settle_card_amounts
 from .numerals import parse_amounts
 from .schema import Evidence, JobCard, LineItem, TranscriptLog
 from .session import Conflict, Session, SessionStore
@@ -172,7 +172,8 @@ class Workflow:
         """A flagged amount is settled only when two consecutive recordings agree.
 
         The candidate is what the previous recording heard (kept as zero-score evidence). A recording with no
-        candidate, or one that differs from it, becomes the new candidate instead of the amount.
+        candidate, or one that differs from it, becomes the new candidate instead of the amount. An amount with
+        look-alike number words (see `money.confusable_amount`) needs a third agreeing recording.
         """
         item_id = field.split(".")[1]
         if decision.reason is not None or any(
@@ -185,6 +186,12 @@ class Workflow:
             return AmountDecision(None, "independent_confirmation_required", decision.quote)
         if heard[0] != decision.paise:
             return AmountDecision(None, "recordings_disagree", decision.quote)
+        if confusable_amount(decision.quote):
+            # Look-alike number words can fool two recordings the same way, so the pair is not enough: settle only
+            # on a third agreeing recording, i.e. when the previous recording already ended in this same state.
+            last = next((log.text for log in reversed(session.logs) if log.mode == f"abstain:{field}"), None)
+            if last != "confusable_needs_third":
+                return AmountDecision(None, "confusable_needs_third", decision.quote)
         return decision
 
     def _reask_amount(

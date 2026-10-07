@@ -14,7 +14,7 @@ from random import Random
 from typing import Iterable, Mapping
 
 from parcha.lab.money_eval import wilson_upper
-from parcha.money import decide_amounts
+from parcha.money import confusable_amount, decide_amounts
 from parcha.numerals import render_colloquial_amount
 
 SEED = 20261007
@@ -107,7 +107,8 @@ def rescore(rows: Iterable[Mapping]) -> list[dict]:
 def paired_outcomes(rows: Iterable[Mapping]) -> dict[str, dict]:
     """Two-recordings rule: one voice is the earlier candidate, the other the re-ask (both directions).
 
-    A pair settles only when both recordings are accepted by `decide_amounts` and agree. Wrong settles are the
+    A pair settles only when both recordings are accepted by `decide_amounts`, agree, and carry no look-alike number
+    word (those need a third recording, counted as `needs_third`). Wrong settles are the
     failures that matter: two independent recordings agreeing on the same wrong amount.
     """
     by_key: dict[tuple, dict] = {}
@@ -123,7 +124,10 @@ def paired_outcomes(rows: Iterable[Mapping]) -> dict[str, dict]:
                 continue
             ok1, ok2 = first["paise"] is not None, second["paise"] is not None
             if ok1 and ok2 and first["paise"] == second["paise"]:
-                outcome = "settled" if first["paise"] == first["expected_paise"] else "settled_wrong"
+                if confusable_amount(first.get("verbatim", "")) or confusable_amount(second.get("verbatim", "")):
+                    outcome = "needs_third"          # look-alike number words: the product asks for a third recording
+                else:
+                    outcome = "settled" if first["paise"] == first["expected_paise"] else "settled_wrong"
             else:
                 outcome = "needs_another"
             for key in (condition, "ALL"):
@@ -134,5 +138,5 @@ def paired_outcomes(rows: Iterable[Mapping]) -> dict[str, dict]:
         result[key] = {"pairs": n, "settled": counts["settled"], "settled_rate": counts["settled"] / n,
                        "settled_wrong": counts["settled_wrong"],
                        "settled_wrong_upper95": wilson_upper(counts["settled_wrong"], n),
-                       "needs_another": counts["needs_another"]}
+                       "needs_another": counts["needs_another"], "needs_third": counts["needs_third"]}
     return result
