@@ -144,3 +144,15 @@ def test_customer_approval_stamps_the_mechanics_slip(page, world):
     expect(page.locator("#message")).to_contain_text("ग्राहक ने मंज़ूर किया")
     expect(page.locator('#stepper li[data-step="manzoor"]')).to_have_attribute("data-state", "done")
     page.screenshot(path=str(SCREENS / "workshop-sealed-360.png"), full_page=True)
+
+
+def test_live_captions_appear_while_speaking_and_never_become_amounts(page, world):
+    world.prisma.script_intake(transcribe=INTAKE_T, verbatim=INCOMPLETE_V)
+    page.goto("/workshop")
+    speak(page, "#record", "#stop", seconds=1.5)
+    expect(page.locator("#slip")).to_be_visible(timeout=15000)
+    expect(page.locator("#captions")).to_be_visible(timeout=10000)
+    expect(page.locator("#captions-text")).to_contain_text("front brake pad paanch sau")
+    # the caption said "paanch sau" but amounts come only from the finished recording's two REST passes
+    expect(page.locator('[data-item="part-1"] .row__amount')).not_to_contain_text("₹500")
+    expect(page.locator("#total-cell")).to_have_text("Incomplete", use_inner_text=True)
