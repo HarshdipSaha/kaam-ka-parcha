@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .config import Settings
+from .languages import supported_codes
 from .session import Conflict, SessionStore
 from .workflow import RepeatRequest, Workflow
 from .audio import AudioError, normalize_upload
@@ -286,12 +287,15 @@ def create_app(services: AppServices | None = None) -> FastAPI:
     async def start_readback(
         session_id: str,
         expected_revision: int = Form(...),
+        language: str = Form("hi-IN"),
     ):
+        if language not in supported_codes():
+            raise HTTPException(422, "unsupported read-back language")
         if not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
             raise HTTPException(404, "unknown session")
 
         try:
-            readback = services.workflow.start_readback(session_id, expected_revision)
+            readback = services.workflow.start_readback(session_id, expected_revision, language=language)
             base_dir = Path("var/sessions").resolve()
             wav_path = (base_dir / session_id / f"{readback.revision}.wav").resolve()
             if not wav_path.is_relative_to(base_dir):

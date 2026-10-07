@@ -94,6 +94,12 @@ Captured from a **live run** (`scripts/capture_live_screens.py`): real Gnani Pri
 
 ---
 
+## Regional Read-Back (Preview)
+
+The mechanic can pick the customer's language (Tamil, Bengali or Kannada; Hindi stays the default) before tapping "Read to customer". The read-back is built from fixed per-language strings (`src/parcha/languages.py`) with digit amounts, spoken by a Timbre voice for that language; the customer's reply is recognised and classified in the same language, and only a clear yes confirms (any negation is a reject). The chosen language is recorded in the audit log. **These strings were drafted without a native-speaker review and are labelled "preview" until the owner has one done.** Measured echo pass rates per language and voice are in [`docs/gates.md`](docs/gates.md) once the live run is recorded (synthetic speech).
+
+---
+
 ## Technical Moat: Line Noise Lab
 
 Rather than relying on best-case clean audio demos, Kaam Ka Parcha includes a dedicated evaluation harness (`parcha.lab`) benchmarking speech robustness under brutal telephony conditions:
