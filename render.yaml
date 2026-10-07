@@ -15,5 +15,16 @@ services:
         sync: false   # name of the model served by your OpenAI-compatible endpoint
       - key: EXTRACTOR_PROVIDER
         value: openai   # set to evon only when serving Gnani Evon v3.3
+      # Public-demo guards (src/parcha/guard.py); behind Render's proxy trust the appended client IP.
+      - key: TRUST_PROXY
+        value: "1"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "10"
+      - key: SESSIONS_PER_IP_PER_HOUR
+        value: "20"
+      - key: MAX_TOTAL_SESSIONS
+        value: "300"
+      - key: DEMO_ACCESS_CODE
+        sync: false   # optional; leave empty to keep the demo open
       - key: TTS_VOICE
         value: Vikrant

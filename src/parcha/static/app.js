@@ -68,6 +68,9 @@ function showError(target, err) {
     UI.say(target, UI.REPEAT_MESSAGE, "", "warn", UI.ABSTAIN_LABELS[err.reason] || "");
   } else if (err instanceof UI.HttpError && err.status === 409) {
     UI.stale(target);
+  } else if (err instanceof UI.HttpError && (err.status === 429 || err.status === 413)) {
+    const copy = err.status === 429 ? UI.COPY.tooMany : UI.COPY.tooLarge;
+    UI.say(target, copy.hi, copy.en, "warn");
   } else {
     UI.say(target, UI.COPY.failed.hi, UI.COPY.failed.en, "error", err && err.message);
   }

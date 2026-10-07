@@ -26,3 +26,18 @@ The image never contains `.env`; pass secrets at run time or in the platform das
 - Use a **new session** per run (reload `/stage`). The page discloses the simulated phone line; keep it visible.
 - Keep demo data synthetic: no real customer names, numbers or plates.
 - The extractor must be reachable from the host; `EXTRACTOR_BASE_URL=http://localhost:8080/v1` only works locally.
+
+## Abuse protection (public URL)
+A public URL lets anyone spend your Prisma/Timbre credits, so the app ships with guards (`src/parcha/guard.py`), all off
+locally and set in `render.yaml`:
+
+| Setting | Effect |
+|---|---|
+| `RATE_LIMIT_PER_MINUTE` | Per-client cap on session creation and every credit-spending POST (intake, re-ask, read-back, reply, fallback, consent); excess gets HTTP 429 with `Retry-After`, before any speech call. |
+| `SESSIONS_PER_IP_PER_HOUR` | Per-client cap on new sessions. |
+| `MAX_TOTAL_SESSIONS` | Hard cap on live sessions (oldest untouched draft is evicted; otherwise HTTP 503). |
+| `MAX_UPLOAD_BYTES` | Upload cap (default 8 MB, HTTP 413); audio over 60 s is also rejected by `normalize_upload`. |
+| `DEMO_ACCESS_CODE` | Optional. When set, everything except `/health` needs the code entered once at `/gate` (cookie). |
+| `TRUST_PROXY=1` | Behind a single trusted proxy, key limits by the rightmost `X-Forwarded-For` entry. |
+
+Unexpected server errors return a generic body; details are logged server-side only.

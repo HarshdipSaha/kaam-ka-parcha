@@ -24,6 +24,13 @@ def resolve_project_path(value: str | Path) -> Path:
 
 
 
+def _int(raw: str | None, default: int) -> int:
+    try:
+        return max(0, int((raw or "").strip()))
+    except ValueError:
+        return default
+
+
 @dataclass(frozen=True)
 class Settings:
     api_key: str = field(default="", repr=False)
@@ -38,6 +45,13 @@ class Settings:
     telephony_codec: str = "g711"
     telephony_target_snr_db: float = 5.0
     telephony_noise_path: Path = DEFAULT_TELEPHONY_NOISE_PATH
+    # Public-demo guards (0 / empty = off, the local default); see src/parcha/guard.py.
+    rate_limit_per_minute: int = 0
+    sessions_per_ip_per_hour: int = 0
+    max_total_sessions: int = 0
+    max_upload_bytes: int = 8 * 1024 * 1024
+    demo_access_code: str = field(default="", repr=False)
+    trust_proxy: bool = False
 
     @classmethod
     def from_mapping(cls, values: Mapping[str, str | None]) -> "Settings":
@@ -56,6 +70,12 @@ class Settings:
             use_automotive_bias=(values.get("USE_AUTOMOTIVE_BIAS") or "true").strip().casefold() not in {"0", "false", "no", "off"},
             telephony_codec=(values.get("TELEPHONY_CODEC") or "").strip() or "g711",
             telephony_target_snr_db=float((values.get("TELEPHONY_TARGET_SNR_DB") or "5.0").strip()),
+            rate_limit_per_minute=_int(values.get("RATE_LIMIT_PER_MINUTE"), 0),
+            sessions_per_ip_per_hour=_int(values.get("SESSIONS_PER_IP_PER_HOUR"), 0),
+            max_total_sessions=_int(values.get("MAX_TOTAL_SESSIONS"), 0),
+            max_upload_bytes=_int(values.get("MAX_UPLOAD_BYTES"), 8 * 1024 * 1024),
+            demo_access_code=(values.get("DEMO_ACCESS_CODE") or "").strip(),
+            trust_proxy=(values.get("TRUST_PROXY") or "").strip().casefold() in {"1", "true", "yes", "on"},
             telephony_noise_path=resolve_project_path(
                 (values.get("TELEPHONY_NOISE_PATH") or "").strip()
                 or DEFAULT_TELEPHONY_NOISE_PATH
