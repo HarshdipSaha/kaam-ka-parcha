@@ -14,7 +14,7 @@ from .captions import relay_captions
 from .config import Settings
 from .guard import ACCESS_COOKIE, SlidingWindow, access_ok, access_token, client_ip, is_guarded
 from .session import CapacityError, Conflict, SessionStore
-from .workflow import RepeatRequest, Workflow
+from .workflow import NothingToConfirm, RepeatRequest, Workflow
 from .audio import AudioError, normalize_upload
 from .extract import ExtractionError, Extractor
 from .gnani import PrismaClient, TimbreClient, GnaniError
@@ -85,6 +85,15 @@ def abstention_reasons(session) -> dict[str, str]:
     return {field: reason for field, reason in reasons.items() if field in pending}
 
 
+def heard_once(session) -> list[str]:
+    """Flagged amounts for which one recording has already been heard (a candidate awaiting its second)."""
+    if not session.card:
+        return []
+    candidates = {ev.field for ev in session.card.evidence if ev.review_score == 0.0 and ev.quote.strip()}
+    return [f"items.{it.id}.amount_paise" for it in session.card.items
+            if it.amount_paise is None and f"items.{it.id}.amount_paise" in candidates]
+
+
 def json_safe(value):
     """Non-finite floats (SNR = inf when no noise is mixed) become None, so the body stays valid JSON."""
     if isinstance(value, float) and not math.isfinite(value):
@@ -109,6 +118,7 @@ def session_payload(session) -> dict:
         "total_paise": card.maybe_total_paise if card else None,
         "review_fields": review_fields(card) if card else [],
         "abstentions": abstention_reasons(session),
+        "heard_once": heard_once(session),
         "readback_revision": session.readback_revision,
         "parcha_no": parcha_no(session.id),
         "status_label": status_label(session.status),
@@ -395,6 +405,35 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             raise HTTPException(409, str(exc))
         except RepeatRequest as exc:
             raise HTTPException(422, {"repeat": True, "reason": exc.reason})
+        except (AudioError, ExtractionError) as exc:
+            raise HTTPException(422, str(exc))
+        except ValueError as exc:
+            raise HTTPException(503, str(exc))
+        except GnaniError as exc:
+            raise HTTPException(502, str(exc))
+
+    @app.post("/sessions/{session_id}/confirm-estimate")
+    async def confirm_estimate(
+        session_id: str,
+        expected_revision: int = Form(...),
+        audio: UploadFile = File(...),
+    ):
+        try:
+            blob = await audio.read()
+            if not blob:
+                raise AudioError("empty recording")
+            services.settings.require_gnani()
+            services.settings.require_extractor()
+            result = services.workflow.confirm_estimate(
+                session_id, blob, audio.content_type or "", expected_revision=expected_revision
+            )
+            return session_payload(result)
+        except KeyError:
+            raise HTTPException(404, "unknown session")
+        except Conflict as exc:
+            raise HTTPException(409, str(exc))
+        except NothingToConfirm as exc:
+            raise HTTPException(422, str(exc))
         except (AudioError, ExtractionError) as exc:
             raise HTTPException(422, str(exc))
         except ValueError as exc:

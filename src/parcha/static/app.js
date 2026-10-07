@@ -167,7 +167,7 @@ function renderSession(data) {
   $("review-section").hidden = flags.length === 0;
   $("review-count").replaceChildren(UI.el("span", { class: "hi" }, count.hi), UI.el("span", { class: "en" }, count.en));
   if (data.card) {
-    UI.renderSlip($("card"), data, { copy: "duplicate", flags: true, onReask: handleReask, stamp: stage === "manzoor" });
+    UI.renderSlip($("card"), data, { copy: "duplicate", flags: true, onReask: handleReask, onConfirmEstimate: handleConfirmEstimate, stamp: stage === "manzoor" });
   } else {
     $("card").replaceChildren(UI.emptyWorkshop());
   }
@@ -242,6 +242,9 @@ async function recordAndPost(startButton, url, name) {
 }
 function handleRecordEstimate() {
   return recordAndPost($("record"), (s) => `/sessions/${s.id}/intake`, "estimate");
+}
+function handleConfirmEstimate(button) {
+  return recordAndPost(button, (s) => `/sessions/${s.id}/confirm-estimate`, "confirm");
 }
 function handleReask(field, chip) {
   return recordAndPost(chip, (s) => `/sessions/${s.id}/reask/${field}`, "reask");
