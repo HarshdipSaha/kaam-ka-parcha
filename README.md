@@ -96,7 +96,7 @@ Captured from a **live run** (`scripts/capture_live_screens.py`): real Gnani Pri
 
 ## Regional Read-Back (Preview)
 
-The mechanic can pick the customer's language (Tamil, Bengali or Kannada; Hindi stays the default) before tapping "Read to customer". The read-back is built from fixed per-language strings (`src/parcha/languages.py`) with digit amounts, spoken by a Timbre voice for that language; the customer's reply is recognised and classified in the same language, and only a clear yes confirms (any negation is a reject). The chosen language is recorded in the audit log. **These strings were drafted without a native-speaker review and are labelled "preview" until the owner has one done.** Measured echo pass rates per language and voice are in [`docs/gates.md`](docs/gates.md) once the live run is recorded (synthetic speech).
+The mechanic can pick the customer's language (Tamil, Bengali or Kannada; Hindi stays the default) before tapping "Read to customer". The read-back is built from fixed per-language strings (`src/parcha/languages.py`) with digit amounts, spoken by a Timbre voice for that language; the customer's reply is recognised and classified in the same language, and only a clear yes confirms (any negation is a reject). The chosen language is recorded in the audit log. **These strings were drafted without a native-speaker review and are labelled "preview" until the owner has one done.** A small live echo probe (synthetic speech) is in [`docs/gates.md`](docs/gates.md): Bengali is measurable, Tamil and Kannada are not yet (Prisma mixes number words into its output), so voices are unmeasured.
 
 ---
 
