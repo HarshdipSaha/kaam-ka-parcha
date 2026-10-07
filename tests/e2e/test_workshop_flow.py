@@ -144,3 +144,16 @@ def test_customer_approval_stamps_the_mechanics_slip(page, world):
     expect(page.locator("#message")).to_contain_text("ग्राहक ने मंज़ूर किया")
     expect(page.locator('#stepper li[data-step="manzoor"]')).to_have_attribute("data-state", "done")
     page.screenshot(path=str(SCREENS / "workshop-sealed-360.png"), full_page=True)
+
+
+def test_one_whole_estimate_repeat_settles_every_flagged_amount(page, world):
+    dictate(page)
+    button = page.locator("#confirm-estimate")
+    expect(button).to_be_visible()
+    expect(page.locator('[data-item="part-1"]')).to_contain_text("2 में से 1 बार सुनी")
+    speak(page, button, "#stop")          # StagePrisma replays the intake words: both amounts agree
+    expect(page.locator('[data-item="part-1"] .row__amount')).to_have_text("₹450", timeout=15000)
+    expect(page.locator('[data-item="labour-1"] .row__amount')).to_have_text("₹200", timeout=15000)
+    expect(page.locator("#total-cell")).to_have_text("₹650")
+    expect(page.locator("#confirm-estimate")).to_have_count(0)
+    expect(page.locator("#start-readback")).to_be_enabled()

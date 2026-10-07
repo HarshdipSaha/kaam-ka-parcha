@@ -215,3 +215,5 @@ button, a, summary, label { cursor: pointer; }
 .slip:has(.stamp) .slip__delivery { padding-right: 116px; }
 [data-lang="en"] .verdict__title { font-size: 24px; }
 .topbar .langtoggle { margin-left: auto; }
+.reask--all { margin: .5rem 0; width: 100%; justify-content: center; }
+.row__heard-count { font-size: .8em; opacity: .75; }

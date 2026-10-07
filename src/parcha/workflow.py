@@ -12,7 +12,7 @@ import unicodedata
 from .audio import codec_round_trip, mix_at_snr, mulaw_to_wav, normalize_upload
 from .extract import Extractor
 from .gnani import GnaniError, PrismaClient, TimbreClient
-from .money import AbstainReason, AmountDecision, decide_amounts, settle_card_amounts
+from .money import AbstainReason, AmountDecision, decide_amounts, settle_card_amounts, spoken_item_order
 from .numerals import parse_amounts
 from .schema import Evidence, JobCard, LineItem, TranscriptLog
 from .session import Conflict, Session, SessionStore
@@ -27,6 +27,10 @@ class RepeatRequest(RuntimeError):
     def __init__(self, reason: AbstainReason):
         super().__init__(reason)
         self.reason = reason
+
+
+class NothingToConfirm(ValueError):
+    """Every amount on the card is already settled; there is nothing for a whole-estimate repeat to do."""
 
 
 def provider_reason(exc: GnaniError) -> AbstainReason | None:
@@ -241,6 +245,81 @@ class Workflow:
             card=new_card,
             logs=logs,
         )
+
+    def confirm_estimate(
+        self,
+        session_id: str,
+        blob: bytes,
+        mime: str,
+        *,
+        expected_revision: int,
+        recorded_at_utc: datetime | None = None,
+    ) -> Session:
+        """One repeat of the whole estimate settles every flagged amount whose value both recordings agree on.
+
+        Same two-recording rule as a per-amount re-ask, applied per item in spoken order. Settled items are
+        left untouched; a flagged item that disagrees (or has no candidate yet) stays flagged and keeps what
+        this recording heard as its new candidate.
+        """
+        session = self.store.get(session_id)
+        if session.card is None:
+            raise ValueError("cannot confirm estimate on session without card")
+        if session.status == "confirmed":
+            raise Conflict("confirmed session is immutable")
+        if session.revision != expected_revision:
+            raise Conflict(f"stale revision: expected {expected_revision}, current {session.revision}")
+        card = session.card
+        flagged = [it.id for it in card.items if it.amount_paise is None]
+        if not flagged:
+            raise NothingToConfirm("no flagged amount to confirm")
+
+        recorded_at_utc = recorded_at_utc or datetime.now(timezone.utc)
+        if recorded_at_utc.tzinfo is None:
+            recorded_at_utc = recorded_at_utc.replace(tzinfo=timezone.utc)
+        wav = self.normalize_audio(blob, mime)
+        audio_sha256 = hashlib.sha256(wav).hexdigest()
+
+        by_id: dict[str, AmountDecision] = {}
+        log_text = ""
+        try:
+            normalized, verbatim = self._two_passes(wav)
+            if not normalized.strip() and not verbatim.strip():
+                raise RepeatRequest("empty_transcript")
+        except RepeatRequest as exc:
+            by_id = {item_id: AmountDecision(None, exc.reason, "") for item_id in flagged}
+        else:
+            log_text = verbatim
+            order = spoken_item_order(card, [t for t in (normalized, verbatim) if t]) or [it.id for it in card.items]
+            decisions = decide_amounts(verbatim, normalized, expected_count=len(card.items))
+            for item_id, decision in zip(order, decisions):
+                if item_id in flagged:
+                    by_id[item_id] = self._require_agreeing_recordings(
+                        session, f"items.{item_id}.amount_paise", decision
+                    )
+
+        items = tuple(
+            LineItem(id=it.id, label=it.label, kind=it.kind,
+                     amount_paise=by_id[it.id].paise if it.id in by_id else it.amount_paise)
+            for it in card.items
+        )
+        evidence = list(card.evidence)
+        abstentions: dict[str, AbstainReason] = {}
+        for item_id, decision in by_id.items():
+            field = f"items.{item_id}.amount_paise"
+            if decision.reason is None:
+                evidence = [ev for ev in evidence if ev.field != field]
+                evidence.append(Evidence(field=field, quote=decision.quote, review_score=1.0))
+            else:
+                abstentions[field] = decision.reason
+                if decision.quote.strip():
+                    evidence = [ev for ev in evidence if ev.field != field]
+                    evidence.append(Evidence(field=field, quote=decision.quote, review_score=0.0))
+        logs = (
+            TranscriptLog(role="mechanic", mode="confirm_estimate", text=log_text,
+                          recorded_at_utc=recorded_at_utc, audio_sha256=audio_sha256),
+        ) + abstain_logs(abstentions, recorded_at_utc)
+        new_card = JobCard(items=items, delivery=card.delivery, evidence=tuple(evidence))
+        return self.store.set_card(session_id, expected_revision=expected_revision, card=new_card, logs=logs)
 
     def reask(
         self,

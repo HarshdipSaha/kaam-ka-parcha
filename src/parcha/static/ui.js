@@ -5,6 +5,8 @@
     listening: { hi: "सुन रहा हूँ", en: "Listening — tap to stop" },
     processing: { hi: "समझ रहे हैं…", en: "Understanding…" },
     reask: { hi: "दोबारा बोलें", en: "Say again" },
+    confirmAll: { hi: "पूरा पर्चा दोबारा बोलें", en: "Say the whole estimate again" },
+    heardOnce: { hi: "2 में से 1 बार सुनी", en: "1 of 2 heard" },
     deliveryQ: { hi: "गाड़ी कब मिलेगी?", en: "When will the vehicle be ready?" },
     ready: { hi: "पर्चा तैयार है — नीचे “ग्राहक को सुनाएँ” दबाइए।", en: "The parcha is ready — tap “Read to customer”." },
     checkRows: { hi: "पीली लाइन पर “दोबारा बोलें” दबाकर ठीक कीजिए।", en: "Fix each yellow row with “Say again”." },
@@ -195,11 +197,21 @@
       reason ? el("span", { class: "abstain-reason" }, both(ABSTAIN_LABELS[reason] || reason, ABSTAIN_EN[reason] || reason)) : null,
       chip);
   }
+  // One recording for every flagged amount; shown only while an amount is flagged (the per-row buttons stay).
+  function confirmAllButton(session, opts) {
+    const pending = (session.review_fields || []).some((f) => f.endsWith(".amount_paise"));
+    if (!opts.flags || !opts.onConfirmEstimate || !pending) return null;
+    const button = el("button", { class: "reask reask--all", type: "button", id: "confirm-estimate", "aria-label": `${COPY.confirmAll.hi} — ${COPY.confirmAll.en}` },
+      icon("mic"), el("span", {}, both(COPY.confirmAll.hi, COPY.confirmAll.en)));
+    button.addEventListener("click", () => opts.onConfirmEstimate(button));
+    return button;
+  }
   function renderSlip(target, session, opts = {}) {
     if (!target) return;
     const card = session.card || { items: [], evidence: [] };
     const flags = new Set(opts.flags ? session.review_fields || [] : []);
     const reasons = session.abstentions || {};
+    const heardOnce = new Set(session.heard_once || []);
     const changes = opts.previous ? diffItems(opts.previous, card) : new Map();
     const rows = (card.items || []).map((item) => {
       const amountField = `items.${item.id}.amount_paise`;
@@ -217,7 +229,11 @@
         el("div", { class: "row__amount" },
           change && change.amountFrom !== undefined ? el("s", { class: "row__was" }, formatRupees(change.amountFrom)) : null,
           formatRupees(item.amount_paise)));
-      flagged.forEach((field) => row.append(askBlock(field, card, reasons[field], opts.onReask)));
+      flagged.forEach((field) => {
+        const block = askBlock(field, card, reasons[field], opts.onReask);
+        if (heardOnce.has(field)) block.insertBefore(el("span", { class: "row__heard-count" }, both(COPY.heardOnce.hi, COPY.heardOnce.en)), block.lastChild);
+        row.append(block);
+      });
       return row;
     });
     if (!rows.length) rows.push(el("li", { class: "row row--empty" }, el("span", { class: "hi" }, "अभी कोई चीज़ नहीं"), el("span", { class: "en" }, "No items yet")));
@@ -231,6 +247,7 @@
       el("header", { class: "slip__head" },
         el("div", { class: "slip__title" }, el("span", { class: "hi" }, "काम का पर्चा"), el("span", { class: "en" }, "Job estimate")),
         el("div", { class: "slip__serial" }, "№ ", el("span", { id: "parcha-no" }, session.parcha_no || ""))),
+      confirmAllButton(session, opts),
       el("ol", { class: "slip__rows", id: "items-tbody" }, rows),
       el("div", { class: "slip__total" },
         el("span", { class: "slip__total-k" }, el("span", { class: "hi" }, "कुल"), el("span", { class: "en" }, "Total")),
