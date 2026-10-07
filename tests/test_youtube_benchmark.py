@@ -4,21 +4,34 @@ import pytest
 from pydantic import ValidationError
 
 from parcha.schema import JobCard, LineItem, Evidence
-from scripts.benchmark_youtube_samples import BENCHMARK_CASES
+from scripts.benchmark_youtube_samples import load_cases
+
+# Synthetic stand-ins: real third-party video metadata is never committed.
+BENCHMARK_CASES = [
+    {
+        "id": "YT-MECH-001",
+        "expected_items": [
+            {"id": "part-1", "label": "Synthetic Part A", "kind": "part", "amount_paise": 378500, "quote": "synthetic quote a"},
+            {"id": "part-2", "label": "Synthetic Part B", "kind": "part", "amount_paise": None, "quote": "synthetic quote b"},
+            {"id": "labour-1", "label": "Synthetic Labour", "kind": "labour", "amount_paise": 35000, "quote": "synthetic quote c"},
+        ],
+    },
+    {
+        "id": "YT-MECH-002",
+        "expected_items": [
+            {"id": "part-1", "label": "Synthetic Part C", "kind": "part", "amount_paise": 120000},
+            {"id": "labour-1", "label": "Synthetic Labour", "kind": "labour", "amount_paise": 50000},
+        ],
+    },
+]
 
 
-def test_youtube_benchmark_cases_structure_and_counts():
-    assert len(BENCHMARK_CASES) == 5
-    for case in BENCHMARK_CASES:
-        assert case["id"].startswith("YT-MECH-")
-        assert case["video_id"]
-        assert case["url"].startswith("https://www.youtube.com/watch?v=")
-        assert case["duration_seconds"] > 60
-        assert case["vehicle"]
-        assert case["spoken_context"]
-        assert len(case["expected_items"]) >= 2
-        assert case["dispute_scenario"]
-        assert case["resolution_path"]
+def test_load_cases_requires_local_manifest(tmp_path):
+    with pytest.raises(SystemExit):
+        load_cases(tmp_path / "missing.json")
+    path = tmp_path / "cases.json"
+    path.write_text(json.dumps(BENCHMARK_CASES), encoding="utf-8")
+    assert load_cases(path) == BENCHMARK_CASES
 
 
 def test_youtube_benchmark_items_satisfy_kaam_ka_parcha_schema():
@@ -72,14 +85,3 @@ def test_youtube_benchmark_rejects_invalid_money_types():
 
     with pytest.raises(ValidationError):
         LineItem(id="part-1", label="Clutch Bearing", kind="part", amount_paise="378500")  # type: ignore
-
-
-def test_manifest_file_exists_and_matches_cases():
-    manifest_path = Path("var/benchmark_audio/youtube_mechanic_benchmark.json")
-    if manifest_path.exists():
-        data = json.loads(manifest_path.read_text(encoding="utf-8"))
-        assert data["total_cases"] == len(BENCHMARK_CASES)
-        assert len(data["cases"]) == len(BENCHMARK_CASES)
-        for c in data["cases"]:
-            assert "audio_16k_wav" in c
-            assert "transcript_txt" in c
