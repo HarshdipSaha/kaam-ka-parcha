@@ -1,16 +1,19 @@
 from dataclasses import dataclass
 import json
+import logging
 import math
 from datetime import datetime, timezone
 from pathlib import Path
 import re
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request, Query, Response
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request, Query, Response, WebSocket
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from .captions import relay_captions
 from .config import Settings
-from .session import Conflict, SessionStore
+from .guard import ACCESS_COOKIE, SlidingWindow, access_ok, access_token, client_ip, is_guarded
+from .session import CapacityError, Conflict, SessionStore
 from .workflow import NothingToConfirm, RepeatRequest, Workflow
 from .audio import AudioError, normalize_upload
 from .extract import ExtractionError, Extractor
@@ -21,6 +24,7 @@ from .artefact import audit_manifest_sha256, render_pdf, whatsapp_text
 from .vocabulary import AUTOMOTIVE_BIAS_WORDS
 
 ROOT = Path(__file__).parent
+log = logging.getLogger("parcha")
 
 
 @dataclass
@@ -29,11 +33,12 @@ class AppServices:
     store: SessionStore
     workflow: Workflow
     timbre: TimbreClient | None = None
+    caption_connect: object | None = None   # websocket opener for live captions; tests inject a fake
 
 
 def default_services() -> AppServices:
     settings = Settings.load()
-    store = SessionStore()
+    store = SessionStore(max_total=settings.max_total_sessions)
     prisma = PrismaClient(settings.api_key, base_url=settings.gnani_base_url)
     extractor = Extractor(
         settings.extractor_base_url,
@@ -122,9 +127,121 @@ def session_payload(session) -> dict:
     }
 
 
+GATE_HTML = (
+    "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
+    "<title>Demo access</title><form method=post action=/gate style='font-family:system-ui;max-width:20rem;margin:20vh auto;padding:0 16px'>"
+    "<h1>Kaam ka Parcha</h1><!--err--><label>Access code<br><input name=code type=password autofocus required style='width:100%;font-size:1rem;padding:.5rem'></label>"
+    "<p><button style='font-size:1rem;padding:.5rem 1rem'>Enter</button></p></form>"
+)
+
+
 def create_app(services: AppServices | None = None) -> FastAPI:
     services = services or default_services()
     app = FastAPI(title="Kaam ka Parcha")
+    settings = services.settings or Settings()
+    rate = SlidingWindow(settings.rate_limit_per_minute, 60.0)
+    session_rate = SlidingWindow(settings.sessions_per_ip_per_hour, 3600.0)
+    gate_rate = SlidingWindow(10, 60.0)  # access-code guesses per client per minute
+
+    async def read_audio(upload: UploadFile) -> bytes:
+        blob = await upload.read(settings.max_upload_bytes + 1)
+        if len(blob) > settings.max_upload_bytes:
+            raise HTTPException(413, "recording too large")
+        return blob
+
+    def refuse(status: int, detail: str, retry_after: float | None = None) -> JSONResponse:
+        headers = {"Retry-After": str(max(1, math.ceil(retry_after)))} if retry_after else None
+        return JSONResponse({"detail": detail}, status_code=status, headers=headers)
+
+    @app.middleware("http")
+    async def public_demo_guards(request: Request, call_next):
+        path = request.url.path
+        if settings.demo_access_code and path not in ("/health", "/gate") and not path.startswith("/static/"):
+            if not access_ok(settings.demo_access_code, request.cookies.get(ACCESS_COOKIE)):
+                if request.method == "GET" and "text/html" in request.headers.get("accept", ""):
+                    return RedirectResponse("/gate", status_code=303)
+                return refuse(401, "access code required")
+        if is_guarded(request.method, path):
+            ip = client_ip(request.headers, request.client.host if request.client else None, settings.trust_proxy)
+            declared = request.headers.get("content-length")
+            if declared and declared.isdigit() and int(declared) > settings.max_upload_bytes + 64 * 1024:
+                return refuse(413, "recording too large")
+            wait = rate.hit(ip)
+            if not wait and path == "/sessions":
+                wait = session_rate.hit(ip)
+            if wait:
+                return refuse(429, "Too many requests, please wait a moment and try again", wait)
+        return await call_next(request)
+
+    @app.exception_handler(Exception)
+    async def unexpected_error(request: Request, exc: Exception):
+        log.exception("unhandled error on %s %s", request.method, request.url.path)
+        return JSONResponse({"detail": "internal error"}, status_code=500)
+
+    @app.websocket("/sessions/{session_id}/captions")
+    async def captions(ws: WebSocket, session_id: str):
+        """Display-only live captions. The HTTP middleware does not see websockets, so the same guards are applied here."""
+        try:
+            services.store.get(session_id)
+        except KeyError:
+            await ws.close(code=4404)
+            return
+        if not access_ok(settings.demo_access_code, ws.cookies.get(ACCESS_COOKIE)):
+            await ws.close(code=4401)
+            return
+        ip = client_ip(ws.headers, ws.client.host if ws.client else None, settings.trust_proxy)
+        if rate.hit(ip):
+            await ws.close(code=4429)
+            return
+        try:
+            settings.require_gnani()
+        except ValueError:
+            await ws.close(code=4503)
+            return
+        await ws.accept()
+
+        async def audio():
+            while True:
+                message = await ws.receive()
+                if message["type"] == "websocket.disconnect":
+                    return
+                if message.get("bytes"):
+                    yield message["bytes"]
+                elif message.get("text") == "stop":
+                    return
+
+        async def emit(event: dict) -> None:
+            try:
+                await ws.send_json(event)
+            except Exception:  # the browser went away; captions are best-effort
+                pass
+
+        options = {"connect": services.caption_connect} if services.caption_connect else {}
+        try:
+            await relay_captions(audio(), emit, api_key=settings.api_key, partials=settings.caption_partials, **options)
+        except Exception:
+            log.exception("caption relay failed")
+            await emit({"type": "error"})
+        try:
+            await ws.close()
+        except Exception:
+            pass
+
+    @app.get("/gate", response_class=HTMLResponse)
+    def gate_page():
+        return HTMLResponse(GATE_HTML)
+
+    @app.post("/gate")
+    def gate_submit(request: Request, code: str = Form("")):
+        ip = client_ip(request.headers, request.client.host if request.client else None, settings.trust_proxy)
+        if gate_rate.hit(ip):
+            return refuse(429, "Too many attempts, wait a minute")
+        if not settings.demo_access_code or not access_ok(settings.demo_access_code, access_token(code)):
+            return HTMLResponse(GATE_HTML.replace("<!--err-->", "<p>Wrong code.</p>"), status_code=401)
+        response = RedirectResponse("/workshop", status_code=303)
+        response.set_cookie(ACCESS_COOKIE, access_token(settings.demo_access_code), httponly=True, samesite="lax",
+                            secure=(request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"))
+        return response
 
     static_dir = ROOT / "static"
     templates_dir = ROOT / "templates"
@@ -177,7 +294,10 @@ def create_app(services: AppServices | None = None) -> FastAPI:
 
     @app.post("/sessions")
     def create_session():
-        return session_payload(services.store.create())
+        try:
+            return session_payload(services.store.create())
+        except CapacityError:
+            raise HTTPException(503, "demo is at capacity, try again shortly")
 
     @app.get("/sessions/{session_id}")
     def get_session(session_id: str):
@@ -228,7 +348,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
         audio: UploadFile = File(...),
     ):
         try:
-            blob = await audio.read()
+            blob = await read_audio(audio)
             if not blob:
                 raise AudioError("empty recording")
             services.settings.require_gnani()
@@ -266,7 +386,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
         audio: UploadFile = File(...),
     ):
         try:
-            blob = await audio.read()
+            blob = await read_audio(audio)
             if not blob:
                 raise AudioError("empty recording")
             services.settings.require_gnani()
@@ -394,7 +514,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
         dpdp_consent: bool = Form(True),
     ):
         try:
-            blob = await audio.read()
+            blob = await read_audio(audio)
             if not blob:
                 raise AudioError("empty recording")
             services.settings.require_gnani()

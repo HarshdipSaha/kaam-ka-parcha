@@ -79,7 +79,7 @@ http://localhost:8000/workshop             http://localhost:8000/customer/{id}
 
 1. Mechanic enters vehicle & customer:
    Vehicle: "DL 3S AB 1234"
-   Customer Phone: "9876543210"
+   Customer Phone: "9876543210" (synthetic)
 
 2. Tap "Record Estimate" (or upload audio):
    Dictate: "front brake pad badla,

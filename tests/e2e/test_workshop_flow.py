@@ -157,3 +157,13 @@ def test_one_whole_estimate_repeat_settles_every_flagged_amount(page, world):
     expect(page.locator("#total-cell")).to_have_text("₹650")
     expect(page.locator("#confirm-estimate")).to_have_count(0)
     expect(page.locator("#start-readback")).to_be_enabled()
+def test_live_captions_appear_while_speaking_and_never_become_amounts(page, world):
+    world.prisma.script_intake(transcribe=INTAKE_T, verbatim=INCOMPLETE_V)
+    page.goto("/workshop")
+    speak(page, "#record", "#stop", seconds=1.5)
+    expect(page.locator("#slip")).to_be_visible(timeout=15000)
+    expect(page.locator("#captions")).to_be_visible(timeout=10000)
+    expect(page.locator("#captions-text")).to_contain_text("front brake pad paanch sau")
+    # the caption said "paanch sau" but amounts come only from the finished recording's two REST passes
+    expect(page.locator('[data-item="part-1"] .row__amount')).not_to_contain_text("₹500")
+    expect(page.locator("#total-cell")).to_have_text("Incomplete", use_inner_text=True)
