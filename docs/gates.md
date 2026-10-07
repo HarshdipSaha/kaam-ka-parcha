@@ -374,6 +374,27 @@ Spend is runner-estimated, not console-billed; an interrupted resume attempt
 its small unrecorded duplicate spend is not included above. Private report:
 `.\.venv\Scripts\python.exe -m parcha.lab.bench_report --echo var/lab/echo_screen_resumed4_20261006.jsonl --echo var/lab/echo_confirm_resumed2_20261006.jsonl` → `var/lab/benchmark_report.md`.
 
+### Whole-estimate repeat benchmark (2026-10-07, A1)
+
+`scripts/run_estimate_repeat_bench.py --count 100 --live --max-credits 5000 --interval 1.0` (resumed after one Prisma read timeout; retries added), then `--rescore`.
+100 synthetic estimates of 2-4 priced items x 2 Timbre voices x 5 conditions = 1,000 clips, 2,000 Prisma calls; output `var/lab/estimate_repeat.jsonl`; about 4,400 credits
+(forecast, not console billing). Scoring replays the saved transcripts through the real `Workflow.intake` + `confirm_estimate` (both voice directions, 1,000 estimates / 2,990 items).
+Synthetic speech, so this is application-logic evidence.
+
+| Condition | Items settled by two recordings | Wrong settled | Estimates fully settled |
+|---|---|---|---|
+| control | 92.5% | 0 of 598 | 89.5% |
+| G.711 clean | 92.5% | 0 of 598 | 89.5% |
+| AMR-NB 4.75 clean | 86.1% | 0 of 598 | 84.0% |
+| G.711 0 dB | 88.6% | 0 of 598 | 86.0% |
+| AMR-NB 4.75 0 dB | 63.9% | 3 of 598 | 59.5% |
+| all | 84.7% | 3 of 2,990 (Wilson upper 0.29%) | 81.7% |
+
+Recordings per estimate: 2.0 regardless of item count. The 3 wrong settles are all AMR-NB 0 dB: a lost tail ("तेईस सौ" heard twice as "तेईस") and a look-alike (तैंतीस heard twice as पैंतीस); the
+under-₹100 rule in A2 (PR #36) covers the first, the second is residual risk. The benchmark found two grammar bugs, fixed in PRs #45 and #47: Prisma spellings such as उन्तीस were
+dropped so "उन्तीस सौ" read as ₹100 (this settled wrong on clean audio before the fix), and a comma after "साढ़े N हज़ार" made estimates abstain (items settled in control rose from 72% to 93%).
+The remaining unsettled items abstain safely, mostly Prisma's partly formatted forms such as "उन्तीस ₹100".
+
 ### Follow-up hardening (2026-10-07)
 
 All private outputs are under ignored `var/lab/`; credits are runner estimates, not console billing.
