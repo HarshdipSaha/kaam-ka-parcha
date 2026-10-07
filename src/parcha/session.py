@@ -11,6 +11,10 @@ class Conflict(RuntimeError):
     pass
 
 
+class CapacityError(RuntimeError):
+    """The store is full; the caller should back off rather than evict real work."""
+
+
 @dataclass(frozen=True)
 class Session:
     id: str
@@ -27,13 +31,19 @@ class Session:
 
 
 class SessionStore:
-    def __init__(self, max_untouched: int = 500):
+    def __init__(self, max_untouched: int = 500, max_total: int = 0):
         self._lock = RLock()
         self._items: dict[str, Session] = {}
         self._max_untouched = max_untouched
+        self._max_total = max_total
 
     def create(self) -> Session:
         with self._lock:
+            if self._max_total and len(self._items) >= self._max_total:
+                untouched = [sid for sid, s in self._items.items() if s.card is None and s.status == "draft"]
+                if not untouched:
+                    raise CapacityError("session capacity reached")
+                del self._items[untouched[0]]
             session = Session(id=secrets.token_urlsafe(18))
             self._items[session.id] = session
             self._evict_untouched()

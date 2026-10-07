@@ -46,6 +46,8 @@ h1, h2, p { margin: 0; }
 .stepper li[data-state="current"]::before { background: var(--neela); border-color: var(--neela); color: #fff; }
 .stepper li[data-state="done"]::before { content: "✓"; background: var(--hara); border-color: var(--hara); color: #fff; }
 .heard { background: var(--bubble); border-radius: 4px 16px 16px 16px; padding: 10px 14px; box-shadow: 0 1px 0 rgba(27,36,51,.08); }
+.heard--live { background: var(--paper); border: 1px dashed var(--rule); }
+.heard--live .heard__text { color: var(--ink-muted); }
 .heard__k { font-weight: 700; font-size: 14px; color: var(--hara); }
 .heard__k .en { display: inline; margin-left: 6px; }
 .heard__text { margin-top: 2px; font-size: 18px; overflow-wrap: anywhere; }
@@ -217,3 +219,5 @@ button, a, summary, label { cursor: pointer; }
 .topbar .langtoggle { margin-left: auto; }
 .langfield { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; font-size: 15px; }
 .langfield select { min-height: var(--tap); padding: 0 10px; font: inherit; border-radius: var(--r-btn); border: 1px solid var(--rule); background: var(--paper); color: var(--ink); }
+.reask--all { margin: .5rem 0; width: 100%; justify-content: center; }
+.row__heard-count { font-size: .8em; opacity: .75; }

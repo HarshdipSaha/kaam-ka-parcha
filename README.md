@@ -199,11 +199,12 @@ Rather than relying on best-case clean audio demos, Kaam Ka Parcha includes a de
    API_KEY=your_gnani_vachana_api_key_here
    GNANI_BASE_URL=https://api.vachana.ai
 
-   # Extractor endpoint (required): Evon v3.3 via an OpenAI-compatible server; it structures line items only — amounts are read by deterministic code
+   # Extractor endpoint (required): any OpenAI-compatible server; it structures line items only — amounts are read by deterministic code.
+   # Gnani Evon v3.3 can be self-hosted here (EXTRACTOR_PROVIDER=evon) but has no hosted API; the demo runs used an external LLM.
    EXTRACTOR_BASE_URL=http://localhost:8080/v1
    EXTRACTOR_API_KEY=
-   EXTRACTOR_MODEL=gnani-evon-v3.3
-   EXTRACTOR_PROVIDER=evon
+   EXTRACTOR_MODEL=your_served_model_name
+   EXTRACTOR_PROVIDER=openai
 
    # Speech Configuration
    GNANI_LANG_CODE=hi-IN
@@ -237,7 +238,7 @@ Follow these steps to demonstrate or rehearse the complete two-browser flow:
    - Right window: Prepare to open the customer link generated in step 3.
 
 2. **Step 1: Mechanic Dictation (`/workshop`)**:
-   - Enter Vehicle Number: `DL 3S AB 1234` and Customer Phone: `9876543210`.
+   - Enter Vehicle Number: `DL 3S AB 1234` and Customer Phone: `9876543210` (synthetic).
    - Tap **Record Estimate** (or choose a pre-recorded WAV file).
    - Dictate in Hinglish:
      > *"Front brake pad badla, part saade chaar sau, labour do sau, Somvaar shaam tak."*
@@ -368,6 +369,22 @@ In accordance with Hackathon Rule 7 ("Misleading Demos") and the Gnani AI Platfo
    - We **never publish cross-engine competitor comparisons** (Whisper, Google, AWS, Azure) or unauthorized absolute CER/WER rankings.
 
 ---
+
+## Gnani models used
+
+| Stage | Gnani model / endpoint |
+|---|---|
+| Speech recognition | Prisma v2.5, REST (`/stt/v3`), `transcribe` and `verbatim` formats with automotive bias words |
+| Read-back voice | Timbre v2.5 TTS, voice Vikrant |
+| Field extraction | **Not Gnani today**: an external OpenAI-compatible LLM. Gnani Evon v3.3 is self-hostable but has no hosted API |
+
+## Data and consent
+
+Per the contest rule, only synthetic data, licensed corpora and self-recorded, consented audio are used.
+
+- Benchmarks use Timbre synthetic speech (labelled synthetic wherever reported) and the AI4Bharat IndicContextEval Hindi subset (CC BY 4.0, attribution in `data/benchmarks/real_audio_2026-10/README.md`).
+- No recorded calls, third-party creator voices, real phone numbers, Aadhaar/PAN or account numbers are in this repository, the demo or the submission. Earlier internal diagnostics on such audio were removed (see `docs/gates.md`).
+- Owner-recorded takes, if any, stay private under `var/` and are never committed.
 
 ## Target Awards
 
