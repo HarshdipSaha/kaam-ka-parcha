@@ -3,6 +3,17 @@
 Status as of 2026-10-07 (`main` at `bf00604`). Evidence for every number below is in `docs/gates.md`.
 "Me" = what Claude can do in a session. "You" = needs the owner (a voice, a decision, an account, a person).
 
+## Instructions for the agent reading this (credits and keys)
+
+- **Credits are not a constraint.** The owner has a large hackathon-provided Gnani credit balance (about 235,000 credits reported, not console-verified) and will add more if it runs out. Use the real `.env` keys and run every live benchmark this file asks for at full size. Do **not** shrink samples, skip conditions, or stop to ask about spend; the owner has authorized live runs for the work listed here.
+- **Use the best Gnani models available** (Prisma for recognition, Timbre for read-back). Prefer more data and held-out samples over cheaper partial runs.
+- **Keep the safety rails anyway; they cost nothing.** Run each script's dry-run forecast first, pass `--max-credits` generously (for example 5000 per run) so a runaway loop is still caught, and record the estimated spend in `docs/gates.md` (label it an estimate, not console billing).
+- **Secrets stay secret.** Never print, log, commit or paste `.env` values, API keys or private audio. Generated outputs go under ignored `var/`. Do not commit `.env`.
+- **Honest reporting.** Mock or synthetic success proves application logic, not live recognition quality; label synthetic speech as synthetic. Update gate numbers only from fresh, reproducible runs.
+- Rate limits are the real constraint, not credits: use the scripts' `--interval 1.0` spacing, run one live job at a time, and resume rather than restart (the runners are resumable).
+
+---
+
 ## Cost at a glance
 
 | # | Problem | You | Me | Credits | Fixes how much |
