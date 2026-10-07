@@ -138,3 +138,12 @@ Still pending: Task 0 console balance/outreach, owner takes (Task 14 Step 2/5), 
 ## Next
 
 Only user-supplied inputs remain: deployment, the owner's own recordings (`docs/owner-recording.md`), human listening labels, and the Task 0 console/permission records. Keep result artifacts private under ignored `var/`; billed totals remain unverified from the console.
+
+## Contender work from sug.md Part A (2026-10-07; each item is an open PR, merge order noted in HANDOFF.md)
+
+- A0 (#34) data-rule audit; A12 (#35) public-demo hardening; A1 (#37) whole-estimate repeat (+ live benchmark in docs/gates.md); A2 (#36) third recording for look-alike / lost-tail amounts
+  (fresh held-out run: 0 wrong in 930 pairs); A5 (#38) Hinglish note; A13 (#40) submission drafts; A14 (#39) licensed-speech report; A15 (#41) a11y pass; A9 (#42, stacked on #35) live captions;
+  A10 (#43) regional read-back (preview; only Bengali measurable); numeral fixes #45 (Prisma spellings) and #47 (normaliser commas / trailing पचास) found by the A1 benchmark.
+- A2 design choice recorded: third agreeing recording (not a read-back yes), state carried by the abstain log, so no new storage and no API bypass.
+- Live spend this session (runner estimates, not console billing): A1 ~4,400, A2 ~2,900, A10 ~1,500, A9 ~100 credits.
+- Blocked on the human: A3 (owner takes, B1), A6 (deploy, B2), A8 (Evon GPU, B9), A11 (cloning consent, B11).
