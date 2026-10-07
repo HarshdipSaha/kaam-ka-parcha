@@ -65,8 +65,15 @@ customer, placed through Twilio's REST API, with plain TwiML webhooks (no Twilio
 5. A real call already passes through a real phone codec, so `start_readback`/`reply` skip the simulated
    noise+codec degradation for this leg (`degrade=False`) — that layer is for the in-browser line only.
 6. Trial-account limits apply: only verified numbers, a prefixed "trial account" announcement, 30-day expiry.
-   Say so plainly if you demo with this; it is real telephone audio, not simulated.
+   Say so plainly if you demo with this; it is real telephone audio, not simulated. On a trial account, that
+   announcement needs an actual on-screen keypad tap to continue into the app — a phone's side button does
+   nothing, and nothing registering just ends the call before ever reaching our webhook (confirmed 2026-10-07).
 7. No UI button yet — call the endpoint directly (curl, Postman, or the browser devtools) until one is added.
+8. On `confirmed`, the app sends the customer a one-line SMS with the verify link (`telephony.send_sms`, no
+   Twilio SDK): `Kaam ka Parcha #<no> confirm ho gaya. Kul ₹<amount>. Parcha: <PUBLIC_BASE_URL>/verify/<id>`.
+   Costs roughly $0.08/message to India, billed from the same account/credit as the call; trial accounts can
+   only send to a verified number, with Twilio's own "Sent from a Twilio trial account" prefix added. A failed
+   send is logged and never breaks the call — the customer still hears the spoken confirmation either way.
 
 ## Live captions (display only)
 While the mechanic records, the workshop page streams the microphone (8 kHz PCM16) to `WS /sessions/{id}/captions`, which relays it

@@ -105,6 +105,26 @@ def test_download_recording_appends_wav_and_authenticates():
     assert seen["url"].endswith("RE123.wav") and "Basic" in seen["auth"]
 
 
+def test_send_sms_posts_to_the_messages_endpoint_and_returns_the_sid():
+    seen = {}
+
+    def handler(request):
+        seen["auth"] = request.headers["authorization"]
+        seen["body"] = request.content.decode()
+        return httpx.Response(201, json={"sid": "SM_new"})
+
+    http = httpx.Client(transport=httpx.MockTransport(handler))
+    sid = telephony.send_sms(account_sid="AC_x", auth_token="tok", to="+919999999999",
+                              from_="+15550001234", body="hello", http=http)
+    assert sid == "SM_new" and "Basic" in seen["auth"] and "hello" in seen["body"]
+
+
+def test_send_sms_raises_on_an_error_response():
+    http = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(400, text="bad request")))
+    with pytest.raises(telephony.TwilioError, match="400"):
+        telephony.send_sms(account_sid="AC", auth_token="t", to="+1", from_="+1", body="x", http=http)
+
+
 # ---- App routes --------------------------------------------------------------------------
 
 def _ready_session(client: TestClient) -> tuple[str, int]:
@@ -192,6 +212,67 @@ def test_recording_webhook_confirms_on_a_clear_yes_and_hangs_up(fake_services):
     query = f"session_id={sid}&expected_revision={rev}&readback_revision={readback_rev}&language=hi-IN"
     r = _twilio_post(client, "/telephony/twilio/recording", query, {"RecordingUrl": "https://api.twilio.com/REC1"})
     assert r.status_code == 200 and "<Hangup/>" in r.text and "<Redirect" not in r.text
+    assert client.get(f"/sessions/{sid}").json()["status"] == "confirmed"
+
+
+def test_confirming_by_phone_sends_an_sms_with_the_verify_link(fake_services):
+    fake_services.workflow.timbre = fake_services.timbre
+    client = TestClient(create_app(fake_services))
+    sid, rev = _ready_session(client)
+    rb = client.post(f"/sessions/{sid}/readback", data={"expected_revision": rev})
+    rev, readback_rev = rb.json()["revision"], rb.json()["readback_revision"]
+
+    sms_calls = []
+    fake_services.send_sms = lambda **kw: sms_calls.append(kw) or "SM_fake"
+    fake_services.workflow.prisma.transcribe = lambda wav, mode, **kw: "हाँ ठीक है"
+    fake_services.download_recording = lambda **kw: b"fake-recording-bytes"
+    query = (f"session_id={sid}&expected_revision={rev}&readback_revision={readback_rev}"
+             f"&language=hi-IN&to=%2B919228182636")
+    r = _twilio_post(client, "/telephony/twilio/recording", query, {"RecordingUrl": "https://api.twilio.com/REC1"})
+    assert r.status_code == 200 and "<Hangup/>" in r.text
+
+    total = client.get(f"/sessions/{sid}").json()["total_paise"] // 100
+    assert len(sms_calls) == 1
+    assert sms_calls[0]["to"] == "+919228182636"
+    assert f"/verify/{sid}" in sms_calls[0]["body"] and str(total) in sms_calls[0]["body"]
+
+
+def test_no_sms_is_attempted_without_a_phone_number(fake_services):
+    fake_services.workflow.timbre = fake_services.timbre
+    client = TestClient(create_app(fake_services))
+    sid, rev = _ready_session(client)
+    rb = client.post(f"/sessions/{sid}/readback", data={"expected_revision": rev})
+    rev, readback_rev = rb.json()["revision"], rb.json()["readback_revision"]
+
+    sms_calls = []
+    fake_services.send_sms = lambda **kw: sms_calls.append(kw) or "SM_fake"
+    fake_services.workflow.prisma.transcribe = lambda wav, mode, **kw: "हाँ ठीक है"
+    fake_services.download_recording = lambda **kw: b"fake-recording-bytes"
+    query = f"session_id={sid}&expected_revision={rev}&readback_revision={readback_rev}&language=hi-IN"  # no &to=
+    r = _twilio_post(client, "/telephony/twilio/recording", query, {"RecordingUrl": "https://api.twilio.com/REC1"})
+    assert r.status_code == 200 and "<Hangup/>" in r.text
+    assert sms_calls == []
+
+
+def test_an_sms_failure_never_breaks_the_call(fake_services):
+    from parcha import telephony as tel
+
+    fake_services.workflow.timbre = fake_services.timbre
+    client = TestClient(create_app(fake_services))
+    sid, rev = _ready_session(client)
+    rb = client.post(f"/sessions/{sid}/readback", data={"expected_revision": rev})
+    rev, readback_rev = rb.json()["revision"], rb.json()["readback_revision"]
+
+    def boom(**kw):
+        raise tel.TwilioError("simulated SMS outage")
+
+    fake_services.send_sms = boom
+    fake_services.workflow.prisma.transcribe = lambda wav, mode, **kw: "हाँ ठीक है"
+    fake_services.download_recording = lambda **kw: b"fake-recording-bytes"
+    query = (f"session_id={sid}&expected_revision={rev}&readback_revision={readback_rev}"
+             f"&language=hi-IN&to=%2B919228182636")
+    r = _twilio_post(client, "/telephony/twilio/recording", query, {"RecordingUrl": "https://api.twilio.com/REC2"})
+    assert r.status_code == 200 and "<Hangup/>" in r.text  # the call still ends cleanly despite the SMS failure
     assert client.get(f"/sessions/{sid}").json()["status"] == "confirmed"
 
 

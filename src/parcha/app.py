@@ -5,6 +5,7 @@ import math
 from datetime import datetime, timezone
 from pathlib import Path
 import re
+from urllib.parse import quote
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request, Query, Response, WebSocket
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -22,6 +23,7 @@ from .audio import AudioError, normalize_upload, stt_normalizer
 from .extract import ExtractionError, Extractor
 from .gnani import GnaniError, KeyPool, PrismaClient, TimbreClient
 from .presentation import latest_log_text, parcha_no, register_filters, status_label
+from .readback import format_rupees
 from .schema import TranscriptLog, review_fields
 from .artefact import audit_manifest_sha256, render_pdf, whatsapp_text
 from .vocabulary import AUTOMOTIVE_BIAS_WORDS
@@ -40,6 +42,7 @@ class AppServices:
     key_pool: KeyPool | None = None         # shared Gnani key pool (captions follow whichever key REST is on)
     place_call: object | None = None        # telephony.place_call-shaped callable; tests inject a fake
     download_recording: object | None = None  # telephony.download_recording-shaped callable; tests inject a fake
+    send_sms: object | None = None          # telephony.send_sms-shaped callable; tests inject a fake
 
 
 def default_services() -> AppServices:
@@ -639,7 +642,10 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             raise HTTPException(409, "card needs review")
 
         base = services.settings.public_base_url
-        voice_url = f"{base}/telephony/twilio/voice?session_id={session_id}&revision={expected_revision}&language={language}"
+        voice_url = (
+            f"{base}/telephony/twilio/voice?session_id={session_id}&revision={expected_revision}"
+            f"&language={language}&to={quote(to_number)}"
+        )
         placer = services.place_call or telephony.place_call
         try:
             sid = placer(
@@ -671,7 +677,13 @@ def create_app(services: AppServices | None = None) -> FastAPI:
         return Response(content=telephony.twiml(body), media_type="application/xml")
 
     @app.post("/telephony/twilio/voice")
-    async def twilio_voice(request: Request, session_id: str = Query(...), revision: int = Query(...), language: str = Query("hi-IN")):
+    async def twilio_voice(
+        request: Request,
+        session_id: str = Query(...),
+        revision: int = Query(...),
+        language: str = Query("hi-IN"),
+        to: str = Query(""),
+    ):
         if await _twilio_verified_form(request) is None:
             return Response(status_code=403)
         try:
@@ -692,9 +704,30 @@ def create_app(services: AppServices | None = None) -> FastAPI:
         audio_url = f"{base}/sessions/{session_id}/readback.wav?revision={readback.revision}"
         action_url = (
             f"{base}/telephony/twilio/recording?session_id={session_id}"
-            f"&expected_revision={readback.revision}&readback_revision={readback.readback_revision}&language={language}"
+            f"&expected_revision={readback.revision}&readback_revision={readback.readback_revision}"
+            f"&language={language}&to={quote(to)}"
         )
         return _twiml_response(telephony.play(audio_url) + telephony.record(action_url))
+
+    def _send_confirmation_sms(session, to_number: str) -> None:
+        """Best-effort: a phone confirmation gets nothing in hand otherwise. Never breaks the call on failure."""
+        if not to_number or not services.settings.twilio_account_sid:
+            return
+        base = services.settings.public_base_url
+        total = session.card.maybe_total_paise if session.card else None
+        amount = f" Kul {format_rupees(total)}." if total is not None else ""
+        body = f"Kaam ka Parcha #{parcha_no(session.id)} confirm ho gaya.{amount} Parcha: {base}/verify/{session.id}"
+        sender = services.send_sms or telephony.send_sms
+        try:
+            sender(
+                account_sid=services.settings.twilio_account_sid,
+                auth_token=services.settings.twilio_auth_token,
+                to=to_number,
+                from_=services.settings.twilio_from_number,
+                body=body,
+            )
+        except telephony.TwilioError:
+            log.warning("confirmation SMS failed for session %s", session.id, exc_info=True)
 
     @app.post("/telephony/twilio/recording")
     async def twilio_recording(
@@ -703,6 +736,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
         expected_revision: int = Query(...),
         readback_revision: int = Query(...),
         language: str = Query("hi-IN"),
+        to: str = Query(""),
     ):
         form = await _twilio_verified_form(request)
         if form is None:
@@ -710,7 +744,8 @@ def create_app(services: AppServices | None = None) -> FastAPI:
         base = services.settings.public_base_url
         same_recording_again = (
             f"{base}/telephony/twilio/recording?session_id={session_id}"
-            f"&expected_revision={expected_revision}&readback_revision={readback_revision}&language={language}"
+            f"&expected_revision={expected_revision}&readback_revision={readback_revision}"
+            f"&language={language}&to={quote(to)}"
         )
         recording_url = form.get("RecordingUrl")
         if not recording_url:
@@ -731,10 +766,15 @@ def create_app(services: AppServices | None = None) -> FastAPI:
 
         speech = _twilio_outcome_speech(result.outcome, result.session, result.message)
         if result.outcome == "needs_readback":
-            redirect_url = f"{base}/telephony/twilio/voice?session_id={session_id}&revision={result.session.revision}&language={language}"
+            redirect_url = (
+                f"{base}/telephony/twilio/voice?session_id={session_id}&revision={result.session.revision}"
+                f"&language={language}&to={quote(to)}"
+            )
             return _twiml_response(telephony.say(speech, language="hi-IN") + f'<Redirect method="POST">{redirect_url}</Redirect>')
         if result.outcome in ("ask_field", "retry"):
             return _twiml_response(telephony.say(speech, language="hi-IN") + telephony.record(same_recording_again))
+        if result.outcome == "confirmed":
+            _send_confirmation_sms(result.session, to)
         return _twiml_response(telephony.say(speech, language="hi-IN") + telephony.hangup())
 
     @app.post("/telephony/twilio/status")

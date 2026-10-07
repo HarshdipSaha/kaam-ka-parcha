@@ -89,6 +89,28 @@ def place_call(
     return resp.json()["sid"]
 
 
+def send_sms(
+    *,
+    account_sid: str,
+    auth_token: str,
+    to: str,
+    from_: str,
+    body: str,
+    http: httpx.Client | None = None,
+) -> str:
+    """Send a one-off SMS. Returns the message SID. Trial accounts: verified numbers only, and the
+    message carries Twilio's own "Sent from a Twilio trial account" prefix."""
+    http = http or httpx.Client(timeout=15)
+    resp = http.post(
+        f"{TWILIO_API_BASE}/Accounts/{account_sid}/Messages.json",
+        data={"To": to, "From": from_, "Body": body},
+        auth=(account_sid, auth_token),
+    )
+    if resp.status_code >= 400:
+        raise TwilioError(f"Twilio SMS request failed: HTTP {resp.status_code}: {resp.text}")
+    return resp.json()["sid"]
+
+
 def download_recording(
     *, account_sid: str, auth_token: str, recording_url: str, http: httpx.Client | None = None
 ) -> bytes:
