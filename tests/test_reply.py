@@ -74,11 +74,33 @@ def test_clear_acceptance():
 
 
 
+def test_plain_whole_sentence_affirmations_accept():
+    """A customer on a phone line says "theek hai" or "ok" and means yes (changed 2026-10-07; these used to be unclear)."""
+    for phrase in [
+        "theek hai", "Theek hai ji", "thik hai", "bilkul theek hai", "theek hai theek hai", "sab theek hai",
+        "sahi hai", "sahi", "manzoor hai", "mujhe manzoor hai", "kabool hai", "qabool hai", "chalega", "chalta hai",
+        "pakka", "pakka hai", "zaroor", "jarur", "kar do", "theek hai kar do", "done", "ok", "OK.", "okay", "ok hai",
+        "bilkul", "yes", "yeah", "sure", "correct", "agreed", "confirmed", "haan ok", "ok haan", "haan pakka",
+        "ठीक है", "ठीक है ठीक है", "सब ठीक है", "सही है", "कबूल है", "चलेगा", "पक्का", "ज़रूर", "ओके", "हाँ ओके",
+        "बिल्कुल", "बिल्कुल ठीक है", "कर दो", "मुझे मंज़ूर है",
+    ]:
+        assert classify_reply(phrase) == "accept", f"Expected accept for {phrase!r}"
+
+
+def test_hedged_or_loaded_replies_still_never_accept():
+    """Widening the yes list must not let a conditional, a correction, a number or an item name seal the parcha."""
+    for phrase in [
+        "theek hai par 500 se zyada nahi", "theek hai lekin", "theek hai but", "theek hai brake pad", "theek hai 450",
+        "theek nahi hai", "ok nahi", "nahi theek hai", "sahi nahi hai", "bilkul nahi", "haan nahi", "ok but kal",
+        "achha", "hmm", "ji", "theek", "haan theek", "chalo", "pata nahi", "soch ke batata hoon", "kitna hua",
+        "ठीक नहीं है", "ठीक है लेकिन", "ठीक है पर कल", "अच्छा", "जी", "नहीं ठीक है",
+    ]:
+        assert classify_reply(phrase) != "accept", f"Phrase {phrase!r} must never accept"
+
+
 def test_uncertain_or_correction_never_accepts():
     non_accept_cases = [
-        ("theek hai", "unclear"),
         ("theek", "unclear"),
-        ("theek hai ji", "unclear"),
         ("nahi", "reject"),
         ("nahin", "reject"),
         ("नहीं", "reject"),

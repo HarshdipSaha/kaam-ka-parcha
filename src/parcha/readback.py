@@ -22,6 +22,36 @@ NO = {"nahi", "nahin", "नहीं", "ना"}
 MANZOOR = {"manzoor", "मंज़ूर", "मंजूर"}
 MODIFIERS = {"ji", "जी", "bilkul", "बिल्कुल"}
 SAHI = {"sahi", "सही"}
+
+# Whole-utterance affirmations beyond "haan ...": a customer on a phone line says "theek hai", "ok", "pakka" and
+# means yes. Matching stays exact (the full reply must be one of these, optionally with "haan"/"ji"/"bilkul"), so
+# "theek hai par 500 se zyada nahi", "theek hai lekin ..." or anything with a number or an item name is NOT accepted.
+# Deliberately left out: "achha"/"hmm"/"ji" alone (acknowledgement or "pardon?", not consent), "chalo", "theek" alone.
+AFFIRM_CORE: frozenset[tuple[str, ...]] = frozenset(
+    tuple(phrase.split())
+    for phrase in (
+        # Roman Hindi / Hinglish
+        "theek hai", "thik hai", "theek h", "sab theek hai", "sahi hai", "sahi", "manzoor hai", "mujhe manzoor hai",
+        "kabool hai", "qabool hai", "kubool hai", "chalega", "chalta hai", "pakka", "pakka hai", "zaroor", "jarur",
+        "kar do", "kardo", "theek hai kar do", "done", "ok", "okay", "okey", "ok hai", "okay hai", "ok theek hai",
+        # English
+        "yes", "yeah", "yep", "sure", "correct", "right", "agreed", "confirm", "confirmed", "approved",
+        # Devanagari
+        "ठीक है", "ठीक हैं", "सब ठीक है", "सही है", "सही", "कबूल है", "क़बूल है", "चलेगा", "चलता है", "पक्का",
+        "पक्का है", "ज़रूर", "जरूर", "कर दो", "ओके", "ओके है", "ओके ठीक है", "मुझे मंज़ूर है", "मुझे मंजूर है",
+    )
+)
+STRONG_YES_ALONE = {"bilkul", "बिल्कुल"}
+
+
+def _collapse_repeats(words: list[str]) -> list[str]:
+    """"theek hai theek hai" -> "theek hai": people repeat themselves on a bad line."""
+    for size in (1, 2, 3):
+        if len(words) >= 2 * size and len(words) % size == 0:
+            chunks = [tuple(words[i:i + size]) for i in range(0, len(words), size)]
+            if all(chunk == chunks[0] for chunk in chunks):
+                return list(chunks[0])
+    return words
 DATE_WORDS = {
     "kal", "somvaar", "mangalvaar", "budhvaar", "guruvaar",
     "shukravaar", "shanivaar", "ravivaar", "shaam", "subah",
@@ -157,7 +187,7 @@ def classify_reply(text: str, language: str | None = None) -> ReplyClass:
             ["मंजूर"],
         ):
             return "accept"
-        return "unclear"
+        # anything else after "haan" falls through: "haan ok" is still a yes, "haan brake pad" ends up unclear
 
     # 2. Inverted phrasal affirmations ("theek hai haan", "theek hai haan ji")
     if any(w in YES for w in words):
@@ -180,6 +210,17 @@ def classify_reply(text: str, language: str | None = None) -> ReplyClass:
         ["मंज़ूर"],
         ["मंजूर"],
     ):
+        return "accept"
+
+    # 4. Plain whole-utterance affirmations ("theek hai", "ok", "pakka", ...), with an optional "haan" either side.
+    if words and all(w in STRONG_YES_ALONE for w in words):
+        return "accept"
+    core = _collapse_repeats(words_stripped)
+    if tuple(core) in AFFIRM_CORE:
+        return "accept"
+    if core and core[0] in YES and tuple(core[1:]) in AFFIRM_CORE:
+        return "accept"
+    if core and core[-1] in YES and tuple(core[:-1]) in AFFIRM_CORE:
         return "accept"
 
     return "unclear"

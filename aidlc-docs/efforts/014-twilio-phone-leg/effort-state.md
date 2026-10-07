@@ -81,11 +81,15 @@ Full chain on the deployed app, real phone, no simulation on the customer leg:
 Cost note: about $0.05 per call minute-bundle and about $0.08 per SMS to India from the trial credit (balance
 roughly $10.7 before this run).
 
-## Known limitation found in this run
-Acceptance is deliberately narrow: `readback.classify_reply` accepts "haan [ji] [theek hai | manzoor hai | sahi hai]",
-"theek hai haan", and "manzoor [hai]". A bare "theek hai", "ok", or "bilkul theek hai" falls to `unclear` and goes
-to the retry/fallback flow (this is the money-path rule: only an explicit yes seals). Widening the list is a
-separate, deliberate change.
+## Known limitation found in this run, and the follow-up change
+Acceptance was too narrow: only "haan [ji] [theek hai | manzoor hai | sahi hai]", "theek hai haan" and "manzoor [hai]"
+sealed; a bare "theek hai" or "ok" went to retry/fallback (it was an explicit test case). Widened on 2026-10-07 to
+56 whole-utterance affirmations (`readback.AFFIRM_CORE`: theek hai, sahi hai, kabool hai, chalega, pakka, zaroor,
+ok/okay, yes/sure/confirmed, and Devanagari forms), optionally with "haan"/"ji"/"bilkul", repeats collapsed
+("theek hai theek hai"). Still never accepted: anything with a negation, a number, an item name or a hedge ("theek
+hai par 500 se zyada nahi", "theek hai lekin"), and "achha", "hmm", "ji" or "theek" alone. Two old tests that
+asserted "theek hai"/"theek hai ji" are unclear were changed on purpose; 27 hedged/loaded phrases are pinned as
+never-accept. Offline suite 783 passed.
 
 ## Remaining (follow-up, not required to prove the concept)
 - No `/workshop` UI button yet — the call is placed via the API directly. Deferred until the live path was proven
