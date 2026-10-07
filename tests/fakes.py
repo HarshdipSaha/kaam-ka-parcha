@@ -38,9 +38,11 @@ class SilentTimbre:
 
     def __init__(self) -> None:
         self.calls: list[str] = []
+        self.languages: list[str] = []
 
-    def synthesize(self, text: str) -> bytes:
+    def synthesize(self, text: str, *, language: str = "hi-IN", voice: str | None = None) -> bytes:
         self.calls.append(text)
+        self.languages.append(language)
         import io, wave
         buf = io.BytesIO()
         with wave.open(buf, "wb") as w:
@@ -61,6 +63,7 @@ class StagePrisma:
 
     def __init__(self) -> None:
         self.calls: list[tuple[bytes, str]] = []
+        self.languages: list[str] = []
         self.reset()
 
     def reset(self) -> None:
@@ -73,8 +76,9 @@ class StagePrisma:
     def say(self, text: str) -> None:
         self.heard = text
 
-    def transcribe(self, wav: bytes, *, mode: str, bias=None, score: float = 1.0) -> str:
+    def transcribe(self, wav: bytes, *, mode: str, bias=None, score: float = 1.0, language_code: str = "hi-IN") -> str:
         self.calls.append((wav, mode))
+        self.languages.append(language_code)
         if self.heard is not None:
             return self.heard
         return self.by_mode.get(mode, self.by_mode["verbatim"])

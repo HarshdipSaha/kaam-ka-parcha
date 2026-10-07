@@ -146,6 +146,21 @@ def test_customer_approval_stamps_the_mechanics_slip(page, world):
     page.screenshot(path=str(SCREENS / "workshop-sealed-360.png"), full_page=True)
 
 
+def test_mechanic_picks_a_tamil_read_back_and_the_customer_confirms_in_tamil(page, world):
+    page.goto("/workshop")
+    speak(page, "#record", "#stop")
+    expect(page.locator("#slip")).to_be_visible(timeout=15000)
+    confirm_amounts_in_ui(page, world)
+    expect(page.locator("#language-field")).to_be_visible()
+    page.select_option("#readback-language", "ta-IN")
+    page.locator("#start-readback").click()
+    expect(page.locator("#message")).to_contain_text("लिंक", timeout=15000)
+    assert world.services.timbre.languages[-1] == "ta-IN"
+    sid = page.evaluate("() => new URL(window.location).searchParams.get('session_id')")
+    session = world.services.store.get(sid)
+    world.prisma.say("ஆமா சரி")
+    reply = reply_by_api(world.url, {"id": sid, "revision": session.revision, "readback_revision": session.readback_revision})
+    assert reply["outcome"] == "confirmed" and world.prisma.languages[-1] == "ta-IN"
 def test_one_whole_estimate_repeat_settles_every_flagged_amount(page, world):
     dictate(page)
     button = page.locator("#confirm-estimate")

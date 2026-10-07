@@ -173,6 +173,7 @@ function renderSession(data) {
   }
   $("dock").hidden = !["bolo", "parcha", "sunao"].includes(stage);
   $("start-readback").hidden = stage !== "sunao";
+  if ($("language-field")) $("language-field").hidden = stage !== "sunao";
   $("start-readback").disabled = stage !== "sunao";
   const shareOpen = stage === "haan" || stage === "manzoor";
   const customerUrl = `${window.location.origin}/customer/${data.id}`;
@@ -258,6 +259,8 @@ async function handleStartReadback() {
     UI.say(message, "ग्राहक के लिए आवाज़ बन रही है…", "Preparing the customer read-back…");
     const form = new FormData();
     form.append("expected_revision", currentSession.revision);
+    const language = $("readback-language");
+    if (language && language.value) form.append("language", language.value);
     await UI.api.post(`/sessions/${currentSession.id}/readback`, form);
     renderSession(await UI.api.get(`/sessions/${currentSession.id}`));
     UI.say(message, UI.COPY.sendLink.hi, UI.COPY.sendLink.en, "ok");

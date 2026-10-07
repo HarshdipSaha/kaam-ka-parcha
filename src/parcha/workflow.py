@@ -42,6 +42,7 @@ def abstain_logs(abstentions: dict[str, AbstainReason], when: datetime) -> tuple
     return tuple(TranscriptLog(role="system", mode=f"abstain:{field}", text=reason, recorded_at_utc=when)
                  for field, reason in sorted(abstentions.items()))
 
+from .languages import DEFAULT_LANGUAGE, pack_for
 from .readback import (
     DATE_WORDS,
     NO,
@@ -103,6 +104,7 @@ class Workflow:
         target_snr_db: float | None = None,
         noise_wav: bytes | None = None,
         noise_source: str = "synthetic",
+        language_voices: dict[str, str] | None = None,
     ):
         self.store = store
         self.prisma = prisma
@@ -115,6 +117,7 @@ class Workflow:
         self.target_snr_db = target_snr_db
         self.noise_wav = noise_wav
         self.noise_source = noise_source if noise_wav else "none"
+        self.language_voices = dict(language_voices or {})
 
     def intake(
         self,
@@ -403,17 +406,23 @@ class Workflow:
         recorded_at_utc: datetime | None = None,
         *,
         include_consent: bool = True,
+        language: str | None = None,
     ) -> Readback:
         session = self.store.get(session_id)
         if session.card is None or session.card.needs_review:
             raise Conflict("card needs review")
 
-        text = make_readback(session.card, include_consent=include_consent)
+        pack = pack_for(language)          # None: Hindi, the original path
+        text = make_readback(session.card, include_consent=include_consent, language=language)
 
         if not self.timbre:
             raise ValueError("Timbre client required for readback")
 
-        raw_mulaw = self.timbre.synthesize(text)
+        if pack is None:
+            raw_mulaw = self.timbre.synthesize(text)
+        else:
+            voice = self.language_voices.get(pack.code, pack.voices[0])
+            raw_mulaw = self.timbre.synthesize(text, language=pack.code, voice=voice)
         wav = mulaw_to_wav(raw_mulaw)
 
         if self.noise_wav and self.target_snr_db is not None:
@@ -448,6 +457,14 @@ class Workflow:
         updated_session = self.store.start_readback(
             session_id, expected_revision=expected_revision, log=log
         )
+        if pack is not None:
+            # The reply is recognised and classified in the language that was read back; the audit trail records it.
+            updated_session = self.store.record_observation(
+                session_id,
+                expected_revision=updated_session.revision,
+                readback_revision=updated_session.readback_revision,
+                log=TranscriptLog(role="system", mode="readback_language", text=pack.code, recorded_at_utc=rec_time),
+            )
 
         return Readback(
             text=text,
@@ -486,11 +503,13 @@ class Workflow:
             wav, _ = mix_at_snr(wav, self.noise_wav, self.target_snr_db)
             wav = codec_round_trip(wav, self.codec)
 
+        language = next((log.text for log in reversed(session.logs) if log.mode == "readback_language"), DEFAULT_LANGUAGE)
+        stt_options = {} if language == DEFAULT_LANGUAGE else {"language_code": language}
         confidence = 1.0
         if hasattr(self.prisma, "transcribe_detailed"):
-            transcript, confidence = self.prisma.transcribe_detailed(wav, mode="transcribe")
+            transcript, confidence = self.prisma.transcribe_detailed(wav, mode="transcribe", **stt_options)
         else:
-            transcript = self.prisma.transcribe(wav, mode="transcribe")
+            transcript = self.prisma.transcribe(wav, mode="transcribe", **stt_options)
             if hasattr(self.prisma, "confidence"):
                 confidence = float(self.prisma.confidence)
             elif hasattr(self.prisma, "last_confidence"):
@@ -545,7 +564,7 @@ class Workflow:
                 },
             )
 
-        classification = classify_reply(transcript)
+        classification = classify_reply(transcript, None if language == DEFAULT_LANGUAGE else language)
 
         if classification == "accept":
             updated_session = self.store.confirm(

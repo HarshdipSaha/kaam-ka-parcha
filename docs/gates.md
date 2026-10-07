@@ -373,6 +373,21 @@ Spend is runner-estimated, not console-billed; an interrupted resume attempt
 its small unrecorded duplicate spend is not included above. Private report:
 `.\.venv\Scripts\python.exe -m parcha.lab.bench_report --echo var/lab/echo_screen_resumed4_20261006.jsonl --echo var/lab/echo_confirm_resumed2_20261006.jsonl` → `var/lab/benchmark_report.md`.
 
+### Regional read-back echo probe (2026-10-07, A10)
+
+`scripts/run_language_echo_bench.py --live`: Timbre speaks the product's regional read-back (digit amounts, consent line, closing prompt) over control / G.711 clean / AMR-NB 4.75 0 dB, Prisma
+transcribes it in the same language (`transcribe` format), and a card passes when every amount and the total appear as digits. Synthetic speech, about 1,500 credits in total (forecast, not console billing).
+Runs: Tamil 24 rows (stopped on purpose, see below; `var/lab/language_echo_ta.jsonl`); Bengali and Kannada 8 cards x 2 voices x 3 conditions = 96 rows (`var/lab/language_echo_probe.jsonl`).
+
+| Language | Voice | Digit-recovery pass rate | Valid as an echo measure? |
+|---|---|---|---|
+| Bengali | Dhruva | 21/24 | Yes: Prisma returns amounts as digits ("₹22,000", "₹23,500"). Small sample (8 cards), not a ranking. |
+| Bengali | Kirra | 20/24 | same |
+| Kannada | Kavin / Saanvi | 13/24 and 12/24 | No: the formatter mixes number words with digits ("ಒಟ್ಟು ಇಪ್ಪತ್ತ್ಮೂರು ₹1,500"), and the Act year was read as "2,000 ಇಪ್ಪತ್ತಮೂರರ"; a digit scorer cannot tell a bad voice from a formatting choice. |
+| Tamil | Brinda (first 24 rows) | 0/24 by digits | No: amounts come back partly as Tamil number words ("ஐநூற்றி ₹50" for 550, "நாற்பத்தாறாயிரத்தி ஐநூற்றி ₹50" for 46,550), so the full 5-voice x 60-card grid was not run. |
+
+Conclusion: only Bengali yields a usable digit-based echo rate; Tamil and Kannada need a per-language number-word scorer (or the human listening labels, B1c) before a voice can be chosen on evidence.
+The regional read-back therefore stays "preview" with each pack's default voice unmeasured; the Hindi default (Vikrant, words) is unaffected.
 ### Look-alike and lost-tail guard, fresh held-out run (2026-10-07, A2)
 
 `scripts/run_reask_bench.py --count 100 --held-out --seed 20261010 --live --max-credits 5000 --output var/lab/reask_heldout2.jsonl`, then `--rescore`: 930 rows (fresh amounts, 2 Timbre voices, 5 conditions),

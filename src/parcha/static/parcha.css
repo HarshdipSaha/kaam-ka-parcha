@@ -217,5 +217,7 @@ button, a, summary, label { cursor: pointer; }
 .slip:has(.stamp) .slip__delivery { padding-right: 116px; }
 [data-lang="en"] .verdict__title { font-size: 24px; }
 .topbar .langtoggle { margin-left: auto; }
+.langfield { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; font-size: 15px; }
+.langfield select { min-height: var(--tap); padding: 0 10px; font: inherit; border-radius: var(--r-btn); border: 1px solid var(--rule); background: var(--paper); color: var(--ink); }
 .reask--all { margin: .5rem 0; width: 100%; justify-content: center; }
 .row__heard-count { font-size: .8em; opacity: .75; }
