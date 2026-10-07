@@ -74,7 +74,7 @@ flowchart TD
 
 ### Visual Interface Walkthrough
 
-Captured from a **live run** (`scripts/capture_live_screens.py`): real Gnani Prisma recognition, Evon extraction and Timbre read-back, driven by spoken audio. The speech is synthetic (Timbre voices into a fake microphone) and no real customer data is used. The phone line is simulated and WhatsApp is clipboard copy.
+Captured from a **live run** (`scripts/capture_live_screens.py`): real Gnani Prisma recognition and Timbre read-back, driven by spoken audio. Field extraction in that run used the configured external OpenAI-compatible LLM, not Gnani Evon (Gnani publishes no hosted Evon API; self-hosting Evon v3.3 is a listed follow-up in `sug.md`). The speech is synthetic (Timbre voices into a fake microphone) and no real customer data is used. The phone line is simulated and WhatsApp is clipboard copy.
 
 | Leg 1: Mechanic (`/workshop`) — काम का पर्चा | Leg 2: Vehicle owner (`/customer/{id}`) — गैराज से कॉल |
 |:---:|:---:|
