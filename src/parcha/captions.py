@@ -31,7 +31,7 @@ async def relay_captions(
     max_seconds: float = 60.0,
     flush_seconds: float = 1.5,
     timeout_s: float = 10.0,
-    partials: bool = False,
+    partials: bool = True,
 ) -> None:
     """Stream 8 kHz mono s16le PCM chunks from `audio_in`, emit caption dicts: {"type": "caption", "text", "final"}.
 
@@ -49,10 +49,10 @@ async def relay_captions(
                 except (TypeError, ValueError):
                     continue
                 kind = message.get("type")
-                if kind in ("transcript", "partial_transcript"):
+                if kind in ("transcript", "final_transcript", "partial_transcript"):
                     text = str(message.get("text", "")).strip()
                     if text:
-                        await emit({"type": "caption", "text": text, "final": kind == "transcript"})
+                        await emit({"type": "caption", "text": text, "final": kind != "partial_transcript"})
                 elif kind == "error":
                     await emit({"type": "error"})
 

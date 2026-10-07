@@ -76,12 +76,12 @@ def test_odd_sized_chunks_become_exact_frames_then_silence_flushes():
 
 
 def test_partials_are_marked_not_final_and_requested_only_when_enabled():
-    socket = FakeGnaniSocket([{"type": "partial_transcript", "text": "front"}, {"type": "transcript", "text": "front brake"}])
+    socket = FakeGnaniSocket([{"type": "partial_transcript", "text": "front"}, {"type": "final_transcript", "text": "front brake"}])
     events = run_relay(socket, b"\x01" * 2048, partials=True)
     assert [(e["text"], e["final"]) for e in events] == [("front", False), ("front brake", True)]
     assert socket.headers["x-partials"] == "true"
     plain = FakeGnaniSocket([])
-    run_relay(plain, b"\x01" * 1024)
+    run_relay(plain, b"\x01" * 1024, partials=False)
     assert "x-partials" not in plain.headers
 
 
