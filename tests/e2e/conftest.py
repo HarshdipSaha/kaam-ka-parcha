@@ -20,7 +20,7 @@ else:
     from parcha.session import SessionStore
     from parcha.workflow import Workflow
     from tests.conftest import FakeExtractor
-    from tests.fakes import SilentTimbre, StagePrisma, fake_settings
+    from tests.fakes import CaptionSocket, SilentTimbre, StagePrisma, fake_settings
 
     class StageExtractor(FakeExtractor):
         """FakeExtractor whose first label a browser test can make hostile or very long."""
@@ -78,7 +78,10 @@ def world():
         store=store, prisma=prisma, extractor=extractor, timbre=timbre,
         normalize_audio=lambda blob, mime, sample_rate=8000: b"RIFFfakepcm",
     )
-    services = AppServices(fake_settings(), store, workflow, timbre)
+    def caption_connect(url, additional_headers=None, open_timeout=None):
+        return CaptionSocket([{"type": "transcript", "text": "front brake pad paanch sau"}])
+
+    services = AppServices(fake_settings(), store, workflow, timbre, caption_connect=caption_connect)
     app = create_app(services)
     port = _free_port()
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning"))

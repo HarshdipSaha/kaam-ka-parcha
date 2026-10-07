@@ -9,8 +9,8 @@ latency results, or credit totals. Result rows, transcripts, audio, and the
 absolute evaluation report remain private under ignored `var/` paths.
 
 The amount-labelled test asks whether spoken amounts can be parsed safely in
-scripted estimates and corrections. Separate speech diagnostics use a public
-Hindi telephone-speech evaluation slice. Neither is a representative sample of
+scripted estimates and corrections. Separate speech diagnostics use the licensed
+AI4Bharat IndicContextEval Hindi slice (CC BY 4.0). Neither is a representative sample of
 real repair-shop conversations.
 
 ## Composition
@@ -22,7 +22,7 @@ real repair-shop conversations.
 | Owner takes | 80 prompts for one speaker | Internal-only planned slice; recordings and manifest are not present in this checkout |
 | Stress amounts | 37 distinct rupee values, including colloquial and boundary forms | Used for deterministic parser coverage and echo screening |
 | Bias control | 20 generated automotive-term prompts | Synthetic text and Timbre-rendered speech |
-| Gramvaani telephone speech | 1,032 Hindi clips, approximately 2.80 hours; 291 source clips marked clipped | Speech-quality diagnostic only; no rupee labels |
+| IndicContextEval Hindi (AI4Bharat, CC BY 4.0) | 120 licensed read/extempore clips, resampled to 8 kHz | Speech-quality diagnostic only; no rupee labels |
 
 The scripted slices use 13 configured Hindi Timbre voices. The fixed generation
 seeds are `20261005` for estimates, `20261006` for corrections, and `20261007`
@@ -47,32 +47,25 @@ score whether Prisma recovers every amount spoken by a Timbre voice in a
 read-back, for digits and Hindi-word styles. Synthetic speech can make results
 look better than real, spontaneous workshop speech.
 
-The Gramvaani slice is taken from the Vistaar Hindi Gramvaani test set. Source
-audio is downsampled to 8 kHz mono for the phone-channel workflow. Source
-clipping labels come from the original recordings. Gramvaani clips do not have
-rupee labels, so this slice cannot score amount safety. Its use is limited to
-academic purposes unless the rights holder grants permission for other use.
+The IndicContextEval slice is a licensed open dataset (CC BY 4.0, attribution to AI4Bharat). It has no
+rupee labels, so it cannot score amount safety.
 
 ## Licence and handling
 
 - Generated prompts are project-created. Timbre recordings are synthetic and
   do not represent customer recordings.
-- The planned IndicContextEval Hindi material is labelled CC BY 4.0 in its
-  dataset documentation; it is not included in these amount-labelled or
-  Gramvaani slices.
-- Gramvaani source terms allow academic use; other use requires permission
-  from Gram Vaani. No permission to publish benchmark results is recorded.
+- IndicContextEval Hindi (AI4Bharat) is CC BY 4.0; keep the attribution wherever its numbers appear.
 - Owner takes, if later supplied, are for internal evaluation only and require
   documented consent. They will not be redistributed with this repository.
-- Do not commit or redistribute source audio, private transcripts, customer
-  data, API credentials, or raw result rows. The metadata-only Gramvaani index
-  is separate from the private audio and text manifest.
+- Do not commit or redistribute private audio, private transcripts, customer
+  data, API credentials, or raw result rows.
+- Recorded telephone calls and third-party creator voices are excluded from the project and the submission
+  under the contest's synthetic-data rule; internal diagnostics on them are not published.
 
 ## Exclusions
 
 The broader speech-evaluation harness excludes `i036` because its reference
-does not match its audio, and excludes `y001` through `y005` because their
-references are auto-caption pseudo-references. These exclusions are recorded in
+does not match its audio. These exclusions are recorded in
 `data/benchmarks/exclusions.json`. They are not substitutes for review of any
 new source material. No missing owner recordings are replaced with synthetic
 owner examples.
@@ -81,7 +74,7 @@ owner examples.
 
 - Use the scripted slices to test deterministic amount grammar, amount
   cross-check behavior, regression handling, and the read-back loop.
-- Use Gramvaani only for general Hindi telephone-speech diagnostics. It has no
+- Use IndicContextEval only for general Hindi speech-robustness diagnostics. It has no
   rupee labels and is not an automotive or repair-estimate test set.
 - Synthetic speech can flatter recognition and echo results. It cannot support
   a claim about spontaneous mechanic speech or real customer calls.
@@ -118,37 +111,12 @@ foreach ($name in "estimates", "corrections", "bias_control") {
 }
 ```
 
-### Prepare and evaluate the Gramvaani slice
-
-The preparation command requires a locally available source parquet file:
-
-```powershell
-.\.venv\Scripts\python.exe scripts/prepare_gramvaani.py `
-  --parquet <path-to-vistaar-gramvaani-test.parquet>
-```
-
-Forecast the runner first. The shown live command uses a per-run cap; add
-`--live` only after checking the printed forecast and the applicable data-use
-permissions. Before each runner forecast, read the current balance in the
-account console and enter it when prompted. The runner does not query or verify
-the account balance: `--remaining-credits` is only a forecast input, not a
-balance check or proof that credits are available. `--max-credits` is a separate
-forecast cap.
-
-```powershell
-$bias = .\.venv\Scripts\python.exe -c "from parcha.vocabulary import AUTOMOTIVE_BIAS_WORDS as W; print(','.join(W))"
-$remainingCredits = Read-Host "Current credits shown by account console"
-.\.venv\Scripts\python.exe -m parcha.lab.runner `
-  --manifest var/benchmark_audio/gramvaani/manifest.jsonl `
-  --audio-root var/benchmark_audio/gramvaani `
-  --codecs none --snr-dbs clean --impulse-profiles none `
-  --stt-modes transcribe,verbatim `
-  --bias-words $bias `
-  --request-interval-seconds 1 --remaining-credits $remainingCredits --max-credits 5000 `
-  --output var/lab/gramvaani.jsonl
-```
-
 ### Run amount-labelled speech sweeps
+
+Before each runner forecast, read the current balance in the account console and enter it when
+prompted. The runner does not query or verify the account balance: `--remaining-credits` is only a
+forecast input, not a balance check or proof that credits are available. `--max-credits` is a separate
+forecast cap.
 
 The following command is a forecast by default. Run it for the estimates and
 corrections manifests. Add `--live` only for an authorized run.

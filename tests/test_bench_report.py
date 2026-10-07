@@ -187,7 +187,7 @@ def test_benchmark_card_uses_a_fresh_console_balance_for_forecasts():
     normalized_card = " ".join(card.split())
 
     assert "235000" not in card
-    assert card.count('Read-Host "Current credits shown by account console"') == 3
+    assert card.count('Read-Host "Current credits shown by account console"') == 2
     assert "does not query or verify the account balance" in normalized_card
 
 
