@@ -34,7 +34,7 @@ before the external extractor), Gnani `API_KEY` can list several comma-separated
 401/403 (`src/parcha/gnani.py:KeyPool`), `MAX_SPEECH_CALLS_PER_DAY` app-wide spend cap, 29.5 s Prisma recording cap,
 optional `AUDIO_CLEANUP` (unmeasured). A real customer phone call via Twilio (`src/parcha/telephony.py`,
 `/telephony/twilio/*`) now runs alongside the simulated line — **live-verified with a real call**: session
-`PjN3-GlUfgLocLvsiihW4NMB` reached `confirmed`, total ₹650, parcha no. `644793`.
+`PjN3-GlUfgLocLvsiihW4NMB` reached `confirmed`, total ₹650, parcha no. `644793`. A later run (`uj-Al-6o8YceseXKlLZYnnFo`, parcha no. `859653`) also delivered the confirmation SMS with the verify link to the owner's phone.
 
 **Do next:** `/workshop` has no button yet for the phone call (API-only: `POST /sessions/{id}/telephony/call`);
 no automatic WhatsApp/SMS delivery after a phone confirmation; real-call accuracy scoring (~20 calls via

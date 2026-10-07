@@ -64,6 +64,29 @@ through the test client and asserts 200/`audio/wav`; confirmed it fails (404) on
   `total_paise: 65000`, `parcha_no: "644793"`. PDF and verify page fetched and confirmed reachable:
   `/sessions/{id}/pdf`, `/verify/{id}`.
 
+## Live end-to-end run with SMS delivery (2026-10-07, after commit `1b2feca`)
+Full chain on the deployed app, real phone, no simulation on the customer leg:
+1. Mechanic leg: Timbre-synthesised Hinglish dictation uploaded to `/intake`, two `/reask` recordings settle both
+   amounts (the labour amount needed a third recording: first heard "सौ", then "दो सौ", the two-agreeing rule
+   held until two matched). Card: part ₹450 + labour ₹200 = ₹650, delivery Monday evening.
+2. `POST /sessions/uj-Al-6o8YceseXKlLZYnnFo/telephony/call` -> call `CAc3e30bd6f6189fecb01a57c9cde7d0b0` to the
+   verified owner number (`+91 92281 82636`).
+3. Owner answered, tapped a real on-screen keypad digit through Twilio's trial announcement, heard the Hindi
+   read-back over a real phone line, said "haan, theek hai".
+4. Server classified `confirmed` -> session `status: "confirmed"`, `total_paise: 65000`, parcha no. `859653`; PDF
+   served as `application/pdf` from `/sessions/{id}/pdf`.
+5. The confirmation SMS (parcha no., total, `/verify/{id}` link) arrived on the owner's phone and the receipt
+   opened from it. Owner-reported; the SMS body is unit-tested, delivery was confirmed by the human, not by a
+   Twilio delivery receipt we stored.
+Cost note: about $0.05 per call minute-bundle and about $0.08 per SMS to India from the trial credit (balance
+roughly $10.7 before this run).
+
+## Known limitation found in this run
+Acceptance is deliberately narrow: `readback.classify_reply` accepts "haan [ji] [theek hai | manzoor hai | sahi hai]",
+"theek hai haan", and "manzoor [hai]". A bare "theek hai", "ok", or "bilkul theek hai" falls to `unclear` and goes
+to the retry/fallback flow (this is the money-path rule: only an explicit yes seals). Widening the list is a
+separate, deliberate change.
+
 ## Remaining (follow-up, not required to prove the concept)
 - No `/workshop` UI button yet — the call is placed via the API directly. Deferred until the live path was proven
   (this effort), per the plan recorded in the prior turn.
