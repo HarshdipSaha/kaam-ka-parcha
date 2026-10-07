@@ -14,12 +14,25 @@ import time
 
 from parcha.audio import codec_round_trip, mix_at_snr, mulaw_to_wav, normalize_upload
 from parcha.config import DEFAULT_TELEPHONY_NOISE_PATH, Settings
-from parcha.gnani import PrismaClient, TimbreClient
+import httpx
+
+from parcha.gnani import GnaniError, PrismaClient, TimbreClient
 from parcha.lab.estimate_repeat_bench import CONDITIONS, VOICES, build_cases, paired_estimates, summarize_pairs
 
 TTS_CREDITS_PER_CHAR = 0.05
 PRISMA_CREDITS_PER_SECOND = 0.2
 ASSUMED_SECONDS_PER_ITEM = 3.0  # forecast only
+
+
+def with_retries(call, *, attempts: int = 4, base_delay: float = 5.0):
+    """Live calls time out or get rate-limited now and then; back off and retry rather than abandon a long run."""
+    for attempt in range(attempts):
+        try:
+            return call()
+        except (httpx.TimeoutException, httpx.TransportError, GnaniError):
+            if attempt == attempts - 1:
+                raise
+            time.sleep(base_delay * (attempt + 1))
 
 
 def forecast(cases, max_credits: float) -> dict:
@@ -88,13 +101,13 @@ def main(argv=None) -> int:
             for voice in VOICES:
                 if all((case.case_id, voice, cond) in done for cond in CONDITIONS):
                     continue
-                wav = mulaw_to_wav(timbre[voice].synthesize(case.utterance))
+                wav = mulaw_to_wav(with_retries(lambda: timbre[voice].synthesize(case.utterance)))
                 for condition in CONDITIONS:
                     if (case.case_id, voice, condition) in done:
                         continue
                     audio = degrade(wav, condition)
-                    verbatim = prisma.transcribe(audio, mode="verbatim"); time.sleep(args.interval)
-                    transcribe = prisma.transcribe(audio, mode="transcribe"); time.sleep(args.interval)
+                    verbatim = with_retries(lambda: prisma.transcribe(audio, mode="verbatim")); time.sleep(args.interval)
+                    transcribe = with_retries(lambda: prisma.transcribe(audio, mode="transcribe")); time.sleep(args.interval)
                     row = {"case_id": case.case_id, "voice": voice, "condition": condition,
                            "utterance": case.utterance, "expected_paise": case.expected,
                            "verbatim": verbatim, "transcribe": transcribe}
