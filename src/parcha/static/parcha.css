@@ -46,6 +46,8 @@ h1, h2, p { margin: 0; }
 .stepper li[data-state="current"]::before { background: var(--neela); border-color: var(--neela); color: #fff; }
 .stepper li[data-state="done"]::before { content: "✓"; background: var(--hara); border-color: var(--hara); color: #fff; }
 .heard { background: var(--bubble); border-radius: 4px 16px 16px 16px; padding: 10px 14px; box-shadow: 0 1px 0 rgba(27,36,51,.08); }
+.heard--live { background: var(--paper); border: 1px dashed var(--rule); }
+.heard--live .heard__text { color: var(--ink-muted); }
 .heard__k { font-weight: 700; font-size: 14px; color: var(--hara); }
 .heard__k .en { display: inline; margin-left: 6px; }
 .heard__text { margin-top: 2px; font-size: 18px; overflow-wrap: anywhere; }
@@ -215,3 +217,5 @@ button, a, summary, label { cursor: pointer; }
 .slip:has(.stamp) .slip__delivery { padding-right: 116px; }
 [data-lang="en"] .verdict__title { font-size: 24px; }
 .topbar .langtoggle { margin-left: auto; }
+.reask--all { margin: .5rem 0; width: 100%; justify-content: center; }
+.row__heard-count { font-size: .8em; opacity: .75; }
