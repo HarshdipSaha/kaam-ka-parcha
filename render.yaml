@@ -12,9 +12,9 @@ services:
       - key: EXTRACTOR_API_KEY
         sync: false
       - key: EXTRACTOR_MODEL
-        value: gnani-evon-v3.3
+        sync: false   # name of the model served by your OpenAI-compatible endpoint
       - key: EXTRACTOR_PROVIDER
-        value: evon
+        value: openai   # set to evon only when serving Gnani Evon v3.3
       # Public-demo guards (src/parcha/guard.py); behind Render's proxy trust the appended client IP.
       - key: TRUST_PROXY
         value: "1"

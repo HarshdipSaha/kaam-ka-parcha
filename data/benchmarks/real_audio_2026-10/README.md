@@ -1,8 +1,8 @@
 # Real-audio benchmark bundle (2026-10)
 
-This private handoff bundle contains the 120-clip Hindi subset of AI4Bharat's IndicContextEval that was used in the live API sweep, along with source references, per-condition measurements, and two failed-attempt records. The five user-provided YouTube-source clips were used locally, but their audio and caption/transcription text are not bundled because source-specific redistribution permission is not recorded. The 80 corresponding condition rows remain in `results.jsonl` with their audio-text and source-row fields redacted; all other metrics and condition metadata are retained.
+This bundle contains the 120-clip Hindi subset of AI4Bharat's IndicContextEval used in the live API sweep, with source references, per-condition measurements, and two failed-attempt records. Earlier internal runs also covered five third-party video clips; under the contest's synthetic/consented-data rule those clips, their rows and their metrics are excluded from this bundle and from the project.
 
-This detailed handoff is intended for the current private repository. Remove the evaluation exports before making the repository public or otherwise redistributing them; the guarded public reporting requirements still apply.
+The guarded public reporting requirements still apply (relative deltas only; see `src/parcha/lab/report.py`).
 
 ## Attribution and license
 
@@ -12,11 +12,11 @@ The manifest contains 120 speaker-disjoint clips spanning the selected sample's 
 
 ## Run record
 
-- 125 source clips were evaluated locally: 120 licensed dataset clips and five private YouTube-source clips.
+- 120 licensed dataset clips were evaluated (an earlier internal run also included five clips that are now excluded).
 - Grid: two Prisma modes (`transcribe`, `verbatim`), two codecs (`g711`, `amr_nb_4750`), clean / 10 / 5 / 0 dB SNR, no frame loss, no impulse profiles.
 - API: Gnani Prisma REST v3 (`/stt/v3`), language `hi-IN`. The client does not record an explicit served model build/version. Verbatim requests use the 12 automotive bias words in `results.jsonl` at the client default bias score of 1.0; transcribe requests have no bias list.
-- 2,000 unique conditions succeeded and were each recorded once in `results.jsonl`. Two HTTP 504 attempts are recorded in `failed_attempts.jsonl`; both conditions later succeeded on a single retry.
-- Requests were serial with a one-second interval. The local usage estimate is 4,964.864 credits for successful conditions and 4,970.2334 including both failed attempts, using 0.2 credits per source-audio second. This is an estimate, not a provider billing statement or dashboard balance.
-- `summary.json` groups CER, WER, latency, condition counts, and estimated usage by source, reference type, mode, codec, and SNR. YouTube-derived reference and hypothesis text is withheld from the bundle, so that slice cannot be independently rescored from this export.
+- 1,920 unique conditions succeeded and were each recorded once in `results.jsonl`. Two HTTP 504 attempts are recorded in `failed_attempts.jsonl`; both conditions later succeeded on a single retry.
+- Requests were serial with a one-second interval. The local usage estimate is 4,727.104 credits for successful conditions and 4,732.4734 including both failed attempts, using 0.2 credits per source-audio second. This is an estimate, not a provider billing statement or dashboard balance.
+- `summary.json` groups CER, WER, latency, condition counts, and estimated usage by source, reference type, mode, codec, and SNR.
 
-The IndicContextEval subset is broad professional Hindi, not a mechanic-specific corpus. The five YouTube-source clips used automatic captions as pseudo-references, not human gold labels. No sample has a trusted repair-amount label; the run does not measure amount-extraction accuracy or establish safe monetary transcription.
+The IndicContextEval subset is broad professional Hindi, not a mechanic-specific corpus. No sample has a trusted repair-amount label; the run does not measure amount-extraction accuracy or establish safe monetary transcription.

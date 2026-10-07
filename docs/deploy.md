@@ -6,7 +6,7 @@ so use a host that terminates TLS.
 
 ## Required settings (platform environment, never committed)
 `API_KEY` (Gnani Prisma/Timbre), `EXTRACTOR_BASE_URL`, `EXTRACTOR_API_KEY`, `EXTRACTOR_MODEL`,
-`EXTRACTOR_PROVIDER=evon`. `TTS_VOICE` defaults to `Vikrant` (the measured read-back leader).
+`EXTRACTOR_PROVIDER` (`evon` only if the served model is Gnani Evon; otherwise `openai`). `TTS_VOICE` defaults to `Vikrant` (the measured read-back leader).
 See `.env.example` for the rest. FFmpeg must be present; the Dockerfile installs it.
 
 ## Render (blueprint in `render.yaml`)
