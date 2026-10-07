@@ -26,7 +26,7 @@ REST STT rejects clips of about 30 s or more (the 60 s doc claim does not hold);
 
 # Handoff 2026-10-07: deploy hardening + real Twilio phone leg
 
-**Status:** deployed live at `https://kaam-ka-parcha.onrender.com` (Render free plan). Offline suite 776 passed.
+**Status:** deployed live at `https://kaam-ka-parcha.onrender.com` (Render free plan). Offline suite 781 passed.
 See `aidlc-docs/efforts/013-deploy-hardening/effort-state.md` and `aidlc-docs/efforts/014-twilio-phone-leg/effort-state.md`.
 
 **What's new:** CI, MIT `LICENSE`, `PARCHA_MOCK=1` offline demo mode, `src/parcha/redact.py` (masks phone/Aadhaar/PAN
@@ -37,7 +37,7 @@ optional `AUDIO_CLEANUP` (unmeasured). A real customer phone call via Twilio (`s
 `PjN3-GlUfgLocLvsiihW4NMB` reached `confirmed`, total ₹650, parcha no. `644793`. A later run (`uj-Al-6o8YceseXKlLZYnnFo`, parcha no. `859653`) also delivered the confirmation SMS with the verify link to the owner's phone.
 
 **Do next:** `/workshop` has no button yet for the phone call (API-only: `POST /sessions/{id}/telephony/call`);
-no automatic WhatsApp/SMS delivery after a phone confirmation; real-call accuracy scoring (~20 calls via
+no WhatsApp delivery (SMS with the verify link is sent on a phone confirmation); real-call accuracy scoring (~20 calls via
 `parcha.lab`) not yet run; `AUDIO_CLEANUP` A/B not yet measured.
 
 **Known limits worth remembering:** Twilio trial plays its own disclaimer and requires an actual on-screen keypad
