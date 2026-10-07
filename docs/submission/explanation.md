@@ -29,6 +29,8 @@
 - The phone call is an in-browser simulation; no real telephony is used. "WhatsApp" is clipboard copy; nothing is sent.
 - Extraction is not on a Gnani model (see above).
 
+**Who pays (hypothesis).** The workshop: a customer-confirmed estimate protects it against pick-up disputes. About ₹99 per workshop per month is an untested guess to check with garage owners; reach is through spare-parts dealers and garage associations; the next features are a GST invoice and a UPI advance from the same confirmed card. [Replace with what the garage visits show.]
+
 **Data and consent.** Only synthetic data, a licensed corpus and self-recorded consented audio are used. No recorded calls, third-party voices, real phone numbers or IDs are in the project, demo or this submission.
 
 **Each member's contribution.** [Human to fill in.]

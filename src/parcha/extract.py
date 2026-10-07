@@ -5,6 +5,7 @@ from typing import Any
 import unicodedata
 import httpx
 from .schema import Delivery, Evidence, JobCard, LineItem
+from .redact import mask_pii
 
 CARD_SYSTEM_PROMPT = """Extract only explicitly spoken workshop facts from the two transcripts. Return JSON with
 items [{id,label,kind,amount_paise}], delivery {date,window,spoken} or null, evidence
@@ -370,6 +371,7 @@ class Extractor:
         messages: list[dict[str, str]],
         schema: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        messages = [{**m, "content": mask_pii(m["content"])} for m in messages]   # identifiers never reach the external model
         num_keys = len(self.api_keys)
         last_error: Exception | None = None
 

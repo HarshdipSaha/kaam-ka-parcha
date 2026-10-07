@@ -120,3 +120,24 @@ def test_gate_guesses_are_rate_limited(fake_services):
     codes = [client.post("/gate", data={"code": f"guess{i}"}).status_code for i in range(12)]
     assert codes[:10] == [401] * 10 and codes[10:] == [429, 429]
     assert client.post("/gate", data={"code": "open-sesame"}).status_code == 429  # even the right code waits
+
+
+def test_daily_cap_stops_credit_spending_calls_app_wide(fake_services):
+    client = app_with(fake_services, max_speech_calls_per_day=2)
+    sid = client.post("/sessions").json()["id"]            # creating sessions spends nothing, so it is not counted
+    assert client.post("/sessions").status_code == 200
+
+    def intake():
+        return client.post(f"/sessions/{sid}/intake", data={"expected_revision": 0}, files={"audio": ("a.wav", b"x", "audio/wav")})
+
+    assert intake().status_code != 503 and intake().status_code != 503
+    before = len(fake_services.workflow.prisma.calls)
+    res = intake()
+    assert res.status_code == 503 and res.headers["retry-after"]
+    assert len(fake_services.workflow.prisma.calls) == before   # refused before any speech call
+    assert client.get("/health").status_code == 200 and client.get(f"/sessions/{sid}").status_code == 200
+
+
+def test_daily_cap_defaults_off_and_parses_env():
+    assert Settings().max_speech_calls_per_day == 0
+    assert Settings.from_mapping({"MAX_SPEECH_CALLS_PER_DAY": "500"}).max_speech_calls_per_day == 500

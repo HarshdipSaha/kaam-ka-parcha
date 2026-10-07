@@ -12,7 +12,7 @@ Never commit `.env`, `var/`, private audio. Two unrelated untracked files stay o
 
 ---
 
-# Handoff 2026-10-07: sug.md Part A
+# Handoff 2026-10-07: docs/dev-notes/sug.md Part A
 
 **Status:** all Part A PRs (#34-#43, #45, #47, #48, #49) are merged into `main`; combined main passes the offline suite (743) and the e2e suite.
 

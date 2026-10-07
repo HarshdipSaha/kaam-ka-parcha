@@ -72,3 +72,33 @@ def test_rate_limit_gives_up_after_two_retries(monkeypatch):
     with pytest.raises(gnani.GnaniError) as err:
         client.transcribe(b"wav", mode="transcribe")
     assert err.value.status == 429
+
+
+def test_long_readback_is_split_below_the_tts_limit_and_audio_joined():
+    from parcha.gnani import TTS_MAX_CHARS, chunk_for_tts
+
+    sentence = "front brake pad: चार सौ पचास रुपये, labour: दो सौ रुपये."
+    text = " ".join([sentence] * 60)
+    assert len(text) > TTS_MAX_CHARS * 2
+    chunks = chunk_for_tts(text)
+    assert len(chunks) >= 3 and all(len(c) <= TTS_MAX_CHARS for c in chunks)
+    assert " ".join(chunks) == text   # nothing lost or reordered
+
+    sent: list[str] = []
+
+    def handler(request):
+        sent.append(json.loads(request.content)["text"])
+        return httpx.Response(200, content=b"\xff" * 100)
+
+    client = TimbreClient("test-key", http=httpx.Client(transport=httpx.MockTransport(handler)))
+    audio = client.synthesize(text)
+    assert sent == chunks and len(audio) == 100 * len(chunks)
+
+
+def test_chunking_breaks_an_unpunctuated_run_at_word_boundaries():
+    from parcha.gnani import chunk_for_tts
+
+    text = " ".join(["shabd"] * 500)
+    chunks = chunk_for_tts(text, limit=100)
+    assert all(len(c) <= 100 for c in chunks) and " ".join(chunks) == text
+    assert chunk_for_tts("chhota sa") == ["chhota sa"]

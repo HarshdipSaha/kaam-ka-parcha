@@ -24,3 +24,6 @@ Thumbs.db
 var/
 var/lab/
 var/lab/audio/
+
+# Personal to-do (local only)
+HARSHDOTHIS.md

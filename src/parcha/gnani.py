@@ -4,7 +4,53 @@ import time
 from typing import Literal
 import httpx
 
-__all__ = ["GnaniError", "PrismaClient", "TimbreClient"]
+__all__ = ["GnaniError", "PrismaClient", "TimbreClient", "chunk_for_tts"]
+
+# Another entrant's live probe (boli-zero, 2026-10-05) saw Timbre fail somewhere between ~1,500 and ~2,800 characters.
+# Not verified here; long read-backs are split below a conservative limit so a many-item card cannot crash the demo.
+TTS_MAX_CHARS = 1000
+_SENTENCE_END = re.compile(r"(?<=[.!?।])\s+")
+
+
+def chunk_for_tts(text: str, limit: int = TTS_MAX_CHARS) -> list[str]:
+    """Split text into pieces of at most `limit` characters, preferring sentence, then comma, then word boundaries."""
+    text = text.strip()
+    if len(text) <= limit:
+        return [text]
+    chunks: list[str] = []
+    current = ""
+    for piece in _pieces(text, limit):
+        if current and len(current) + 1 + len(piece) > limit:
+            chunks.append(current)
+            current = piece
+        else:
+            current = f"{current} {piece}".strip()
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def _pieces(text: str, limit: int) -> list[str]:
+    """Sentence-sized pieces, each broken further (commas, then words) if still longer than `limit`."""
+    out: list[str] = []
+    for sentence in _SENTENCE_END.split(text):
+        if len(sentence) <= limit:
+            out.append(sentence)
+            continue
+        for part in re.split(r"(?<=,)\s+", sentence):
+            if len(part) <= limit:
+                out.append(part)
+                continue
+            line = ""
+            for word in part.split():
+                if line and len(line) + 1 + len(word) > limit:
+                    out.append(line)
+                    line = word
+                else:
+                    line = f"{line} {word}".strip()
+            if line:
+                out.append(line)
+    return out
 
 
 class GnaniError(RuntimeError):
@@ -119,6 +165,10 @@ class TimbreClient:
     def synthesize(self, text: str, *, language: str = "hi-IN", voice: str | None = None) -> bytes:
         if not text.strip():
             raise ValueError("TTS text is empty")
+        # Raw mu-law has no header, so the pieces' audio can simply be joined.
+        return b"".join(self._synthesize_one(piece, language, voice) for piece in chunk_for_tts(text))
+
+    def _synthesize_one(self, text: str, language: str, voice: str | None) -> bytes:
         body = {
             "text": text,
             "voice": voice or self.voice,

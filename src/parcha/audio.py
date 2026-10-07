@@ -22,8 +22,27 @@ ALLOWED_UPLOAD_MIMES = {
 }
 
 
-def normalize_upload(blob: bytes, mime: str, sample_rate: int = 16000) -> bytes:
-    """Normalize uploaded audio blob to 16-bit mono WAV at target sample rate."""
+# Optional clean-up before speech recognition (AUDIO_CLEANUP=1): drop rumble below speech, then spectral denoise.
+# Off by default until a noise-lab A/B shows it helps amount recovery without hurting clean audio (HARSHDOTHIS P1-5).
+CLEANUP_FILTER = "highpass=f=100,afftdn=nf=-25"
+
+
+# Prisma's REST endpoint rejected clips of about 30 s or more with HTTP 400 although the docs say 60 s (our probe, and an
+# independent entrant's, 2026-10). Recordings meant for speech-to-text are refused early with a clear message instead.
+STT_MAX_SECONDS = 29.5
+
+
+def stt_normalizer(cleanup: bool = False):
+    """normalize_upload for recordings that go to Prisma: the 30 s ceiling and the optional clean-up."""
+    def normalize(blob: bytes, mime: str, sample_rate: int = 16000) -> bytes:
+        return normalize_upload(blob, mime, sample_rate, cleanup=cleanup, max_seconds=STT_MAX_SECONDS)
+    return normalize
+
+
+def normalize_upload(
+    blob: bytes, mime: str, sample_rate: int = 16000, cleanup: bool = False, max_seconds: float = 60.0
+) -> bytes:
+    """Normalize uploaded audio blob to 16-bit mono WAV at target sample rate, optionally denoised."""
     clean_mime = mime.split(";")[0].strip().lower()
     if clean_mime not in ALLOWED_UPLOAD_MIMES:
         raise AudioError(f"unsupported audio mime type: {clean_mime}")
@@ -34,7 +53,8 @@ def normalize_upload(blob: bytes, mime: str, sample_rate: int = 16000) -> bytes:
     out_wav = _ffmpeg(
         blob,
         [],
-        ["-ar", str(sample_rate), "-ac", "1", "-c:a", "pcm_s16le", "-f", "wav"],
+        (["-af", CLEANUP_FILTER] if cleanup else [])
+        + ["-ar", str(sample_rate), "-ac", "1", "-c:a", "pcm_s16le", "-f", "wav"],
     )
 
     try:
@@ -50,8 +70,8 @@ def normalize_upload(blob: bytes, mime: str, sample_rate: int = 16000) -> bytes:
         raise AudioError(f"Truncated WAV data: {exc}") from exc
 
     duration = len(frames) / (2 * sample_rate)
-    if not (0.3 <= duration <= 60.0):
-        raise AudioError(f"audio duration {duration:.2f}s outside bounds [0.3s, 60s]")
+    if not (0.3 <= duration <= max_seconds):
+        raise AudioError(f"audio duration {duration:.2f}s outside bounds [0.3s, {max_seconds:g}s]")
 
     return out_wav
 

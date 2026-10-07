@@ -28,7 +28,7 @@ CONTRAST_JS = """() => {
   // Worst-case backdrop: a gradient contributes each of its colour stops; the caller keeps the lowest contrast.
   const backdrops = (el) => { let stack = []; for (let n = el; n; n = n.parentElement) { const cs = getComputedStyle(n); const c = parse(cs.backgroundColor);
       if (c && c.a > 0) { stack.push([c]); if (c.a === 1) break; }
-      const stops = (cs.backgroundImage.match(/rgba?\([^)]+\)/g) || []).map(parse).filter((x) => x && x.a > 0.5);
+      const stops = (cs.backgroundImage.match(/rgba?\\([^)]+\\)/g) || []).map(parse).filter((x) => x && x.a > 0.5);
       if (stops.length) { stack.push(stops); break; } }
     let options = [[255, 255, 255]]; for (const layer of stack.reverse()) options = layer.flatMap((c) => options.map((bg) => blend(c, bg))); return options; };
   const out = [];

@@ -4,7 +4,8 @@
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
-[![Pytest Passed](https://img.shields.io/badge/tests-631%20passed%20(100%25%20offline)-brightgreen.svg)](tests/)
+[![CI](https://github.com/HarshdipSaha/kaam-ka-parcha/actions/workflows/ci.yml/badge.svg)](https://github.com/HarshdipSaha/kaam-ka-parcha/actions/workflows/ci.yml)
+[![Offline tests](https://img.shields.io/badge/offline%20tests-754%20passing-brightgreen.svg)](tests/)
 [![Playwright E2E](https://img.shields.io/badge/playwright-E2E%20Passed%20(4%20Viewports)-purple.svg)](scripts/run_webattack_suite.py)
 [![Gnani AI](https://img.shields.io/badge/Gnani%20AI-Prisma%20%7C%20Timbre-orange.svg)](https://vachana.ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -36,7 +37,7 @@ flowchart TD
         C -->|format=transcribe| D["Indic ITN<br/>(saade chaar sau -> ₹450)"]
         C -->|format=verbatim + bias_list| E["Automotive Vocabulary<br/>(brake pad, clutch plate)"]
         D & E --> F["Structured Extractor<br/>(Paise-accurate Line Items & Delivery Date)"]
-        F --> G["Session State Machine<br/>(DRAFT -> READ_BACK_READY)"]
+        F --> G["Session State Machine<br/>(draft -> review)"]
     end
 
     subgraph Leg2["Leg 2: Customer Telephony Loop (8 kHz Narrowband)"]
@@ -45,7 +46,7 @@ flowchart TD
         I --> J["Customer WebApp<br/>/customer/{session_id}"]
         J --> K["Targeted Voice Correction / Affirmation<br/>(haan theek hai / nahi badlo)"]
         K --> L["Prisma Telephony STT (8 kHz)<br/>Targeted Delta Field Update"]
-        L --> M["Session State Machine<br/>(CUSTOMER_REVIEW -> SEALED)"]
+        L --> M["Session State Machine<br/>(awaiting_reply -> confirmed)"]
     end
 
     subgraph Artefact["The Sealed Artefact"]
@@ -59,14 +60,14 @@ flowchart TD
    - Transcribed through **Gnani Prisma v2.5** running dual-pass:
      - `format=transcribe` (Indic Inverse Text Normalization parses *"saade chaar sau"* $\to$ ₹450, dates $\to$ Monday 6:00 PM).
      - `format=verbatim` with an automotive `bias_list` (boosts specialized parts and brand terms).
-   - Extractor creates an itemized job card with confidence scores and sets session status to `READ_BACK_READY`.
+   - Extractor creates an itemized job card with confidence scores and moves the session to `review` (amounts settle only after two agreeing recordings).
 
 2. **Leg 2 (Customer Telephony Loop):** The customer opens their personalized review link (`/customer/{id}`):
    - **Gnani Timbre v2.5** speaks the read-back in natural Hindi:
      > *"Aapki gaadi ka kul chhe sau pachaas rupaye hua, Somvaar shaam tak milegi. Agar theek hai toh kahiye 'Haan, theek hai'."*
    - Audio is degraded through an authentic telephony filter graph (FFmpeg G.711 $\mu$-law or AMR-NB 4.75 kbps + street ambient noise at 5 dB SNR) with an on-screen simulation disclosure.
    - If the customer wants a change (*"Nahi, brake pad saade teen sau bola tha"*), the system executes a **targeted delta update** on that single field without wiping the card, recalculating the total (₹550) and generating a revised read-back.
-   - When the customer confirms (*"Haan, theek hai"*), the session state transitions to `SEALED`.
+   - When the customer confirms (*"Haan, theek hai"*), the session state transitions to `confirmed`.
 
 3. **The Artefact (Confirmed Parcha):**
    - **Tamper-Evident PDF**: Contains an itemized paise-accurate breakdown, promised delivery timestamp, verbatim Hinglish transcripts, audio SHA-256 signatures, and an embedded `transcripts.json` stream for automated auditing.
@@ -74,7 +75,7 @@ flowchart TD
 
 ### Visual Interface Walkthrough
 
-Captured from a **live run** (`scripts/capture_live_screens.py`): real Gnani Prisma recognition and Timbre read-back, driven by spoken audio. Field extraction in that run used the configured external OpenAI-compatible LLM, not Gnani Evon (Gnani publishes no hosted Evon API; self-hosting Evon v3.3 is a listed follow-up in `sug.md`). The speech is synthetic (Timbre voices into a fake microphone) and no real customer data is used. The phone line is simulated and WhatsApp is clipboard copy.
+Captured from a **live run** (`scripts/capture_live_screens.py`): real Gnani Prisma recognition and Timbre read-back, driven by spoken audio. Field extraction in that run used the configured external OpenAI-compatible LLM, not Gnani Evon (Gnani publishes no hosted Evon API; self-hosting Evon v3.3 is a listed follow-up in `docs/dev-notes/sug.md`). The speech is synthetic (Timbre voices into a fake microphone) and no real customer data is used. The phone line is simulated and WhatsApp is clipboard copy.
 
 | Leg 1: Mechanic (`/workshop`) — काम का पर्चा | Leg 2: Vehicle owner (`/customer/{id}`) — गैराज से कॉल |
 |:---:|:---:|
@@ -147,7 +148,7 @@ Rather than relying on best-case clean audio demos, Kaam Ka Parcha includes a de
 │       ├── readback.py          # Timbre TTS synthesis and number pre-normalization
 │       ├── reply.py             # Customer reply classification and confirmation logic
 │       ├── schema.py            # Pydantic models (JobCard, LineItem, SessionState)
-│       ├── session.py           # State machine (DRAFT -> READ_BACK -> SEALED)
+│       ├── session.py           # State machine (draft -> review -> awaiting_reply -> confirmed)
 │       └── lab/
 │           ├── metrics.py       # Levenshtein distance, CER, WER, and hallucination scoring
 │           ├── report.py        # Private analysis report & guarded public delta exporter
@@ -247,7 +248,7 @@ Follow these steps to demonstrate or rehearse the complete two-browser flow:
      > *"Front brake pad badla, part saade chaar sau, labour do sau, Somvaar shaam tak."*
    - Click **Transcribe & Parse**:
      - Prisma extracts line items: **Front Brake Pad** (₹450), **Labour** (₹200), **Total** (₹650), **Delivery** (Monday 6:00 PM).
-     - State advances to `READ_BACK_READY`.
+     - State advances to `awaiting_reply` once the read-back is generated.
      - System displays the unique customer link.
 
 3. **Step 2: Customer Review & Telephony Read-Back (`/customer/{id}`)**:
@@ -267,7 +268,7 @@ Follow these steps to demonstrate or rehearse the complete two-browser flow:
 5. **Step 4: Sealing & Artefacts**:
    - Customer taps **Voice Confirm** and speaks:
      > *"Haan, theek hai."*
-   - Status transitions to `SEALED` and UI locks with green confirmation shield.
+   - Status transitions to `confirmed` and UI locks with green confirmation shield.
    - **Download Sealed PDF**: Click to inspect the PDF with itemized totals and embedded `transcripts.json` audit trail.
    - **Copy WhatsApp Summary**: Return to `/workshop`, click the copy button, and paste the ready-to-send message into WhatsApp Web or chat.
 
@@ -337,7 +338,7 @@ Output:
 
 ### Test Coverage Highlights
 - `tests/test_extract.py`: Validates colloquial Hinglish number parsing (*"saade chaar sau"*, *"paanch sau pachaas"*, *"hazaar"*).
-- `tests/test_session.py`: Verifies state machine transitions and immutability once `SEALED`.
+- `tests/test_session.py`: Verifies state machine transitions and immutability once `confirmed`.
 - `tests/test_artefact.py`: Asserts PDF generation and extraction of embedded `transcripts.json`.
 - `tests/test_audio.py`: Tests FFmpeg audio degradation, G.711 / AMR-NB encoding, and SNR mixing.
 - `tests/test_lab_report.py`: Validates fail-closed consent guards, competitor bans, and paired delta math.
@@ -355,7 +356,40 @@ In addition to the unit tests, an end-to-end browser automation and security pro
 
 ---
 
+## Try it without keys (mock mode)
+
+```powershell
+$env:PARCHA_MOCK = "1"
+.\.venv\Scripts\python.exe -m uvicorn parcha.app:app --port 8000   # then open http://127.0.0.1:8000/stage
+```
+
+Mock mode runs the real app, workflow, state machine, PDF and verification page with **scripted** speech services
+(`src/parcha/mock.py`): any recording produces the same synthetic estimate, and the first recording after a read-back is
+"Haan, theek hai". It uses no credits and **proves nothing about recognition**; every accuracy number in this repository comes
+from the live services (see `docs/gates.md`). FFmpeg is still required.
+
+## Safeguards worth knowing about
+
+| Safeguard | Where | What it does |
+|---|---|---|
+| Two agreeing recordings | `workflow.py`, `money.py` | An amount is settled only when two separate recordings agree; look-alike numbers need a third. |
+| Identifier masking | `redact.py` | Indian mobile numbers, Aadhaar and PAN codes are masked before text is sent to the external extraction model. Number plates are not masked (they can be evidence). |
+| Spend guards | `guard.py` | Per-client rate limit, per-client session cap, total session cap, upload cap, optional access code and an app-wide daily cap (`MAX_SPEECH_CALLS_PER_DAY`). |
+| Long read-backs | `gnani.py` | A card with many items is split into sentence-sized pieces before Timbre (another entrant saw Timbre fail somewhere above ~1,500 characters; not verified here). |
+| 30 s recordings | `audio.py` | Prisma's REST endpoint rejected clips of about 30 s or more although its docs say 60 s, so longer recordings get a clear message instead of a 502. |
+| Optional clean-up | `audio.py` | `AUDIO_CLEANUP=1` adds a high-pass and denoise step before Prisma. Off by default: its effect on recognition has not been measured yet. |
+
+## Who pays (hypothesis, not yet validated)
+
+The paying user is the **workshop**, not the customer: a signed-off estimate is protection against the "aapne ₹400 bola tha"
+dispute at pick-up. An illustrative price of about ₹99 per workshop per month is a guess to test with garage owners,
+reached through spare-parts dealers and garage associations. Natural next steps are a GST invoice and a UPI advance
+from the same confirmed card. No workshop has been interviewed yet; see `docs/submission/explanation.md` for what is and is not evidenced.
+
+---
+
 ## Honest Scope & Legal Disclosure
+
 
 In accordance with Hackathon Rule 7 ("Misleading Demos") and the Gnani AI Platform EULA:
 

@@ -13,10 +13,11 @@ from fastapi.templating import Jinja2Templates
 from .captions import relay_captions
 from .config import Settings
 from .languages import supported_codes
+from .mock import MockExtractor, MockPrisma, MockTimbre
 from .guard import ACCESS_COOKIE, SlidingWindow, access_ok, access_token, client_ip, is_guarded
 from .session import CapacityError, Conflict, SessionStore
 from .workflow import NothingToConfirm, RepeatRequest, Workflow
-from .audio import AudioError, normalize_upload
+from .audio import AudioError, normalize_upload, stt_normalizer
 from .extract import ExtractionError, Extractor
 from .gnani import PrismaClient, TimbreClient, GnaniError
 from .presentation import latest_log_text, parcha_no, register_filters, status_label
@@ -40,18 +41,24 @@ class AppServices:
 def default_services() -> AppServices:
     settings = Settings.load()
     store = SessionStore(max_total=settings.max_total_sessions)
-    prisma = PrismaClient(settings.api_key, base_url=settings.gnani_base_url)
-    extractor = Extractor(
-        settings.extractor_base_url,
-        settings.extractor_api_key,
-        settings.extractor_model,
-        provider=settings.extractor_provider,
-    )
-    timbre = TimbreClient(
-        settings.api_key,
-        voice=settings.tts_voice,
-        base_url=settings.gnani_base_url,
-    )
+    if settings.mock:
+        prisma = MockPrisma()
+        extractor = MockExtractor()
+        timbre = MockTimbre(prisma)
+        log.warning("PARCHA_MOCK is on: scripted speech services, no credits used, nothing here measures recognition")
+    else:
+        prisma = PrismaClient(settings.api_key, base_url=settings.gnani_base_url)
+        extractor = Extractor(
+            settings.extractor_base_url,
+            settings.extractor_api_key,
+            settings.extractor_model,
+            provider=settings.extractor_provider,
+        )
+        timbre = TimbreClient(
+            settings.api_key,
+            voice=settings.tts_voice,
+            base_url=settings.gnani_base_url,
+        )
     try:
         noise_wav = normalize_upload(
             settings.telephony_noise_path.read_bytes(), "audio/wav", sample_rate=8000
@@ -64,7 +71,7 @@ def default_services() -> AppServices:
         store=store,
         prisma=prisma,
         extractor=extractor,
-        normalize_audio=normalize_upload,
+        normalize_audio=stt_normalizer(cleanup=settings.audio_cleanup),
         timbre=timbre,
         bias_words=AUTOMOTIVE_BIAS_WORDS,
         use_bias=settings.use_automotive_bias,
@@ -142,6 +149,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
     settings = services.settings or Settings()
     rate = SlidingWindow(settings.rate_limit_per_minute, 60.0)
     session_rate = SlidingWindow(settings.sessions_per_ip_per_hour, 3600.0)
+    daily_spend = SlidingWindow(settings.max_speech_calls_per_day, 86400.0)  # one shared key: the whole app
     gate_rate = SlidingWindow(10, 60.0)  # access-code guesses per client per minute
 
     async def read_audio(upload: UploadFile) -> bytes:
@@ -172,6 +180,8 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                 wait = session_rate.hit(ip)
             if wait:
                 return refuse(429, "Too many requests, please wait a moment and try again", wait)
+            if path != "/sessions" and daily_spend.hit("app"):
+                return refuse(503, "Daily demo limit reached, please try again tomorrow", 3600)
         return await call_next(request)
 
     @app.exception_handler(Exception)
@@ -193,6 +203,9 @@ def create_app(services: AppServices | None = None) -> FastAPI:
         ip = client_ip(ws.headers, ws.client.host if ws.client else None, settings.trust_proxy)
         if rate.hit(ip):
             await ws.close(code=4429)
+            return
+        if daily_spend.hit("app"):
+            await ws.close(code=4503)
             return
         try:
             settings.require_gnani()

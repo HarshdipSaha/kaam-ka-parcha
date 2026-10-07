@@ -4,7 +4,7 @@ Hindi (`hi-IN`) stays the default and is handled by the original code in `readba
 read-back is assembled from the fixed strings below, with **digit-style amounts** (Timbre reads numerals natively; we
 never machine-translate an amount) and a reply classifier that only accepts a clear yes.
 
-REVIEW REQUIRED: these strings were drafted without a native-speaker check. Task B8 in `sug.md` asks the owner to have a
+REVIEW REQUIRED: these strings were drafted without a native-speaker check. Task B8 in `docs/dev-notes/sug.md` asks the owner to have a
 native speaker review each pack before the language is shown to real customers; the UI labels them "preview".
 """
 

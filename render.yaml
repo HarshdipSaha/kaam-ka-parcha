@@ -24,6 +24,8 @@ services:
         value: "20"
       - key: MAX_TOTAL_SESSIONS
         value: "300"
+      - key: MAX_SPEECH_CALLS_PER_DAY
+        value: "400"   # app-wide daily cap on credit-spending calls; tune to your credit balance
       - key: DEMO_ACCESS_CODE
         sync: false   # optional; leave empty to keep the demo open
       - key: TTS_VOICE

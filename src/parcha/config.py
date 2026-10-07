@@ -50,7 +50,10 @@ class Settings:
     sessions_per_ip_per_hour: int = 0
     max_total_sessions: int = 0
     max_upload_bytes: int = 8 * 1024 * 1024
+    max_speech_calls_per_day: int = 0   # app-wide cap on credit-spending POSTs per rolling 24 h
     demo_access_code: str = field(default="", repr=False)
+    audio_cleanup: bool = False      # AUDIO_CLEANUP=1: high-pass + denoise recordings before Prisma (unmeasured; see audio.py)
+    mock: bool = False               # PARCHA_MOCK=1: scripted offline speech services (src/parcha/mock.py)
     trust_proxy: bool = False
     caption_partials: bool = True    # interim transcripts via the x-partials header (live probe 2026-10-07: ~0.6 s cadence)
 
@@ -75,7 +78,10 @@ class Settings:
             sessions_per_ip_per_hour=_int(values.get("SESSIONS_PER_IP_PER_HOUR"), 0),
             max_total_sessions=_int(values.get("MAX_TOTAL_SESSIONS"), 0),
             max_upload_bytes=_int(values.get("MAX_UPLOAD_BYTES"), 8 * 1024 * 1024),
+            max_speech_calls_per_day=_int(values.get("MAX_SPEECH_CALLS_PER_DAY"), 0),
             demo_access_code=(values.get("DEMO_ACCESS_CODE") or "").strip(),
+            audio_cleanup=(values.get("AUDIO_CLEANUP") or "").strip().casefold() in {"1", "true", "yes", "on"},
+            mock=(values.get("PARCHA_MOCK") or "").strip().casefold() in {"1", "true", "yes", "on"},
             caption_partials=(values.get("CAPTION_PARTIALS") or "1").strip().casefold() not in {"0", "false", "no", "off"},
             trust_proxy=(values.get("TRUST_PROXY") or "").strip().casefold() in {"1", "true", "yes", "on"},
             telephony_noise_path=resolve_project_path(
@@ -89,9 +95,13 @@ class Settings:
         return cls.from_mapping({**dotenv_values(".env"), **environ})
 
     def require_gnani(self) -> None:
+        if self.mock:
+            return
         if not self.api_key or self.api_key == "replace_me":
             raise ValueError("API_KEY is required for live Gnani calls")
 
     def require_extractor(self) -> None:
+        if self.mock:
+            return
         if not self.extractor_base_url or not self.extractor_model:
             raise ValueError("An extractor endpoint and model are required")
