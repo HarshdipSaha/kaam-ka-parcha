@@ -2,7 +2,7 @@ services:
   - type: web
     name: kaam-ka-parcha
     runtime: docker
-    plan: starter
+    plan: free   # no card needed; sleeps after ~15 min idle and loses in-memory sessions. Use starter for the final demo window
     healthCheckPath: /health
     envVars:
       - key: API_KEY            # Gnani Prisma/Timbre key — set in the dashboard, never commit

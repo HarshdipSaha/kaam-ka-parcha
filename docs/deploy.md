@@ -9,7 +9,7 @@ so use a host that terminates TLS.
 `EXTRACTOR_PROVIDER` (`evon` only if the served model is Gnani Evon; otherwise `openai`). `TTS_VOICE` defaults to `Vikrant` (the measured read-back leader).
 See `.env.example` for the rest. FFmpeg must be present; the Dockerfile installs it.
 
-## Render (blueprint in `render.yaml`)
+## Render (blueprint in `render.yaml`; free plan by default, switch `plan: starter` for an always-on demo)
 1. Push to GitHub, then Render → New → Blueprint → pick the repo.
 2. Fill the four `sync: false` secrets in the dashboard.
 3. Wait for `/health` to go green, then open `https://<service>.onrender.com/stage`.
