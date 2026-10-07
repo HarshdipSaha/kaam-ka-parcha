@@ -373,6 +373,14 @@ Spend is runner-estimated, not console-billed; an interrupted resume attempt
 its small unrecorded duplicate spend is not included above. Private report:
 `.\.venv\Scripts\python.exe -m parcha.lab.bench_report --echo var/lab/echo_screen_resumed4_20261006.jsonl --echo var/lab/echo_confirm_resumed2_20261006.jsonl` → `var/lab/benchmark_report.md`.
 
+### Licensed real-speech robustness (2026-10-07, A14)
+
+`python -m parcha.lab.real_speech_report` over the saved IndicContextEval sweep (`var/lab/real_audio_results.jsonl`): 1,920 licensed rows
+(120 clips x 2 Prisma modes x 2 codecs x clean/10/5/0 dB); 80 rows from non-licensed sources are excluded before analysis. Output `var/lab/real_speech_private.md`
+(private); no new API credits. Reported as relative change versus the same clips on a clean line, 95% bootstrap interval over clips, split by the dataset's
+code-mix flag. Headline (all clips, CER, 0 dB vs clean): G.711 +3% [+1, +5], AMR-NB 4.75 +16% [+11, +22]; 10 and 5 dB are within noise. The public form
+(`--public`) is fail-closed: it needs a recorded organiser consent reference (B3, not yet recorded), prints no absolute CER/WER or competitor names, and
+attributes AI4Bharat (CC BY 4.0). This is broad professional Hindi, not mechanic speech, and says nothing about rupee-amount accuracy.
 ### Regional read-back echo probe (2026-10-07, A10)
 
 `scripts/run_language_echo_bench.py --live`: Timbre speaks the product's regional read-back (digit amounts, consent line, closing prompt) over control / G.711 clean / AMR-NB 4.75 0 dB, Prisma
