@@ -94,6 +94,9 @@ Captured from a **live run** (`scripts/capture_live_screens.py`): real Gnani Pri
 
 ---
 
+## Hinglish Rupee Amounts
+
+Amounts come from a deterministic numeral grammar (डेढ़, ढाई, साढ़े, सवा, पौने, "बारह सौ"), never from a language model. Prisma's formatted pass writes "साढ़े चार सौ" as `04:30 100`; normalising that string lifted single-amount re-ask recovery from 73.3% to 96.3% on 1,000 live synthetic-speech rows (96.8% on a held-out run). Because a single recording still mis-accepts 2.2-2.4% of amounts at 0 dB, an amount is settled only when **two separate recordings agree**. Details, evidence links and limits: [`docs/benchmarks/hinglish-amounts.md`](docs/benchmarks/hinglish-amounts.md).
 ## Regional Read-Back (Preview)
 
 The mechanic can pick the customer's language (Tamil, Bengali or Kannada; Hindi stays the default) before tapping "Read to customer". The read-back is built from fixed per-language strings (`src/parcha/languages.py`) with digit amounts, spoken by a Timbre voice for that language; the customer's reply is recognised and classified in the same language, and only a clear yes confirms (any negation is a reject). The chosen language is recorded in the audit log. **These strings were drafted without a native-speaker review and are labelled "preview" until the owner has one done.** A small live echo probe (synthetic speech) is in [`docs/gates.md`](docs/gates.md): Bengali is measurable, Tamil and Kannada are not yet (Prisma mixes number words into its output), so voices are unmeasured.
