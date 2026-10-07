@@ -94,6 +94,12 @@ Captured from a **live run** (`scripts/capture_live_screens.py`): real Gnani Pri
 
 ---
 
+## Hinglish Rupee Amounts
+
+Amounts come from a deterministic numeral grammar (डेढ़, ढाई, साढ़े, सवा, पौने, "बारह सौ"), never from a language model. Prisma's formatted pass writes "साढ़े चार सौ" as `04:30 100`; normalising that string lifted single-amount re-ask recovery from 73.3% to 96.3% on 1,000 live synthetic-speech rows (96.8% on a held-out run). Because a single recording still mis-accepts about 2.3% of amounts at 0 dB, an amount is settled only when **two separate recordings agree**. Details, evidence links and limits: [`docs/benchmarks/hinglish-amounts.md`](docs/benchmarks/hinglish-amounts.md).
+
+---
+
 ## Technical Moat: Line Noise Lab
 
 Rather than relying on best-case clean audio demos, Kaam Ka Parcha includes a dedicated evaluation harness (`parcha.lab`) benchmarking speech robustness under brutal telephony conditions:
