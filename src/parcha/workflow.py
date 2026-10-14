@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import inspect
+import json
 import re
 from typing import Literal
 import unicodedata
@@ -12,6 +13,7 @@ import unicodedata
 from .audio import codec_round_trip, mix_at_snr, mulaw_to_wav, normalize_upload
 from .extract import Extractor
 from .gnani import GnaniError, PrismaClient, TimbreClient
+from .jev import JevClient, JevUnavailable
 from .money import AbstainReason, AmountDecision, confusable_amount, decide_amounts, settle_card_amounts, spoken_item_order
 from .numerals import parse_amounts
 from .schema import Evidence, JobCard, LineItem, TranscriptLog
@@ -105,6 +107,7 @@ class Workflow:
         noise_wav: bytes | None = None,
         noise_source: str = "synthetic",
         language_voices: dict[str, str] | None = None,
+        reply_reviewer: JevClient | None = None,
     ):
         self.store = store
         self.prisma = prisma
@@ -118,6 +121,7 @@ class Workflow:
         self.noise_wav = noise_wav
         self.noise_source = noise_source if noise_wav else "none"
         self.language_voices = dict(language_voices or {})
+        self.reply_reviewer = reply_reviewer
 
     def intake(
         self,
@@ -569,6 +573,23 @@ class Workflow:
             )
 
         classification = classify_reply(transcript, None if language == DEFAULT_LANGUAGE else language)
+        review_message = None
+        if classification == "unclear" and self.reply_reviewer is not None:
+            try:
+                advice = self.reply_reviewer.review(transcript)
+                if advice['confidence'] >= .8:
+                    review_message = {
+                        'accept': "Please confirm explicitly by saying: Haan, theek hai.",
+                        'correction': "Please repeat the item or delivery detail you want to change.",
+                        'reject': "Please confirm whether you want to cancel or change the estimate.",
+                    }.get(advice['choice'])
+            except JevUnavailable:
+                advice = {'status': 'unavailable'}
+            self.store.record_observation(
+                session_id, expected_revision=expected_revision, readback_revision=readback_revision,
+                log=TranscriptLog(role="system", mode="jev_review", text=json.dumps(advice, sort_keys=True),
+                                  recorded_at_utc=recorded_at_utc),
+            )
 
         if classification == "accept":
             updated_session = self.store.confirm(
@@ -686,5 +707,5 @@ class Workflow:
             outcome="retry",
             transcript=transcript,
             session=updated_session,
-            message="Could not recognize confirmation or correction",
+            message=review_message or "Could not recognize confirmation or correction",
         )

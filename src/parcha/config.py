@@ -41,6 +41,10 @@ class Settings:
     tts_voice: str = "Vikrant"
     gnani_base_url: str = "https://api.vachana.ai"
     reply_transport: str = "rest"
+    jev_api_key: str = field(default="", repr=False)
+    jev_model: str = "jev-1.13.0"
+    jev_timeout_ms: int = 20000
+    jev_review_enabled: bool = False
     use_automotive_bias: bool = True
     telephony_codec: str = "g711"
     telephony_target_snr_db: float = 5.0
@@ -75,6 +79,10 @@ class Settings:
             tts_voice=(values.get("TTS_VOICE") or "").strip() or "Vikrant",
             gnani_base_url=(values.get("GNANI_BASE_URL") or "").strip() or "https://api.vachana.ai",
             reply_transport=(values.get("REPLY_TRANSPORT") or "").strip() or "rest",
+            jev_api_key=(values.get("TYPESAFE_API_KEY") or values.get("JEV_API_KEY") or "").strip(),
+            jev_model=(values.get("TYPESAFE_DEFAULT_MODEL") or "jev-1.13.0").strip(),
+            jev_timeout_ms=max(1, _int(values.get("JEV_TIMEOUT_MS"), 20000)),
+            jev_review_enabled=(values.get("JEV_REVIEW_ENABLED") or "").casefold() in {"1", "true", "yes", "on"},
             use_automotive_bias=(values.get("USE_AUTOMOTIVE_BIAS") or "true").strip().casefold() not in {"0", "false", "no", "off"},
             telephony_codec=(values.get("TELEPHONY_CODEC") or "").strip() or "g711",
             telephony_target_snr_db=float((values.get("TELEPHONY_TARGET_SNR_DB") or "5.0").strip()),

@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 
 from .captions import relay_captions
 from .config import Settings
+from .jev import JevClient
 from .languages import supported_codes
 from .mock import MockExtractor, MockPrisma, MockTimbre
 from . import telephony
@@ -87,6 +88,9 @@ def default_services() -> AppServices:
         target_snr_db=settings.telephony_target_snr_db,
         noise_wav=noise_wav,
         noise_source="recorded_engine_idle",
+        reply_reviewer=(JevClient(settings.jev_api_key, model=settings.jev_model,
+                                  timeout_ms=settings.jev_timeout_ms)
+                        if settings.jev_review_enabled and settings.jev_api_key and not settings.mock else None),
     )
     return AppServices(settings, store, workflow, timbre, key_pool=key_pool)
 

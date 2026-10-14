@@ -212,8 +212,10 @@ class TimbreClient:
         voice: str = "Vikrant",
         http: httpx.Client | None = None,
         base_url: str = "https://api.vachana.ai",
+        *,
+        model: str = "timbre-v2.5",
     ):
-        self.pool, self.voice = KeyPool.from_value(api_key), voice
+        self.pool, self.voice, self.model = KeyPool.from_value(api_key), voice, model
         self.http = http or httpx.Client(timeout=45)
         self.base_url = base_url.rstrip("/")
 
@@ -234,7 +236,7 @@ class TimbreClient:
         body = {
             "text": text,
             "voice": voice or self.voice,
-            "model": "timbre-v2.5",
+            "model": self.model,
             "language": language,
             "speed": 1.0,
             "audio_config": {

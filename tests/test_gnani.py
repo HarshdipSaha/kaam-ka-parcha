@@ -164,3 +164,16 @@ def test_keys_are_trimmed_deduplicated_and_validated():
     Settings(api_key="replace_me, real").require_gnani()
     with pytest.raises(ValueError):
         Settings(api_key="replace_me, ").require_gnani()
+
+
+def test_timbre_allows_an_explicit_model_without_changing_the_default():
+    sent = []
+
+    def handler(request):
+        sent.append(json.loads(request.content))
+        return httpx.Response(200, content=b"audio")
+
+    http = httpx.Client(transport=httpx.MockTransport(handler))
+    assert TimbreClient("test-key", model="timbre-v3.0", http=http).synthesize("namaste") == b"audio"
+    assert sent[0]["model"] == "timbre-v3.0"
+    assert sent[0]["voice"] == "Vikrant"
