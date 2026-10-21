@@ -26,7 +26,7 @@ def answer(page, world, words):
 def test_customer_page_opens_like_a_call_with_the_slip(page, world):
     open_customer(page, world, consent=False)
     expect(page.locator("#disclosure")).to_contain_text("यह नकली फ़ोन लाइन है")
-    expect(page.locator("#disclosure")).to_contain_text("No call was placed.")
+    expect(page.locator("#disclosure")).to_contain_text("No real call is placed.")
     expect(page.locator("#audio-panel")).to_contain_text("गैराज से कॉल")
     expect(page.locator("#readback-caption")).not_to_be_empty()
     expect(page.locator("#total-cell")).to_have_text("₹650")
@@ -102,7 +102,8 @@ def test_stale_reply_offers_reload(page, world):
     open_customer(page, world)
     answer(page, world, "हाँ ठीक है")
     expect(page.locator("#customer-message")).to_contain_text("पर्चा बदल गया है", timeout=15000)
-    expect(page.get_by_role("button", name=re.compile("ताज़ा करें"))).to_be_visible()
+    # one language is on screen at a time, so match the button by either label
+    expect(page.get_by_role("button", name=re.compile("ताज़ा करें|Reload"))).to_be_visible()
 
 
 def test_page_waits_for_the_read_back_then_updates_itself(page, world):

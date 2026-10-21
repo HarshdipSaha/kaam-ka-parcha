@@ -36,7 +36,7 @@ def test_workshop_page_has_record_and_review_controls(fake_services):
     html = res.text
     assert '<meta name="viewport"' in html
     assert "Kaam ka Parcha — Workshop Estimate" in html
-    assert "Synthetic demo data" in html
+    assert "Synthetic demo data" not in html and "pill--demo" not in html
     assert 'id="record"' in html
     assert 'id="stop"' in html
     assert 'id="message"' in html
@@ -208,7 +208,8 @@ def test_customer_page_renders_card_and_disclosure(fake_services):
     assert '<meta name="viewport"' in html
     assert "Kaam ka Parcha — Customer Estimate Review" in html
     assert 'id="disclosure"' in html
-    assert "Simulated phone line: audio passed through G.711 + recorded engine ambience at 5 dB. No call was placed. All names and amounts are synthetic." in html
+    assert "Simulated phone line: the audio is processed to sound like a call. No real call is placed." in html
+    assert "All names and amounts are synthetic" not in html   # false once a real mechanic uses it
     assert 'id="readback-player"' in html
     assert f"/sessions/{session_id}/readback.wav?revision=3" in html
     assert 'id="customer-record"' in html

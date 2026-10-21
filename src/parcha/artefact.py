@@ -78,7 +78,8 @@ def render_pdf(session: Session) -> bytes:
 
     # Workshop header
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, 805, "Kaam ka Parcha — Work Estimate & Job Card (Demo)")
+    phone = session.channel == "phone"
+    c.drawString(50, 805, "Kaam ka Parcha — Work Estimate & Job Card" + ("" if phone else " (Demo)"))
 
     # Dynamic verification QR code in top right
     qr_url = f"/verify/{session.id}"
@@ -94,9 +95,10 @@ def render_pdf(session: Session) -> bytes:
     c.setFont("Helvetica", 6)
     c.drawRightString(540, 725, "Scan to Verify Audio")
 
-    # Synthetic vehicle and metadata
+    # How the customer confirmed. No vehicle line: the app never captures one, so printing one would be invented.
     c.setFont("Helvetica", 10)
-    c.drawString(50, 785, "Vehicle: KA-01-AB-1234 (Synthetic Demo)")
+    c.drawString(50, 785, "Confirmed by the customer by voice on a phone call" if phone
+                 else "Confirmed by the customer by voice in the browser demo")
     c.drawString(50, 772, f"Session: {session.id} | Revision: {session.revision}")
     c.drawString(50, 759, f"Confirmed (UTC): {session.confirmed_at_utc.isoformat()}")
     audit_digest = audit_manifest_sha256(session)
@@ -123,12 +125,13 @@ def render_pdf(session: Session) -> bytes:
         c.setFont("Helvetica-Oblique", 6.5)
         c.drawString(50, 715, "DPDP Act 2023 Statutory Consent: Not Recorded")
 
-    # Simulation notice
+    # Channel notice: a simulated line must say so; a real call must not claim to be simulated.
     c.setFont("Helvetica-Oblique", 8.5)
     c.drawString(
         50,
         702,
-        "Simulated phone line: G.711 + recorded engine ambience at 5 dB. No real call was placed.",
+        "Real phone call: the customer's reply was recorded over the phone network, not simulated." if phone
+        else "Simulated phone line: G.711 + recorded engine ambience at 5 dB. No real call was placed.",
     )
 
     # Separator
@@ -205,7 +208,11 @@ def whatsapp_text(session: Session) -> str:
         f"{itemized_lines}\n\n"
         f"*Total:* {format_rupees(total_paise)}\n"
         f"*Delivery:* {delivery_str}\n\n"
-        f"_Note: Simulated phone line; No real call was placed. All demo identities and data are synthetic._"
+        + (
+            "_Confirmed by the customer by voice on a phone call._"
+            if session.channel == "phone"
+            else "_Note: Simulated phone line; No real call was placed. All demo identities and data are synthetic._"
+        )
     )
 
     assert "sent" not in message.lower(), "Must not claim WhatsApp message was sent"

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import hashlib
 import json
 import logging
 import math
@@ -294,6 +295,12 @@ def create_app(services: AppServices | None = None) -> FastAPI:
 
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
     templates = Jinja2Templates(directory=templates_dir)
+    # Cache-busting: a visitor who loaded the site before a deploy must not pair new HTML with an old stylesheet.
+    digest = hashlib.sha256()
+    for name in ("parcha.css", "ui.js", "app.js"):
+        asset = static_dir / name
+        digest.update(asset.read_bytes() if asset.is_file() else b"")
+    templates.env.globals["asset_v"] = digest.hexdigest()[:10]
     register_filters(templates.env)
 
     @app.get("/")
@@ -306,12 +313,14 @@ def create_app(services: AppServices | None = None) -> FastAPI:
 
     @app.get("/workshop", response_class=HTMLResponse)
     def workshop(request: Request):
-        return templates.TemplateResponse(request, "workshop.html", {})
+        return templates.TemplateResponse(request, "workshop.html", {"demo_mode": settings.mock})
 
     @app.get("/stage", response_class=HTMLResponse)
     def stage(request: Request):
         session = services.store.create()
-        return templates.TemplateResponse(request, "stage.html", {"session": session, "parcha_no": parcha_no(session.id)})
+        return templates.TemplateResponse(
+            request, "stage.html", {"session": session, "parcha_no": parcha_no(session.id), "demo_mode": settings.mock}
+        )
 
     @app.get("/customer/{session_id}", response_class=HTMLResponse)
     def customer_view(request: Request, session_id: str):
@@ -324,6 +333,8 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             "customer.html",
             {
                 "session": session,
+                "channel": session.channel,
+                "demo_mode": settings.mock,
                 "card": session.card,
                 "revision": session.revision,
                 "readback_revision": session.readback_revision,
@@ -694,7 +705,9 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             session = services.store.get(session_id)
             if session.card is None or session.card.needs_review:
                 return _twiml_response(telephony.say("Is waqt estimate poori tarah taiyaar nahi hai.", language="hi-IN") + telephony.hangup())
-            readback = services.workflow.start_readback(session_id, expected_revision=revision, language=language, degrade=False)
+            readback = services.workflow.start_readback(
+                session_id, expected_revision=revision, language=language, degrade=False, channel="phone"
+            )
             base_dir = Path("var/sessions").resolve()
             wav_path = (base_dir / session_id / f"{readback.revision}.wav").resolve()
             if not wav_path.is_relative_to(base_dir):
@@ -947,7 +960,6 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             confirmation_log = next((l for l in session.logs if l.role == "customer"), None)
 
         audit_digest = audit_manifest_sha256(session)
-        vehicle = "KA-01-AB-1234 (Synthetic Demo)"
         legal_compliance = "Bharatiya Sakshya Adhiniyam, 2023 (Sections 61-63) Tamper-Evident Electronic Record"
 
         is_json = format == "json" or request.headers.get("accept", "").startswith("application/json")
@@ -955,7 +967,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             return {
                 "session_id": session.id,
                 "status": session.status,
-                "vehicle": vehicle,
+                "channel": session.channel,
                 "revision": session.revision,
                 "confirmed_at_utc": session.confirmed_at_utc.isoformat() if session.confirmed_at_utc else None,
                 "audit_manifest_sha256": audit_digest,
@@ -987,7 +999,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             "verify.html",
             {
                 "session": session,
-                "vehicle": vehicle,
+                "channel": session.channel,
                 "confirmed_at_utc": session.confirmed_at_utc.isoformat() if session.confirmed_at_utc else None,
                 "audit_manifest_sha256": audit_digest,
                 "legal_compliance": legal_compliance,

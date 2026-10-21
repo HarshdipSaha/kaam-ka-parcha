@@ -4,10 +4,17 @@
 {% block body_class %}page--customer{% endblock %}
 {% block body %}
 <header class="topbar"><div class="brand"><span class="hi">काम का पर्चा</span><span class="en">Kaam ka Parcha</span></div><button id="lang-toggle" class="langtoggle" type="button" aria-label="Language / भाषा"><span>EN</span><span>हिं</span></button></header>
-<div class="disclosure" id="disclosure" role="note">
-  <span class="hi">यह नकली फ़ोन लाइन है — कोई कॉल नहीं हुई। सभी नाम और रकम डेमो के हैं।</span>
-  <span class="en" lang="en">Simulated phone line: audio passed through G.711 + recorded engine ambience at 5 dB. No call was placed. All names and amounts are synthetic.</span>
+{% if channel == "phone" %}
+<div class="disclosure disclosure--phone" id="disclosure" role="note">
+  <span class="hi">यह पर्चा असली फ़ोन कॉल पर सुनाया गया।</span>
+  <span class="en" lang="en">This estimate was read out on a real phone call.</span>
 </div>
+{% else %}
+<div class="disclosure" id="disclosure" role="note">
+  <span class="hi">यह नकली फ़ोन लाइन है — कोई असली कॉल नहीं होती।</span>
+  <span class="en" lang="en">Simulated phone line: the audio is processed to sound like a call. No real call is placed.</span>
+</div>
+{% endif %}
 <main class="sheet" id="customer-container" data-session-id="{{ session.id }}" data-revision="{{ revision }}" data-readback-revision="{{ readback_revision if readback_revision is not none else '' }}" data-status="{{ status }}">
   <section class="receipt" id="confirmed-banner" role="status"{% if status != "confirmed" %} hidden{% endif %}>
     <div class="receipt__tick" aria-hidden="true"><svg focusable="false"><use href="/static/icons.svg#check"/></svg></div>
@@ -87,4 +94,4 @@
 </nav>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 {% endblock %}
-{% block scripts %}<script src="/static/ui.js"></script><script src="/static/app.js"></script>{% endblock %}
+{% block scripts %}<script src="/static/ui.js?v={{ asset_v }}"></script><script src="/static/app.js?v={{ asset_v }}"></script>{% endblock %}

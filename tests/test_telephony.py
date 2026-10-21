@@ -325,3 +325,74 @@ def test_demo_access_code_never_gates_twilio_webhooks(fake_services):
     unauth_client = TestClient(create_app(services))  # a fresh client, no cookie, no code
     r = _twilio_post(unauth_client, "/telephony/twilio/voice", f"session_id={sid}&revision={rev}", {})
     assert r.status_code == 200 and "<Play>" in r.text  # the Twilio path only needs its own signature
+
+
+# ---- A real call must not be described as a simulation ---------------------------------------
+
+def _confirm_by_real_call(fake_services, client):
+    """Phone leg end to end: the voice webhook reads the estimate back, the recording webhook confirms it."""
+    sid, rev = _ready_session(client)
+    voice = _twilio_post(client, "/telephony/twilio/voice", f"session_id={sid}&revision={rev}&language=hi-IN&to=%2B919228182636", {})
+    assert voice.status_code == 200 and "<Play>" in voice.text
+    state = client.get(f"/sessions/{sid}").json()
+    fake_services.workflow.prisma.transcribe = lambda wav, mode, **kw: "हाँ ठीक है"
+    fake_services.download_recording = lambda **kw: b"fake-recording-bytes"
+    fake_services.send_sms = lambda **kw: "SM_fake"
+    query = (f"session_id={sid}&expected_revision={state['revision']}&readback_revision={state['readback_revision']}"
+             f"&language=hi-IN&to=%2B919228182636")
+    done = _twilio_post(client, "/telephony/twilio/recording", query, {"RecordingUrl": "https://api.twilio.com/REC9"})
+    assert done.status_code == 200 and client.get(f"/sessions/{sid}").json()["status"] == "confirmed"
+    return sid
+
+
+def test_a_real_call_is_recorded_as_the_phone_channel_and_the_receipt_says_so(fake_services):
+    from io import BytesIO
+    from pypdf import PdfReader
+
+    fake_services.workflow.timbre = fake_services.timbre
+    client = TestClient(create_app(fake_services))
+    sid = _confirm_by_real_call(fake_services, client)
+
+    assert fake_services.store.get(sid).channel == "phone"
+
+    pdf = client.get(f"/sessions/{sid}/pdf")
+    text = PdfReader(BytesIO(pdf.content)).pages[0].extract_text()
+    assert "Real phone call" in text and "voice on a phone call" in text
+    # The old receipt claimed all of these even after a real call:
+    for false_claim in ("Simulated phone line", "No real call was placed", "(Demo)", "Synthetic Demo", "KA-01-AB-1234"):
+        assert false_claim not in text, false_claim
+
+    wa = client.get(f"/sessions/{sid}/whatsapp.txt").text
+    assert "Confirmed by the customer by voice on a phone call" in wa
+    assert "synthetic" not in wa.lower() and "No real call was placed" not in wa
+
+    verify = client.get(f"/verify/{sid}")
+    assert "Approved by voice on a phone call" in verify.text and "KA-01-AB-1234" not in verify.text
+    assert client.get(f"/verify/{sid}?format=json").json()["channel"] == "phone"
+
+    customer = client.get(f"/customer/{sid}").text
+    assert "read out on a real phone call" in customer and "Simulated phone line" not in customer
+
+
+def test_the_channel_is_part_of_the_signed_audit_manifest(fake_services):
+    from parcha.artefact import audit_manifest_sha256
+
+    fake_services.workflow.timbre = fake_services.timbre
+    client = TestClient(create_app(fake_services))
+    sid = _confirm_by_real_call(fake_services, client)
+    session = fake_services.store.get(sid)
+
+    from dataclasses import replace
+    without_channel = replace(session, logs=tuple(l for l in session.logs if l.mode != "call_channel"))
+    assert audit_manifest_sha256(session) != audit_manifest_sha256(without_channel)   # so it cannot be stripped quietly
+
+
+def test_the_demo_badge_shows_only_in_real_mock_mode(fake_services):
+    from dataclasses import replace
+
+    live = TestClient(create_app(fake_services))
+    assert "Demo mode" not in live.get("/workshop").text
+
+    mock_services = AppServices(replace(fake_services.settings, mock=True), fake_services.store,
+                                fake_services.workflow, fake_services.timbre)
+    assert "Demo mode · scripted speech" in TestClient(create_app(mock_services)).get("/workshop").text

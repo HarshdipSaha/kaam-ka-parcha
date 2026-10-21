@@ -55,7 +55,8 @@ def test_verify_html_and_json_responses(fake_services):
     assert "Compliant" in body
     assert "Audit Verification" in body
     assert session_id in body
-    assert "KA-01-AB-1234" in body
+    assert "KA-01-AB-1234" not in body and "Synthetic Demo" not in body
+    assert "Approved by voice in the browser demo" in body
     assert f"/sessions/{session_id}/intake.wav" in body
     assert f"/sessions/{session_id}/reply.wav" in body
     assert "front brake pad" in body
@@ -66,7 +67,7 @@ def test_verify_html_and_json_responses(fake_services):
     data = json_res.json()
     assert data["session_id"] == session_id
     assert data["status"] == "confirmed"
-    assert data["vehicle"] == "KA-01-AB-1234 (Synthetic Demo)"
+    assert "vehicle" not in data and data["channel"] == "browser"
     assert "audit_manifest_sha256" in data
     assert len(data["audit_manifest_sha256"]) == 64
     assert data["intake"]["audio_url"] == f"/sessions/{session_id}/intake.wav"

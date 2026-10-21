@@ -44,3 +44,17 @@ no WhatsApp delivery (SMS with the verify link is sent on a phone confirmation);
 tap (a phone side button does nothing) before it calls our webhook at all; trial calls are capped at 10 minutes,
 verified numbers only, 30-day account expiry. `aidlc-docs/`, `docs/raw/`, `docs/webattack_artifacts/` are still
 tracked in the repo; several docs link into them, so moving them needs its own pass.
+
+---
+
+# Handoff 2026-10-21: realistic UI (effort 015)
+
+The sealed PDF, verify page, WhatsApp text and customer page no longer call a real phone call simulated or synthetic
+(`Session.channel`, recorded in the audit manifest); the invented `KA-01-AB-1234 (Synthetic Demo)` vehicle is gone; the UI
+shows one language at a time and `/stage` no longer repeats its header. Offline 807 passed, e2e 67 passed
+(`pytest -m e2e --browser-channel chrome`). See `aidlc-docs/efforts/015-realistic-ui/effort-state.md`.
+
+**Do next:** persistent session storage (the verify/PDF link in the confirmation SMS returns 404 once the free Render
+instance idles or restarts); keep the instance warm before demos; regenerate the README/`docs/ui` screenshots from a
+live capture run; a "Call customer" button in `/workshop`.
+

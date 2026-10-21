@@ -4,7 +4,7 @@
 {% block body %}
 <header class="topbar">
   <div class="brand"><span class="hi">काम का पर्चा</span><span class="en">Kaam ka Parcha</span></div>
-  <span class="pill pill--demo">Synthetic demo data</span>
+  {% if demo_mode %}<span class="pill pill--demo">Demo mode · scripted speech</span>{% endif %}
   <button id="lang-toggle" class="langtoggle" type="button" aria-label="Language / भाषा"><span>EN</span><span>हिं</span></button>
 </header>
 <main class="sheet" id="workshop" data-stage="bolo">
@@ -70,4 +70,4 @@
 </nav>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 {% endblock %}
-{% block scripts %}<script src="/static/ui.js"></script><script src="/static/app.js"></script>{% endblock %}
+{% block scripts %}<script src="/static/ui.js?v={{ asset_v }}"></script><script src="/static/app.js?v={{ asset_v }}"></script>{% endblock %}

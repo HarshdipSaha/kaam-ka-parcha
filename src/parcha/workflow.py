@@ -412,6 +412,7 @@ class Workflow:
         include_consent: bool = True,
         language: str | None = None,
         degrade: bool = True,
+        channel: str = "browser",
     ) -> Readback:
         session = self.store.get(session_id)
         if session.card is None or session.card.needs_review:
@@ -464,6 +465,15 @@ class Workflow:
         updated_session = self.store.start_readback(
             session_id, expected_revision=expected_revision, log=log
         )
+        if channel == "phone":
+            # A real call. Recorded in the audit trail so the sealed receipt and verify page say so, instead of
+            # claiming a simulated line.
+            updated_session = self.store.record_observation(
+                session_id,
+                expected_revision=updated_session.revision,
+                readback_revision=updated_session.readback_revision,
+                log=TranscriptLog(role="system", mode="call_channel", text="phone", recorded_at_utc=rec_time),
+            )
         if pack is not None:
             # The reply is recognised and classified in the language that was read back; the audit trail records it.
             updated_session = self.store.record_observation(

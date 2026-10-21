@@ -53,6 +53,16 @@ def test_confirmed_parcha_shows_verdict_slip_and_evidence(fake_services):
     html = client.get(f"/verify/{sid}").text
     assert "असली पर्चा" in html and "Verified electronic record" in html
     assert "₹1,000" in html and "₹500" in html and "पार्ट" in html and "लेबर" in html
-    assert "front brake pad" in html and "KA-01-AB-1234" in html and "DPDP Act 2023" in html
+    assert "front brake pad" in html and "KA-01-AB-1234" not in html and "DPDP Act 2023" in html
     assert re.search(r'id="manifest-digest"[^>]*>[0-9a-f]{64}<', html)
     assert "मंज़ूर" in html                     # the stamp
+
+
+def test_static_assets_are_versioned_so_a_deploy_cannot_leave_a_stale_stylesheet(fake_services):
+    import re
+
+    client = TestClient(create_app(fake_services))
+    html = client.get("/workshop").text
+    versions = set(re.findall(r'/static/(?:parcha\.css|ui\.js|app\.js)\?v=([0-9a-f]{10})', html))
+    assert len(versions) == 1                       # one content hash, used by the stylesheet and both scripts
+    assert client.get(f"/static/parcha.css?v={versions.pop()}").status_code == 200

@@ -1,7 +1,7 @@
 # AI-DLC Effort Registry
 
 **Project:** Kaam ka Parcha (Phone-Sealed)  
-**Last Updated:** 2026-10-07
+**Last Updated:** 2026-10-21
 **Baseline:** `aidlc-docs/inception/` (Locked & Signed Off)  
 
 ---
@@ -24,6 +24,7 @@
 | **012** | `deploy-ready` | Container + deploy files, owner-take recorder, bounded sessions | **complete** (repo side; deployment is a user step) | 2026-10-07 | 2026-10-07 | [`aidlc-docs/efforts/012-deploy-ready/`](efforts/012-deploy-ready/effort-state.md) |
 | **013** | `deploy-hardening` | CI, LICENSE, offline mock mode, spend/length/privacy guards, Gnani key failover; deployed live to Render (free plan) | **complete** | 2026-10-07 | 2026-10-07 | [`aidlc-docs/efforts/013-deploy-hardening/`](efforts/013-deploy-hardening/effort-state.md) |
 | **014** | `twilio-phone-leg` | Real customer phone call via Twilio alongside the simulated line; live-verified with a real call (confirmed, PDF sealed) | **complete** | 2026-10-07 | 2026-10-07 | [`aidlc-docs/efforts/014-twilio-phone-leg/`](efforts/014-twilio-phone-leg/effort-state.md) |
+| **015** | `realistic-ui` | Stop the receipts, verify page and UI claiming a real call is synthetic; one language at a time; decluttered stage; asset cache-busting | **complete** | 2026-10-21 | 2026-10-21 | [`aidlc-docs/efforts/015-realistic-ui/`](efforts/015-realistic-ui/effort-state.md) |
 
 ---
 

@@ -9,7 +9,7 @@
   <section class="verdict {{ 'verdict--ok' if sealed else 'verdict--pending' }}" id="verify-verdict" role="status">
     <div class="verdict__icon" aria-hidden="true">{{ "✓" if sealed else "!" }}</div>
     <h1 class="verdict__title"><span class="hi">{{ "असली पर्चा" if sealed else "अभी मंज़ूर नहीं" }}</span><span class="en">{{ "Verified electronic record" if sealed else "Not yet confirmed by the customer" }}</span></h1>
-    <p class="verdict__meta">№ {{ parcha_no }} · {{ vehicle }}</p>
+    <p class="verdict__meta">№ {{ parcha_no }}{% if sealed %} · {% if channel == "phone" %}<span class="lang-hi">फ़ोन कॉल पर आवाज़ से मंज़ूर</span><span class="lang-en">Approved by voice on a phone call</span>{% else %}<span class="lang-hi">ब्राउज़र डेमो में आवाज़ से मंज़ूर</span><span class="lang-en">Approved by voice in the browser demo</span>{% endif %}{% endif %}</p>
   </section>
 
   {{ slip(session.card, total_paise, parcha_no, copy="original", stamp=sealed) }}
@@ -53,4 +53,4 @@
   {% endif %}
 </main>
 {% endblock %}
-{% block scripts %}<script src="/static/ui.js"></script>{% endblock %}
+{% block scripts %}<script src="/static/ui.js?v={{ asset_v }}"></script>{% endblock %}

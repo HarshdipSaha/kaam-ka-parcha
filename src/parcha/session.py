@@ -29,6 +29,11 @@ class Session:
     dpdp_user_agent: str | None = None
     dpdp_consent_sha256: str | None = None
 
+    @property
+    def channel(self) -> str:
+        """"phone" once a real Twilio call has read the estimate back, else "browser" (the simulated line)."""
+        return "phone" if any(log.mode == "call_channel" and log.text == "phone" for log in self.logs) else "browser"
+
 
 class SessionStore:
     def __init__(self, max_untouched: int = 500, max_total: int = 0):

@@ -4,9 +4,9 @@
 {% block body %}
 <header class="stage__head">
   <div class="brand"><span class="hi">काम का पर्चा</span><span class="en">Kaam ka Parcha</span></div>
+  <p class="stage__flow"><span class="hi">मिस्त्री बोलता है → ग्राहक सुनकर “हाँ” कहता है → पर्चा मंज़ूर</span><span class="en">Mechanic speaks → customer hears it and says “haan” → parcha sealed</span></p>
   <button id="lang-toggle" class="langtoggle" type="button" aria-label="Language / भाषा"><span>EN</span><span>हिं</span></button>
-  <p><span class="hi">मिस्त्री बोलता है → ग्राहक सुनकर “हाँ” कहता है → पर्चा मंज़ूर</span><span class="en">Mechanic speaks → customer hears and says “haan” → parcha sealed</span></p>
-  <p class="fineprint"><span class="hi">Gnani Prisma सुनता है · Gnani Timbre बोलता है · पर्चा № {{ parcha_no }}</span><span class="en">One parcha, two phones. Simulated phone line and synthetic demo data — no call is placed and nothing is sent.</span></p>
+  <p class="fineprint"><span class="hi">ब्राउज़र डेमो: फ़ोन लाइन नकली है और कुछ भेजा नहीं जाता · आवाज़: Gnani Prisma + Gnani Timbre</span><span class="en">Browser demo: the phone line is simulated and nothing is sent · Speech by Gnani Prisma + Gnani Timbre</span></p>
 </header>
 <main class="stage">
   <figure class="phone">
@@ -19,4 +19,4 @@
   </figure>
 </main>
 {% endblock %}
-{% block scripts %}<script src="/static/ui.js"></script>{% endblock %}
+{% block scripts %}<script src="/static/ui.js?v={{ asset_v }}"></script>{% endblock %}

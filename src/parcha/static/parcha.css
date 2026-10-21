@@ -8,7 +8,7 @@
   --r-card: 6px; --r-btn: 12px; --r-pill: 999px; --r-sheet: 20px;
   --shadow-paper: 0 1px 0 rgba(27,36,51,.06), 0 8px 18px -8px rgba(27,36,51,.22);
   --shadow-dock: 0 -6px 16px rgba(27,36,51,.10);
-  --tap: 48px; --tap-primary: 64px; --mic: 96px; --dock-h: 150px;
+  --tap: 48px; --tap-primary: 64px; --mic: 96px; --dock-h: 128px;
   --ease: cubic-bezier(.22,.8,.24,1); --slam: cubic-bezier(.16,1,.3,1);
 }
 *, *::before, *::after { box-sizing: border-box; }
@@ -95,12 +95,12 @@ h1, h2, p { margin: 0; }
 .flagbar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-btn); background: var(--paper-yellow); box-shadow: 0 0 0 2px var(--haldi); font-weight: 700; }
 .flagbar::before { content: "!"; flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--haldi); font: 800 18px/1 var(--font); }
 .dock { position: fixed; inset: auto 0 0 0; z-index: 10; background: var(--paper); box-shadow: var(--shadow-dock); border-radius: var(--r-sheet) var(--r-sheet) 0 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
-.dock::before { content: ""; display: block; width: 40px; height: 4px; margin: -4px auto 8px; border-radius: 2px; background: var(--rule); }
 .dock__inner { max-width: 480px; margin: 0 auto; display: grid; gap: 10px; }
 .dock__row { display: flex; align-items: center; gap: 14px; }
 .dock__status { min-width: 0; display: grid; gap: 2px; }
 .dock__title { font-weight: 800; font-size: 22px; line-height: 1.2; }
 .timer { font-weight: 700; font-size: 18px; color: var(--sindoor); min-height: 1.2em; }
+.dock:not([data-mic="listening"]) .meter { opacity: 0; }
 .meter { height: 8px; border-radius: 4px; background: var(--counter); overflow: hidden; }
 .meter > span { display: block; height: 100%; width: 100%; transform: scaleX(var(--level, 0)); transform-origin: left; background: var(--hara); transition: transform 80ms linear; }
 .mic { position: relative; flex: none; width: var(--mic); height: var(--mic); border-radius: 50%; border: 3px solid var(--ink); background: var(--haldi); color: var(--ink); display: grid; place-items: center; cursor: pointer; touch-action: manipulation; }
@@ -149,7 +149,7 @@ h1, h2, p { margin: 0; }
 .consent__full summary { display: flex; align-items: center; gap: 6px; min-height: var(--tap); color: var(--neela); font-weight: 700; cursor: pointer; }
 .consent__full p { margin-bottom: 6px; font-size: 14px; color: var(--ink-muted); }
 .hints { display: flex; flex-wrap: wrap; gap: 8px; }
-.hint { padding: 4px 12px; border-radius: var(--r-pill); border: 2px dashed currentColor; font-weight: 700; font-size: 16px; }
+.hint { padding: 2px 10px; border-radius: var(--r-pill); border: 2px dashed currentColor; font-weight: 700; font-size: 14px; }
 .hint--haan { color: var(--hara); } .hint--change { color: var(--amber); }
 .fallback { display: grid; gap: 10px; padding: 16px; background: var(--paper); border: 2px solid var(--amber); border-radius: var(--r-card); }
 .fallback h2 { font-size: 20px; }
@@ -178,15 +178,15 @@ h1, h2, p { margin: 0; }
 .kv { display: grid; gap: 2px; margin: 8px 0 12px; } .kv dt { margin-top: 8px; font-size: 14px; font-weight: 700; color: var(--ink-muted); } .kv dd { margin: 0; overflow-wrap: anywhere; }
 .hash { padding: 6px 8px; border-radius: 6px; background: var(--counter); font: 600 13px/1.4 ui-monospace, Consolas, monospace; word-break: break-all; }
 .actions { display: grid; gap: 10px; }
-.stage__head { max-width: 1100px; margin: 0 auto; padding: 22px 16px 8px; text-align: center; display: grid; gap: 4px; }
+.stage__head { position: relative; max-width: 1100px; margin: 0 auto; padding: 20px 16px 6px; text-align: center; display: grid; justify-items: center; gap: 6px; }
 .stage__head .brand { font-size: 34px; }
 .stage__head p { font-size: 20px; font-weight: 700; }
+.stage__head .fineprint { font-size: 14px; font-weight: 400; }
 .stage { display: flex; flex-wrap: wrap; justify-content: center; gap: 32px; padding: 8px 16px 24px; }
 .phone { margin: 0; display: grid; justify-items: center; gap: 8px; }
 .phone figcaption { font-weight: 800; font-size: 20px; }
 .phone figcaption { padding: 2px 16px; border-radius: var(--r-pill); background: var(--ink); color: #fff; }
-.phone figcaption .en { display: inline; margin-left: 6px; color: inherit; opacity: .8; }
-.phone iframe { width: 360px; height: min(760px, calc(100dvh - 300px)); min-height: 560px; border: 10px solid var(--ink); border-radius: 36px; background: var(--counter); box-shadow: var(--shadow-paper); }
+.phone iframe { width: 360px; height: min(780px, calc(100dvh - 190px)); min-height: 560px; border: 10px solid var(--ink); border-radius: 36px; background: var(--counter); box-shadow: var(--shadow-paper); }
 #workshop[data-stage="haan"] #share, #workshop[data-stage="manzoor"] #share { order: -1; }
 #workshop[data-stage="haan"] #stepper, #workshop[data-stage="manzoor"] #stepper { order: -3; }
 #workshop[data-stage="haan"] #message, #workshop[data-stage="manzoor"] #message { order: -2; }
@@ -199,16 +199,17 @@ button, a, summary, label { cursor: pointer; }
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }
 
-/* language: data-lang on <html> picks the headline language; the other stays as the sub-line */
+/* language: data-lang on <html> picks the ONE language shown; the toggle swaps it. The approval stamp keeps both,
+   like a real rubber stamp. Text drawn by JS uses .lang-hi / .lang-en and follows the same rule. */
 [data-lang="en"] .lang-hi, [data-lang="hi"] .lang-en { display: none; }
-[data-lang="en"] :has(> .hi + .en) { display: flex; flex-direction: column; }
-[data-lang="en"] .en { order: -1; font-size: 1em; font-weight: inherit; line-height: inherit; color: inherit; opacity: 1; }
-[data-lang="en"] .hi { font-size: max(14px, .78em); font-weight: 400; opacity: 1; }
-[data-lang="en"] .phone figcaption { flex-direction: row; gap: 8px; align-items: baseline; }
+[data-lang="en"] :not(.stamp) > .hi, [data-lang="hi"] :not(.stamp) > .en { display: none; }
+[data-lang="en"] :not(.stamp) > .en { display: inline; margin: 0; font: inherit; color: inherit; }
+[data-lang="en"] .dock__status > .en[data-mic-sub] { display: block; font-weight: 800; font-size: 22px; line-height: 1.2; }
 .langtoggle { display: inline-flex; min-height: 48px; padding: 0; border: 2px solid var(--ink); border-radius: var(--r-pill); background: var(--paper); color: var(--ink); font: 700 15px/1 var(--font); overflow: hidden; }
 .langtoggle span { display: grid; place-items: center; min-width: 46px; padding: 0 10px; }
 [data-lang="en"] .langtoggle span:first-child, [data-lang="hi"] .langtoggle span:last-child { background: var(--ink); color: #fff; }
 .stage__head .langtoggle { justify-self: center; }
+@media (min-width: 900px) { .stage__head .langtoggle { position: absolute; top: 16px; right: 16px; } }
 .stamp { align-items: center; justify-content: center; }
 .stamp .en { font-size: 17px; letter-spacing: .1em; font-weight: 800; }
 .stamp .hi { font-size: 24px; opacity: 1; font-weight: 800; }
@@ -221,3 +222,14 @@ button, a, summary, label { cursor: pointer; }
 .langfield select { min-height: var(--tap); padding: 0 10px; font: inherit; border-radius: var(--r-btn); border: 1px solid var(--rule); background: var(--paper); color: var(--ink); }
 .reask--all { margin: .5rem 0; width: 100%; justify-content: center; }
 .row__heard-count { font-size: .8em; opacity: .75; }
+
+/* a phone frame on /stage: the stage page already carries the brand and the language toggle */
+.embedded .topbar { display: none; }
+.embedded .sheet { padding-top: 16px; }
+
+/* the revision number belongs in the audit panel, not on a customer's card */
+#card-revision-badge { display: none; }
+.embedded .stepper li { font-size: 13px; }
+
+/* the customer dock also carries the two hint chips, so it is taller than the workshop one */
+.page--customer { --dock-h: 176px; }

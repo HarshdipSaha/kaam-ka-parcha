@@ -5,14 +5,16 @@ from fastapi.testclient import TestClient
 from parcha.app import create_app
 from tests.test_pages import awaiting
 
-SIM = ("Simulated phone line: audio passed through G.711 + recorded engine ambience at 5 dB. "
-       "No call was placed. All names and amounts are synthetic.")
+SIM = ("Simulated phone line: the audio is processed to sound like a call. "
+       "No real call is placed.")
 
 
 def test_workshop_page_is_hindi_first_and_keeps_its_contract(fake_services):
     html = TestClient(create_app(fake_services)).get("/workshop").text
     assert '<html lang="hi">' in html and "/static/ui.js" in html and "/static/parcha.css" in html
-    assert "बोलिए" in html and "Synthetic demo data" in html and "Kaam ka Parcha — Workshop Estimate" in html
+    assert "बोलिए" in html and "Kaam ka Parcha — Workshop Estimate" in html
+    # A working tool does not label the mechanic's own estimate "synthetic"; only the scripted mock mode is a demo.
+    assert "Synthetic demo data" not in html and "pill--demo" not in html
     assert "<style>" not in html and ">Kind<" not in html
     for element_id in ("record", "stop", "message", "transcript", "card", "start-readback",
                        "customer-link", "review-section", "review-count"):

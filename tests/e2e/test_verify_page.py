@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from playwright.sync_api import expect
 
@@ -11,9 +13,9 @@ def test_verify_shows_a_big_verdict_and_folds_the_hashes(page, world):
     world.prisma.say("हाँ ठीक है")
     reply_by_api(world.url, session)
     page.goto(f"/verify/{session['id']}")
-    expect(page.get_by_role("heading", name="असली पर्चा")).to_be_visible()
+    expect(page.get_by_role("heading", name=re.compile("असली पर्चा|Verified electronic record"))).to_be_visible()
     expect(page.locator("#manifest-digest")).to_be_hidden()          # folded under "तकनीकी सबूत"
-    page.get_by_text("तकनीकी सबूत").click()
+    page.get_by_text(re.compile("^(तकनीकी सबूत|Technical evidence)$")).locator("visible=true").click()
     expect(page.locator("#manifest-digest")).to_be_visible()
     expect(page.get_by_role("img", name="मंज़ूर — Approved")).to_be_visible()
     page.screenshot(path=str(SCREENS / "verify-360.png"), full_page=True)

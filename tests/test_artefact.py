@@ -95,7 +95,8 @@ def test_pdf_embeds_exact_transcripts():
 
     # Verify content in the PDF canvas
     assert "Kaam ka Parcha" in page_text
-    assert "KA-01-AB-1234" in page_text
+    assert "KA-01-AB-1234" not in page_text and "Synthetic Demo" not in page_text   # no invented vehicle
+    assert "Simulated phone line" in page_text            # a browser confirmation still says it was simulated
     assert "sess-xyz-123" in page_text
     assert "Total Amount:" in page_text
     assert "650" in page_text

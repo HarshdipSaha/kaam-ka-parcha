@@ -8,14 +8,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Mukta:wght@400;600;800&display=swap">
-  <link rel="stylesheet" href="/static/parcha.css">
+  <link rel="stylesheet" href="/static/parcha.css?v={{ asset_v }}">
   <script>
     (function () {
+      // ?lang=, then the saved choice; English leads by default and Hindi is one tap away.
       var l = "en";
       try { l = new URLSearchParams(location.search).get("lang") || localStorage.getItem("parcha-lang") || "en"; } catch (e) {}
       if (l !== "hi") l = "en";
       document.documentElement.dataset.lang = l;
       document.documentElement.lang = l;
+      // Inside a phone frame on /stage: the stage page already has the brand and the language toggle.
+      if (window.self !== window.top) document.documentElement.classList.add("embedded");
     })();
   </script>
 </head>
