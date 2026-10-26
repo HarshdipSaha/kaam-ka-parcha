@@ -47,6 +47,8 @@ Unexpected server errors return a generic body; details are logged server-side o
 
 ## Real customer phone call (Twilio, optional)
 
+**Owner-confirmed working, 2026-10-26:** the deployed project is at https://kaam-ka-parcha.onrender.com/stage and the owner reports the real Twilio call path works. Preserve this distinction in future demos: `/stage` is the browser simulation; an actual Twilio call is a separate channel. A Playwright smoke check of the deployed page on that date passed without placing a call, so it is not independent call-completion evidence.
+
 `src/parcha/telephony.py` adds a second leg alongside the in-browser simulated line: an actual phone call to the
 customer, placed through Twilio's REST API, with plain TwiML webhooks (no Twilio SDK dependency).
 

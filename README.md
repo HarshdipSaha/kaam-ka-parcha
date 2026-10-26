@@ -12,6 +12,10 @@
 
 Built for **Gnani AI's Great Indian AI Challenge** (Oct 1 – Nov 10, 2026).
 
+**[Open the live demo](https://kaam-ka-parcha.onrender.com/stage)** — mechanic and customer views side by side. [Workshop](https://kaam-ka-parcha.onrender.com/workshop) · [60-second recording plan](docs/submission/video-script.md).
+
+The browser demo simulates a phone line. A separate **Twilio integration places real customer calls**, reads the estimate, and accepts spoken confirmation or corrections. The owner confirmed this integration is working on 2026-10-26; see [real-call setup](docs/deploy.md#real-customer-phone-call-twilio-optional).
+
 ---
 
 ## The Problem
@@ -272,7 +276,7 @@ Follow these steps to demonstrate or rehearse the complete two-browser flow:
    - **Download Sealed PDF**: Click to inspect the PDF with itemized totals and embedded `transcripts.json` audit trail.
    - **Copy WhatsApp Summary**: Return to `/workshop`, click the copy button, and paste the ready-to-send message into WhatsApp Web or chat.
 
-For the full 60-second video storyboard and cue sheet, see [`docs/demo.md`](docs/demo.md).
+For the current 60-second video storyboard, including the real Twilio call, see [`docs/submission/video-script.md`](docs/submission/video-script.md).
 
 ---
 
@@ -393,14 +397,14 @@ from the same confirmed card. No workshop has been interviewed yet; see `docs/su
 
 In accordance with Hackathon Rule 7 ("Misleading Demos") and the Gnani AI Platform EULA:
 
-1. **Simulated Telephony Line**:
-   - The customer review leg is an **in-browser acoustic simulation**. Audio is filtered through FFmpeg via 8 kHz bandpass, downsampling, G.711 / AMR-NB 4.75 kbps encoding, and calibrated street ambient noise at 5 dB SNR.
-   - **No live PSTN or carrier cellular call was placed.** No telecom carrier aggregator (Twilio, Exotel) is used in the default demo.
+1. **Browser Simulation and Real Phone Calls**:
+   - The browser customer view is an **in-browser acoustic simulation**, with its own visible disclosure. Audio is filtered through FFmpeg via 8 kHz bandpass, downsampling, G.711 / AMR-NB 4.75 kbps encoding, and calibrated ambient noise at 5 dB SNR.
+   - The separate Twilio path places an actual customer phone call. It plays the read-back, processes spoken replies, and skips the extra simulated degradation. The owner confirmed it working on 2026-10-26; the browser smoke check does not independently verify a completed call. Trial-account announcements and verified-number restrictions apply when using a trial account.
 2. **Simulated WhatsApp Transmission**:
    - Clicking "Copy WhatsApp Summary" copies standard WhatsApp Markdown plain text to the local clipboard.
-   - **No automated WhatsApp Business API / Twilio messages are dispatched.**
+   - No WhatsApp Business API delivery is implemented. The real Twilio call path separately attempts an SMS with the verification link after confirmation; SMS is distinct from WhatsApp copy.
 3. **Synthetic Demonstration Data**:
-   - All vehicle registration numbers, customer phone numbers, and mechanic names used in demonstrations and test fixtures are entirely synthetic.
+   - Use synthetic vehicle registrations and names in demonstrations. A real Twilio call uses the owner's own or an explicitly consented recipient's number; hide the number and caller ID in the video.
 4. **Public Benchmarking & Zero-Leak Policy**:
    - In compliance with platform guidelines, we publish **only our own pipeline's relative deltas** (e.g., domain biasing ON vs. OFF, clean vs. degraded recovery) with explicit sample sizes ($N$), operational settings, and measurement dates.
    - We **never publish cross-engine competitor comparisons** (Whisper, Google, AWS, Azure) or unauthorized absolute CER/WER rankings.
@@ -420,7 +424,7 @@ In accordance with Hackathon Rule 7 ("Misleading Demos") and the Gnani AI Platfo
 Per the contest rule, only synthetic data, licensed corpora and self-recorded, consented audio are used.
 
 - Benchmarks use Timbre synthetic speech (labelled synthetic wherever reported) and the AI4Bharat IndicContextEval Hindi subset (CC BY 4.0, attribution in `data/benchmarks/real_audio_2026-10/README.md`).
-- No recorded calls, third-party creator voices, real phone numbers, Aadhaar/PAN or account numbers are in this repository, the demo or the submission. Earlier internal diagnostics on such audio were removed (see `docs/gates.md`).
+- No private call recordings, third-party creator voices, real phone numbers, Aadhaar/PAN or account numbers are committed. Earlier internal diagnostics on such audio were removed (see `docs/gates.md`). A real-call demonstration uses the owner's own consented participation and masks identifying details.
 - Owner-recorded takes, if any, stay private under `var/` and are never committed.
 
 ## Target Awards

@@ -26,13 +26,13 @@
 **Honest limitations.**
 - Evidence is mostly synthetic speech. It supports the application logic, not general recognition accuracy.
 - Owner-recorded real takes: [one speaker; add the result here once scored, or state that they are not yet scored].
-- The phone call is an in-browser simulation; no real telephony is used. "WhatsApp" is clipboard copy; nothing is sent.
+- The `/stage` browser view simulates a phone line. A separate Twilio integration places real calls for read-back, spoken corrections and confirmation; the owner confirmed it working on 2026-10-26. WhatsApp is clipboard copy; the Twilio call path separately attempts a verification-link SMS after confirmation.
 - Extraction is not on a Gnani model (see above).
 
 **Who pays (hypothesis).** The workshop: a customer-confirmed estimate protects it against pick-up disputes. About ₹99 per workshop per month is an untested guess to check with garage owners; reach is through spare-parts dealers and garage associations; the next features are a GST invoice and a UPI advance from the same confirmed card. [Replace with what the garage visits show.]
 
-**Data and consent.** Only synthetic data, a licensed corpus and self-recorded consented audio are used. No recorded calls, third-party voices, real phone numbers or IDs are in the project, demo or this submission.
+**Data and consent.** Only synthetic data, a licensed corpus and self-recorded consented audio are used. No private call recordings, third-party voices, real phone numbers or IDs are committed. The real-call demo uses the owner's own consented participation and masks identifying details.
 
 **Each member's contribution.** [Human to fill in.]
 
-**Links.** Demo: [URL]. Video: [URL]. Nominated posts: [URLs, with #GnaniAI #GreatIndianAIInternshipChallenge].
+**Links.** Demo: https://kaam-ka-parcha.onrender.com/stage. Video: [URL]. Nominated posts: [URLs, with #GnaniAI #GreatIndianAIInternshipChallenge].

@@ -4,6 +4,8 @@
 
 This document details the exact 60-second video demo storyboard, live rehearsal script, two-browser operational run sheet, technical transitions, and fallback checklist for Kaam Ka Parcha.
 
+**Current recording plan:** use [`submission/video-script.md`](submission/video-script.md), updated on 2026-10-26 to include the owner-confirmed working Twilio integration and the [deployed demo](https://kaam-ka-parcha.onrender.com/stage). The simulation-only storyboard below is historical rehearsal material; its display states and timings are not current acceptance evidence.
+
 ---
 
 ## 1. 60-Second Video Storyboard & Script
