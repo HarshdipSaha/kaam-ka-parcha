@@ -194,7 +194,7 @@
   function askBlock(field, card, reason, onReask) {
     const q = describeField(field, card);
     const chip = el("button", { class: "reask", type: "button", "data-field": field, "aria-label": `${COPY.reask.hi} — ${q.en}` },
-      icon("mic"), el("span", {}, COPY.reask.hi));
+      icon("mic"), el("span", {}, both(COPY.reask.hi, COPY.reask.en)));
     if (onReask) chip.addEventListener("click", () => onReask(field, chip));
     return el("div", { class: "row__ask" },
       el("span", { class: "row__question" }, el("span", { class: "hi" }, q.hi), el("span", { class: "en" }, q.en)),
@@ -379,25 +379,40 @@
     setTimeout(() => ctx.close(), 900);
   }
   const buzz = () => navigator.vibrate && navigator.vibrate([80, 40, 80]);
-  function poll(fetchOnce, { every = 3000, maxMs = 600000, until, onData, onDone } = {}) {
+  function poll(fetchOnce, { every = 3000, maxMs = 600000, until, onData, onDone, onError, onRecover, onTimeout } = {}) {
     const started = Date.now();
     let timer = 0;
     let stopped = false;
+    let disconnected = false;
     const stop = () => { stopped = true; clearTimeout(timer); };
     const tick = async () => {
       if (stopped) return;
       try {
         const data = await fetchOnce();
+        if (stopped) return;
+        if (disconnected && onRecover) onRecover();
+        disconnected = false;
         if (onData) onData(data);
         if (until && until(data)) { stop(); if (onDone) onDone(data); return; }
-      } catch (_) { /* transient network error: keep polling */ }
-      if (Date.now() - started > maxMs) { stop(); return; }
+      } catch (err) {
+        if (stopped) return;
+        if (!disconnected && onError) onError(err);
+        disconnected = true;
+      }
+      if (Date.now() - started > maxMs) { stop(); if (onTimeout) onTimeout(); return; }
       timer = setTimeout(tick, every);
     };
     timer = setTimeout(tick, every);
     return stop;
   }
   const timeNow = () => new Intl.DateTimeFormat("hi-IN", { hour: "numeric", minute: "2-digit" }).format(new Date());
+  // Keep content clear of the dock.
+  const dock = document.getElementById("dock");
+  if (dock && window.ResizeObserver) {
+    new ResizeObserver(() => {
+      document.body.style.setProperty("--dock-h", `${Math.ceil(dock.getBoundingClientRect().height)}px`);
+    }).observe(dock);
+  }
   window.ParchaUI = {
     COPY, REPEAT_MESSAGE, ABSTAIN_LABELS, describeHttpError, HttpError, MicError, api,
     formatRupees, hindiDelivery, kindLabel, describeField, stageFor, flagCount, diffItems, heardQuote,

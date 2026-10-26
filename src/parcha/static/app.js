@@ -82,10 +82,8 @@ async function getOrCreateSession() {
   if (currentSession && currentSession.id) return currentSession;
   const existingId = new URLSearchParams(window.location.search).get("session_id");
   if (existingId) {
-    try {
-      renderSession(await UI.api.get(`/sessions/${existingId}`));
-      return currentSession;
-    } catch (_) { /* fall through to a new session */ }
+    renderSession(await UI.api.get(`/sessions/${existingId}`));
+    return currentSession;
   }
   const created = await UI.api.post("/sessions");
   const url = new URL(window.location);
@@ -93,6 +91,24 @@ async function getOrCreateSession() {
   window.history.replaceState({}, "", url);
   renderSession(created);
   return currentSession;
+}
+function showSessionRecovery(err) {
+  const missing = err instanceof UI.HttpError && err.status === 404;
+  const message = $("message");
+  UI.say(message, missing ? "पर्चा उपलब्ध नहीं है" : "कनेक्शन नहीं हुआ",
+    missing ? "Estimate unavailable" : "Couldn't connect", "warn");
+  const action = UI.el("button", { class: "btn btn--ghost", type: "button" },
+    UI.both(missing ? "नया पर्चा" : "फिर कोशिश करें", missing ? "New estimate" : "Retry"));
+  action.addEventListener("click", () => {
+    if (missing) {
+      const url = new URL(window.location);
+      url.searchParams.delete("session_id");
+      window.location.assign(url);
+    } else {
+      window.location.reload();
+    }
+  });
+  message.append(action);
 }
 /* ---------- live captions (display only) ----------
  * Streams the microphone to /sessions/{id}/captions as 8 kHz mono PCM16 and shows what Gnani's realtime STT hears.
@@ -159,6 +175,7 @@ function renderSession(data) {
   if (!$("workshop")) return;
   const stage = UI.stageFor(data);
   $("workshop").dataset.stage = stage;
+  $("dock").dataset.stage = stage;
   UI.renderStepper($("stepper"), stage);
   $("transcript").hidden = !data.mechanic_transcript;
   $("transcript-content").textContent = data.mechanic_transcript || "";
@@ -204,6 +221,15 @@ function startWaiting() {
     onData: (s) => { if (s.status !== currentSession.status || s.revision !== currentSession.revision) renderSession(s); },
     until: (s) => s.status !== "awaiting_reply" && s.status !== "fallback_ready",
     onDone: () => { stopWaiting = null; },
+    onError: () => UI.say($("message"), "कनेक्शन जुड़ रहा है…", "Reconnecting…", "warn"),
+    onRecover: () => UI.say($("message"), UI.COPY.waiting.hi, UI.COPY.waiting.en),
+    onTimeout: () => {
+      stopWaiting = null;
+      UI.say($("message"), "लाइव अपडेट रुके हैं", "Updates paused", "warn");
+      const retry = UI.el("button", { class: "btn btn--ghost", type: "button" }, UI.both("फिर जोड़ें", "Reconnect"));
+      retry.addEventListener("click", startWaiting);
+      $("message").append(retry);
+    },
   });
 }
 function celebrate() {
@@ -215,11 +241,20 @@ async function recordAndPost(startButton, url, name) {
   let stopCaptions = () => {};
   const mic = UI.micDock($("dock"));
   const message = $("message");
+  const controls = [...document.querySelectorAll("#card button")];
+  controls.forEach((button) => { button.disabled = true; });
+  const row = startButton.closest(".row");
+  if (row) row.classList.add("row--active");
+  const field = startButton.dataset.field;
   try {
     const session = await getOrCreateSession();
     $("record").disabled = true;
     const blob = await recordOnce(startButton, $("stop"), {
-      onStart: (stream) => { toggleListening(true); mic.listening(stream); stopCaptions = startCaptions(stream, session.id); },
+      onStart: (stream) => {
+        toggleListening(true); mic.listening(stream); stopCaptions = startCaptions(stream, session.id);
+        const copy = field ? UI.describeField(field, session.card) : name === "confirm" ? UI.COPY.confirmAll : UI.COPY.listening;
+        UI.say(message, copy.hi, copy.en);
+      },
       onEnd: () => { toggleListening(false); stopCaptions(); },
     });
     mic.processing();
@@ -232,8 +267,11 @@ async function recordAndPost(startButton, url, name) {
     const next = pending ? UI.COPY.checkRows : UI.COPY.ready;
     UI.say(message, next.hi, next.en, pending ? "warn" : "ok");
   } catch (err) {
-    showError(message, err);
+    if (!currentSession && new URLSearchParams(window.location.search).has("session_id")) showSessionRecovery(err);
+    else showError(message, err);
   } finally {
+    if (row) row.classList.remove("row--active");
+    controls.forEach((button) => { button.disabled = false; });
     stopCaptions();   // the panel stays until the next recording starts, so the last live words remain readable
     mic.idle();
     toggleListening(false);
@@ -276,7 +314,7 @@ function initWorkshopPage() {
     if (await UI.copyText(event.currentTarget.dataset.url)) UI.toast(`${UI.COPY.copied.hi} · ${UI.COPY.copied.en}`);
   });
   if (new URLSearchParams(window.location.search).get("session_id")) {
-    getOrCreateSession().catch((err) => showError($("message"), err));
+    getOrCreateSession().catch(showSessionRecovery);
   }
 }
 /* ---------- customer (vehicle owner) ---------- */
@@ -502,6 +540,14 @@ async function copyWhatsapp(sessionId) {
 function waitForReadback(sessionId) {
   UI.poll(() => UI.api.get(`/sessions/${sessionId}`), {
     every: 3000,
+    onError: () => UI.say($("customer-message"), "कनेक्शन जुड़ रहा है…", "Reconnecting…", "warn"),
+    onRecover: describeCustomerState,
+    onTimeout: () => {
+      UI.say($("customer-message"), "लाइव अपडेट रुके हैं", "Updates paused", "warn");
+      const retry = UI.el("button", { class: "btn btn--ghost", type: "button" }, UI.both("फिर जोड़ें", "Reconnect"));
+      retry.addEventListener("click", () => { describeCustomerState(); waitForReadback(sessionId); });
+      $("customer-message").append(retry);
+    },
     until: (s) => (s.readback_revision !== null && s.readback_revision !== undefined) || s.status === "confirmed",
     onDone: (s) => {
       renderCustomerCard(s);

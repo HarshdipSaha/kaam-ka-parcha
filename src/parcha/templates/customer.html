@@ -43,7 +43,10 @@
       <button id="play-readback" class="play" type="button" aria-label="सुनें — Listen" disabled><svg aria-hidden="true" focusable="false"><use href="/static/icons.svg#play"/></svg></button>
       <div class="call__progress" aria-hidden="true"><span id="call-progress"></span></div>
     </div>
-    <p class="call__caption" id="readback-caption" aria-live="polite">{{ readback_text or "" }}</p>
+    <details class="call__script">
+      <summary><span class="hi">साथ में पढ़ें</span><span class="en">Read along</span></summary>
+      <p class="call__caption" id="readback-caption" aria-live="polite">{{ readback_text or "" }}</p>
+    </details>
     <audio id="readback-player" preload="auto"{% if readback_revision is not none %} src="/sessions/{{ session.id }}/readback.wav?revision={{ readback_revision }}"{% endif %}></audio>
   </section>
 

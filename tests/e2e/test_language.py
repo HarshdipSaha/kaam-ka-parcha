@@ -32,10 +32,11 @@ def test_english_leads_by_default_and_hindi_is_one_tap_away(page):
 def test_only_one_language_is_on_screen_at_a_time(page):
     """The old layout stacked English over Hindi everywhere; a user reads one language."""
     page.goto("/workshop")
-    for parent in ("#message", ".empty__title", "#stepper li[data-step='parcha']"):
+    expect(page.locator("#message")).to_be_hidden()  # the empty slip already explains the first action
+    for parent in (".empty__title", "#stepper li[data-step='parcha']"):
         assert shown(page, parent) == "en"
     page.locator("#lang-toggle").click()
-    for parent in ("#message", ".empty__title", "#stepper li[data-step='parcha']"):
+    for parent in (".empty__title", "#stepper li[data-step='parcha']"):
         assert shown(page, parent) == "hi"
 
 
