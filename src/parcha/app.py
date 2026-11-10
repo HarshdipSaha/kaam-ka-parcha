@@ -102,6 +102,8 @@ def _twilio_outcome_speech(outcome: str, session, message: str | None) -> str:
         total = session.card.maybe_total_paise if session.card else None
         amount = f" Kul {total // 100} rupaye." if total is not None else ""
         return f"Dhanyavaad.{amount} Aapka parcha confirm ho gaya. Likhit parcha aapko bhej diya jaayega."
+    if outcome == "needs_readback":
+        return "Theek hai, badal diya. Naya parcha suniye."
     if outcome == "fallback":
         return "Aapka jawab phone par saaf nahi suna. Hum aapko link bhejenge jahan aap likh kar confirm kar sakte hain."
     if outcome == "ask_field":

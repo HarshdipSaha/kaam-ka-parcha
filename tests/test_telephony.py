@@ -200,6 +200,13 @@ def test_workshop_hides_the_call_button_without_twilio(fake_services):
     assert 'id="call-customer"' not in html
 
 
+def test_a_phone_correction_is_acknowledged_not_called_misheard():
+    # The call used to say "Samajh nahi aaya" after an accepted correction, right before the new read-back.
+    from parcha.app import _twilio_outcome_speech
+    speech = _twilio_outcome_speech("needs_readback", None, None)
+    assert "badal diya" in speech and "Samajh nahi" not in speech
+
+
 def _twilio_post(client: TestClient, path: str, query: str, form: dict):
     url = f"https://test.example{path}?{query}" if query else f"https://test.example{path}"
     sig = _sign("test-twilio-token", url, form)
