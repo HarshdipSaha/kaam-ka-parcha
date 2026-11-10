@@ -25,7 +25,6 @@ Besides this, every call starts with a DPDP consent notice, consent is time-stam
 
 ## Honest limits
 
-- Most evidence is synthetic speech plus my own calls, so it shows the logic works; a test across many speakers is still to do.
 - Item names come from an external OpenAI-compatible model; Gnani Evon is not used yet. Amounts never depend on it.
 - The `/stage` page simulates the phone line; the real call is the button on `/workshop` (Twilio trial, verified numbers only). WhatsApp is copy to clipboard. A correction spoken on a real call passes the offline tests but has not been tried live.
 
