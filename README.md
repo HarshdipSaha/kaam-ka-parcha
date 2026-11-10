@@ -12,6 +12,8 @@
 
 Built for **Gnani AI's Great Indian AI Challenge** (Oct 1 – Nov 10, 2026).
 
+**[Read the one-page solution pitch](PITCH.md)**
+
 **[Open the live demo](https://kaam-ka-parcha.onrender.com/stage)** — mechanic and customer views side by side. [Workshop](https://kaam-ka-parcha.onrender.com/workshop) · [60-second recording plan](docs/submission/video-script.md).
 
 The browser demo simulates a phone line. A separate **Twilio integration places real customer calls**, reads the estimate, and accepts spoken confirmation or corrections. The owner confirmed this integration is working on 2026-10-26; see [real-call setup](docs/deploy.md#real-customer-phone-call-twilio-optional).
