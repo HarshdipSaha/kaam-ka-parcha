@@ -5,7 +5,7 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
 [![CI](https://github.com/HarshdipSaha/kaam-ka-parcha/actions/workflows/ci.yml/badge.svg)](https://github.com/HarshdipSaha/kaam-ka-parcha/actions/workflows/ci.yml)
-[![Offline tests](https://img.shields.io/badge/offline%20tests-754%20passing-brightgreen.svg)](tests/)
+[![Offline tests](https://img.shields.io/badge/offline%20tests-826%20passing-brightgreen.svg)](tests/)
 [![Playwright E2E](https://img.shields.io/badge/playwright-E2E%20Passed%20(4%20Viewports)-purple.svg)](scripts/run_webattack_suite.py)
 [![Gnani AI](https://img.shields.io/badge/Gnani%20AI-Prisma%20%7C%20Timbre-orange.svg)](https://vachana.ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

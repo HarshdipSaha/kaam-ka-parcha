@@ -25,6 +25,7 @@
 | **013** | `deploy-hardening` | CI, LICENSE, offline mock mode, spend/length/privacy guards, Gnani key failover; deployed live to Render (free plan) | **complete** | 2026-10-07 | 2026-10-07 | [`aidlc-docs/efforts/013-deploy-hardening/`](efforts/013-deploy-hardening/effort-state.md) |
 | **014** | `twilio-phone-leg` | Real customer phone call via Twilio alongside the simulated line; live-verified with a real call (confirmed, PDF sealed) | **complete** | 2026-10-07 | 2026-10-07 | [`aidlc-docs/efforts/014-twilio-phone-leg/`](efforts/014-twilio-phone-leg/effort-state.md) |
 | **015** | `realistic-ui` | Stop the receipts, verify page and UI claiming a real call is synthetic; one language at a time; decluttered stage; asset cache-busting | **complete** | 2026-10-21 | 2026-10-21 | [`aidlc-docs/efforts/015-realistic-ui/`](efforts/015-realistic-ui/effort-state.md) |
+| **016** | `call-button-and-submission` | Workshop "Call the customer's phone" button, correction phrase fix, phone numbers typed any way; submission pitch, demo script, slides, Lighthouse | **complete** | 2026-11-09 | 2026-11-10 | [`aidlc-docs/efforts/016-call-button-and-submission/`](efforts/016-call-button-and-submission/effort-state.md) |
 
 ---
 
@@ -39,5 +40,4 @@
 ## Active & Next Efforts
 - **Concurrent Active Effort:** `006-real-api-real-audio-benchmark` — User-requested budgeted real-API speech evaluation.
 - **Active Effort:** `004-enterprise-telephony-compliance` — Resolves GitHub Issues #3, #4, #5, #6, #7, and Epic #1.
-- **Follow-up from 014:** no `/workshop` UI button for the Twilio call yet (API-only); no automatic WhatsApp/SMS
-  delivery after a phone confirmation; real-call accuracy scoring (~20 calls) not yet run.
+- **Follow-up from 016:** GitHub Actions blocked by an account billing lock (no job has started since `20b5814`); `TWILIO_DEFAULT_TO` not set on Render; a spoken correction on a real call not yet tried live; real-call accuracy scoring (~20 calls) not yet run.

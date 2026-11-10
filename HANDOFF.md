@@ -58,3 +58,16 @@ shows one language at a time and `/stage` no longer repeats its header. Offline 
 instance idles or restarts); keep the instance warm before demos; regenerate the README/`docs/ui` screenshots from a
 live capture run; a "Call customer" button in `/workshop`.
 
+---
+
+# Handoff 2026-11-10: call button and submission (effort 016)
+
+`/workshop` now has a "Call the customer's phone" button (never inside `/stage`); optional `TWILIO_DEFAULT_TO` dials a
+preset number and shows only its last four digits. The call acknowledges a spoken correction ("Theek hai, badal
+diya") instead of saying "Samajh nahi aaya", and a number typed with spaces or without +91 is accepted. Submission
+material: `PITCH.md`, `docs/submission/demo-recording-script.md`, problem slide and five-promise diagram. Offline 826
+passed. See `aidlc-docs/efforts/016-call-button-and-submission/effort-state.md`.
+
+**Do next:** clear the GitHub billing lock (Actions jobs are not starting: "account is locked due to a billing
+issue"); set `TWILIO_DEFAULT_TO` on Render; try a spoken correction on a real call before showing it.
+

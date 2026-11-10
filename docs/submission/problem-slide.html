@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Problem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Mukta:wght@400;600;700;800&display=block" rel="stylesheet">
+<style>
+  :root {
+    --counter: #F3EEE3; --paper: #FFFDF6; --ink: #1B2433; --ink-muted: #5B6472; --rule: #D9CFBC;
+    --neela: #1F3A8A; --hara: #0E7A41; --jamuni: #5B2E91; --sindoor: #B3261E; --amber: #B45309; --haldi: #F2B705;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; }
+  body {
+    position: relative; color: var(--ink); font-family: "Mukta", "Nirmala UI", sans-serif;
+    background:
+      radial-gradient(ellipse at 50% 78%, rgba(242,183,5,.18) 0, rgba(242,183,5,0) 640px),
+      repeating-linear-gradient(0deg, rgba(27,36,51,.035) 0 1px, transparent 1px 36px),
+      var(--counter);
+  }
+  header { position: absolute; top: 84px; left: 0; right: 0; text-align: center; }
+  .kicker { font: 800 22px/1 "Mukta", sans-serif; letter-spacing: 6px; color: var(--amber); }
+  h1 { margin: 22px 0 0; font: 800 84px/1.05 "Baloo 2", sans-serif; color: var(--ink); }
+  h1 .ok { color: var(--hara); } h1 .bad { color: var(--sindoor); }
+  .sub { margin: 18px auto 0; max-width: 1500px; font: 600 30px/1.4 "Mukta", sans-serif; color: var(--ink-muted); }
+  svg.scene { position: absolute; left: 0; top: 400px; }
+  .brand { position: absolute; right: 64px; bottom: 34px; font: 800 24px/1 "Baloo 2", sans-serif; color: var(--neela); }
+  .brand span { font: 600 18px/1 "Mukta", sans-serif; color: var(--ink-muted); margin-left: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">THE PROBLEM · समस्या</div>
+  <h1>“<span class="ok">₹450</span> bola tha. Bill <span class="bad">₹900</span> ka kaise?”</h1>
+  <p class="sub">In Indian garages the estimate is only ever spoken. At pick-up, it's one word against another.</p>
+</header>
+
+<svg class="scene" width="1920" height="640" viewBox="0 0 1920 640" aria-hidden="true">
+  <!-- ground -->
+  <line x1="180" y1="602" x2="1740" y2="602" stroke="#CDBFA3" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- scooter (background, left) -->
+  <g transform="translate(150,0)" opacity=".9">
+    <path d="M10 545 Q30 470 110 470 L190 470 Q215 430 232 380 L252 380 L246 455 Q270 500 268 545 Z" fill="#D9CFBC"/>
+    <rect x="80" y="440" width="105" height="26" rx="13" fill="#B9AD95"/>
+    <line x1="242" y1="384" x2="214" y2="352" stroke="#8C826F" stroke-width="9" stroke-linecap="round"/>
+    <line x1="200" y1="350" x2="232" y2="346" stroke="#8C826F" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="40" cy="560" r="42" fill="#3A4252"/><circle cx="40" cy="560" r="16" fill="#B9AD95"/>
+    <circle cx="245" cy="560" r="42" fill="#3A4252"/><circle cx="245" cy="560" r="16" fill="#B9AD95"/>
+  </g>
+
+  <!-- mechanic -->
+  <g transform="translate(560,0)">
+    <rect x="-46" y="430" width="38" height="160" rx="12" fill="#17306F"/>
+    <rect x="8" y="430" width="38" height="160" rx="12" fill="#17306F"/>
+    <rect x="-56" y="584" width="54" height="20" rx="10" fill="#1B2433"/>
+    <rect x="6" y="584" width="54" height="20" rx="10" fill="#1B2433"/>
+    <rect x="-72" y="250" width="144" height="205" rx="32" fill="#1F3A8A"/>
+    <rect x="-40" y="300" width="80" height="62" rx="10" fill="#2C4BA6"/>
+    <ellipse cx="34" cy="410" rx="16" ry="9" fill="#0F1E4A" opacity=".55"/>
+    <ellipse cx="-30" cy="345" rx="10" ry="6" fill="#0F1E4A" opacity=".45"/>
+    <!-- left arm down -->
+    <line x1="-72" y1="285" x2="-92" y2="405" stroke="#1F3A8A" stroke-width="32" stroke-linecap="round"/>
+    <circle cx="-94" cy="420" r="17" fill="#B97A4B"/>
+    <!-- right arm raised with spanner -->
+    <polyline points="64,282 122,236 138,170" fill="none" stroke="#1F3A8A" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="140" cy="158" r="17" fill="#B97A4B"/>
+    <line x1="142" y1="152" x2="166" y2="76" stroke="#8A94A6" stroke-width="13" stroke-linecap="round"/>
+    <circle cx="169" cy="66" r="18" fill="#8A94A6"/>
+    <rect x="162" y="40" width="14" height="22" rx="3" fill="#F3EEE3"/>
+    <!-- head -->
+    <rect x="-16" y="228" width="32" height="28" rx="8" fill="#A86B3F"/>
+    <circle cx="0" cy="196" r="50" fill="#B97A4B"/>
+    <path d="M-52 190 Q-50 136 0 134 Q50 136 52 190 Z" fill="#F2B705"/>
+    <rect x="-8" y="178" width="78" height="16" rx="8" fill="#D9A004"/>
+    <circle cx="16" cy="206" r="5" fill="#1B2433"/>
+    <path d="M6 228 Q18 236 30 228" fill="none" stroke="#5A3315" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- mechanic speech bubble -->
+  <g transform="translate(760,30)">
+    <path d="M40 150 L10 205 L92 150 Z" fill="#FFFDF6" stroke="#0E7A41" stroke-width="5" stroke-linejoin="round"/>
+    <rect x="0" y="0" width="300" height="160" rx="30" fill="#FFFDF6" stroke="#0E7A41" stroke-width="5"/>
+    <rect x="16" y="140" width="80" height="16" fill="#FFFDF6"/>
+    <text x="150" y="62" text-anchor="middle" font-family="Mukta" font-weight="700" font-size="32" fill="#1B2433">साढ़े चार सौ लगेगा</text>
+    <text x="150" y="132" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="66" fill="#0E7A41">₹450</text>
+  </g>
+
+  <!-- the gap: nothing written down -->
+  <path d="M1080 250 Q1160 190 1240 250" fill="none" stroke="#B9AD95" stroke-width="5" stroke-dasharray="3 14" stroke-linecap="round"/>
+  <g transform="translate(1100,300)">
+    <rect x="0" y="0" width="118" height="150" rx="12" fill="#FFFDF6" stroke="#B9AD95" stroke-width="5" stroke-dasharray="12 10"/>
+    <line x1="22" y1="42" x2="96" y2="42" stroke="#E2D8C4" stroke-width="7" stroke-linecap="round"/>
+    <line x1="22" y1="70" x2="96" y2="70" stroke="#E2D8C4" stroke-width="7" stroke-linecap="round"/>
+    <line x1="22" y1="98" x2="74" y2="98" stroke="#E2D8C4" stroke-width="7" stroke-linecap="round"/>
+    <line x1="-14" y1="164" x2="132" y2="-14" stroke="#B3261E" stroke-width="12" stroke-linecap="round"/>
+    <text x="59" y="205" text-anchor="middle" font-family="Mukta" font-weight="700" font-size="26" fill="#5B6472">Nothing in writing</text>
+  </g>
+
+  <!-- customer -->
+  <g transform="translate(1520,0)">
+    <rect x="-44" y="425" width="38" height="165" rx="12" fill="#3A3F4B"/>
+    <rect x="6" y="425" width="38" height="165" rx="12" fill="#3A3F4B"/>
+    <rect x="-54" y="584" width="54" height="20" rx="10" fill="#1B2433"/>
+    <rect x="4" y="584" width="54" height="20" rx="10" fill="#1B2433"/>
+    <rect x="-66" y="252" width="132" height="195" rx="30" fill="#5B2E91"/>
+    <line x1="0" y1="262" x2="0" y2="440" stroke="#4A2378" stroke-width="4"/>
+    <line x1="64" y1="285" x2="82" y2="405" stroke="#5B2E91" stroke-width="30" stroke-linecap="round"/>
+    <circle cx="84" cy="420" r="16" fill="#8D5A3B"/>
+    <!-- arm holding the bill out -->
+    <polyline points="-60,284 -96,330" fill="none" stroke="#5B2E91" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="-16" y="228" width="30" height="28" rx="8" fill="#7A4B2E"/>
+    <circle cx="0" cy="196" r="48" fill="#8D5A3B"/>
+    <path d="M-50 190 Q-52 140 -6 138 Q46 136 50 180 Q30 160 -10 162 Q-36 164 -50 190 Z" fill="#1B2433"/>
+    <circle cx="-16" cy="204" r="5" fill="#1B2433"/>
+    <path d="M-30 186 L-6 192" stroke="#1B2433" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="-14" cy="230" rx="8" ry="6" fill="#5A3315"/>
+  </g>
+
+  <!-- the bill -->
+  <g transform="translate(1268,250) rotate(-7)">
+    <rect x="0" y="0" width="150" height="196" rx="10" fill="#FFFFFF" stroke="#1B2433" stroke-width="4"/>
+    <text x="75" y="40" text-anchor="middle" font-family="Mukta" font-weight="800" font-size="22" letter-spacing="3" fill="#5B6472">BILL</text>
+    <line x1="20" y1="62" x2="130" y2="62" stroke="#E2D8C4" stroke-width="6" stroke-linecap="round"/>
+    <line x1="20" y1="86" x2="110" y2="86" stroke="#E2D8C4" stroke-width="6" stroke-linecap="round"/>
+    <text x="75" y="162" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="58" fill="#B3261E">₹900</text>
+  </g>
+  <circle cx="1421" cy="331" r="17" fill="#8D5A3B"/>
+
+  <!-- customer reaction -->
+  <g transform="translate(1560,40)">
+    <path d="M40 120 L18 168 L88 120 Z" fill="#FFFDF6" stroke="#B3261E" stroke-width="5" stroke-linejoin="round"/>
+    <rect x="0" y="0" width="190" height="128" rx="28" fill="#FFFDF6" stroke="#B3261E" stroke-width="5"/>
+    <rect x="22" y="110" width="66" height="16" fill="#FFFDF6"/>
+    <text x="95" y="86" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="56" fill="#B3261E">कैसे?</text>
+  </g>
+</svg>
+
+<div class="brand">काम का पर्चा<span>Kaam ka Parcha</span></div>
+</body>
+</html>
