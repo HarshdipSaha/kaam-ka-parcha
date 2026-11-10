@@ -1,7 +1,7 @@
 import json
 import re
 import time
-from typing import Literal
+from typing import Literal, NamedTuple
 import httpx
 
 __all__ = ["GnaniError", "KeyPool", "PrismaClient", "TimbreClient", "chunk_for_tts"]
@@ -56,6 +56,13 @@ def _pieces(text: str, limit: int) -> list[str]:
             if line:
                 out.append(line)
     return out
+
+
+class Transcript(NamedTuple):
+    """One STT result. A tuple, so callers may unpack `text, confidence = ...`."""
+
+    text: str
+    confidence: float | None
 
 
 class GnaniError(RuntimeError):
@@ -160,6 +167,31 @@ class PrismaClient:
         score: float = 1.0,
         language_code: str = "hi-IN",
     ) -> str:
+        return self._stt(wav, mode=mode, bias=bias, score=score, language_code=language_code)["transcript"].strip()
+
+    def transcribe_detailed(
+        self,
+        wav: bytes,
+        *,
+        mode: Literal["transcribe", "verbatim"] = "transcribe",
+        bias: list[str] | None = None,
+        score: float = 1.0,
+        language_code: str = "hi-IN",
+    ) -> Transcript:
+        """Text plus Prisma's confidence, or None when the response carries none (its documented default)."""
+        payload = self._stt(wav, mode=mode, bias=bias, score=score, language_code=language_code)
+        raw_conf = payload.get("confidence")
+        return Transcript(payload["transcript"].strip(), float(raw_conf) if raw_conf is not None else None)
+
+    def _stt(
+        self,
+        wav: bytes,
+        *,
+        mode: Literal["transcribe", "verbatim"],
+        bias: list[str] | None,
+        score: float,
+        language_code: str,
+    ) -> dict:
         words = bias or []
         if words and mode != "verbatim":
             raise ValueError("bias_list requires verbatim mode")
@@ -188,21 +220,7 @@ class PrismaClient:
             payload.get("transcript"), str
         ):
             raise GnaniError("Gnani STT response lacked a transcript")
-        raw_conf = payload.get("confidence")
-        self.last_confidence = float(raw_conf) if raw_conf is not None else 1.0
-        return payload["transcript"].strip()
-
-    def transcribe_detailed(
-        self,
-        wav: bytes,
-        *,
-        mode: Literal["transcribe", "verbatim"] = "transcribe",
-        bias: list[str] | None = None,
-        score: float = 1.0,
-        language_code: str = "hi-IN",
-    ) -> tuple[str, float]:
-        transcript = self.transcribe(wav, mode=mode, bias=bias, score=score, language_code=language_code)
-        return transcript, getattr(self, "last_confidence", 1.0)
+        return payload
 
 
 class TimbreClient:

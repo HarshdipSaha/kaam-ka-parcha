@@ -450,7 +450,8 @@ def test_workflow_reply_with_noise_and_codec():
         readback_revision=1,
     )
     assert res.outcome == "confirmed"
-    assert len(mock_prisma.calls) == 1
+    # Two passes over the same audio: the yes had no confidence report, so it was re-checked.
+    assert len(mock_prisma.calls) == 2 and mock_prisma.calls[0][0] == mock_prisma.calls[1][0]
     # Check that audio passed to prisma was degraded (not the raw speech wav)
     assert mock_prisma.calls[0][0] != speech_wav
     # Check that audio is valid wav

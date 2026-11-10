@@ -51,8 +51,9 @@ def test_verify_html_and_json_responses(fake_services):
     assert html_res.status_code == 200
     assert "text/html" in html_res.headers["content-type"]
     body = html_res.text
-    assert "BSA 2023" in body
-    assert "Compliant" in body
+    # An unsigned digest must not claim legal compliance.
+    assert "Compliant" not in body and "§§ 61–63" not in body
+    assert "unsigned" in body
     assert "Audit Verification" in body
     assert session_id in body
     assert "KA-01-AB-1234" not in body and "Synthetic Demo" not in body
@@ -72,7 +73,7 @@ def test_verify_html_and_json_responses(fake_services):
     assert len(data["audit_manifest_sha256"]) == 64
     assert data["intake"]["audio_url"] == f"/sessions/{session_id}/intake.wav"
     assert data["confirmation"]["audio_url"] == f"/sessions/{session_id}/reply.wav"
-    assert "Bharatiya Sakshya Adhiniyam, 2023" in data["legal_compliance"]
+    assert "SHA-256" in data["legal_compliance"] and "unsigned" in data["legal_compliance"]
 
     # 3. Audio streaming endpoints
     intake_audio_res = client.get(f"/sessions/{session_id}/intake.wav")
@@ -126,7 +127,7 @@ def test_pdf_contains_scannable_qr_code_and_audio_hashes():
         confirmed_at_utc=now,
     )
 
-    pdf_bytes = render_pdf(session)
+    pdf_bytes = render_pdf(session, base_url="https://kaam.example")
     reader = PdfReader(BytesIO(pdf_bytes))
     page_text = reader.pages[0].extract_text()
 

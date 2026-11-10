@@ -121,13 +121,7 @@ def test_pdf_embeds_exact_transcripts():
     assert payload["logs"][0]["audio_sha256"] == "a" * 64
     assert payload["audit_manifest_sha256"] == hashlib.sha256(
         json.dumps(
-            {
-                "session_id": payload["session_id"],
-                "revision": payload["revision"],
-                "confirmed_at_utc": payload["confirmed_at_utc"],
-                "dpdp_consent": payload["dpdp_consent"],
-                "logs": payload["logs"],
-            },
+            {key: value for key, value in payload.items() if key != "audit_manifest_sha256"},
             ensure_ascii=False,
             separators=(",", ":"),
             sort_keys=True,

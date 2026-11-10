@@ -43,7 +43,7 @@ def test_unconfirmed_parcha_is_not_called_verified(fake_services):
     html = client.get(f"/verify/{sid}").text
     assert '<html lang="hi">' in html and "/static/parcha.css" in html
     assert "अभी मंज़ूर नहीं" in html and "असली पर्चा" not in html
-    assert "Audit Verification" in html and "BSA 2023" in html and "Compliant" in html
+    assert "Audit Verification" in html and "unsigned" in html and "Compliant" not in html
     assert "var(--danger)" not in html
 
 

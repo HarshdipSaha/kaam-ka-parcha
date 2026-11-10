@@ -108,7 +108,7 @@ def test_tamil_customer_confirms_by_voice_end_to_end():
     result = wf.reply(sid, b"audio", "audio/webm", expected_revision=1, readback_revision=1,
                       recorded_at_utc=datetime(2026, 10, 7, tzinfo=timezone.utc))
     assert result.outcome == "confirmed" and result.session.status == "confirmed"
-    assert wf.prisma.calls == ["ta-IN"]                              # the reply was recognised as Tamil
+    assert wf.prisma.calls == ["ta-IN", "ta-IN"]    # recognised as Tamil; the yes was re-checked in the same language
 
 
 def test_regional_negation_retries_and_never_confirms():
@@ -123,7 +123,7 @@ def test_hindi_flow_never_sends_a_language_override(monkeypatch):
     wf.start_readback(sid, expected_revision=1)
     assert wf.timbre.calls == [("hi-IN", None)]                  # a plain synthesize(text) call
     result = wf.reply(sid, b"audio", "audio/webm", expected_revision=1, readback_revision=1)
-    assert result.outcome == "confirmed" and wf.prisma.calls == ["hi-IN"]
+    assert result.outcome == "confirmed" and wf.prisma.calls == ["hi-IN", "hi-IN"]   # the yes is re-checked
 
 
 def test_clients_send_the_requested_language_and_voice():

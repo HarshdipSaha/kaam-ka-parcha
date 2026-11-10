@@ -13,11 +13,32 @@ from .session import Conflict, Session
 from .workflow import format_rupees
 
 
+def _card_evidence(session: Session) -> dict | None:
+    """The amounts and promise printed on the PDF, as paise integers, so the digest covers what the customer agreed to."""
+    card = session.card
+    if card is None:
+        return None
+    return {
+        "items": [
+            {"id": it.id, "label": it.label, "kind": it.kind, "amount_paise": it.amount_paise}
+            for it in card.items
+        ],
+        "total_paise": card.maybe_total_paise,
+        "delivery": (
+            {"date": card.delivery.date.isoformat(), "window": card.delivery.window, "spoken": card.delivery.spoken}
+            if card.delivery else None
+        ),
+    }
+
+
 def audit_manifest(session: Session) -> dict:
     """Return the exact evidence covered by the PDF and attachment digest."""
     return {
+        "schema": "parcha-manifest/1",
         "session_id": session.id,
         "revision": session.revision,
+        "channel": session.channel,
+        "card": _card_evidence(session),
         "confirmed_at_utc": session.confirmed_at_utc.isoformat() if session.confirmed_at_utc else None,
         "dpdp_consent": {
             "granted": session.dpdp_consent_granted,
@@ -32,10 +53,15 @@ def audit_manifest(session: Session) -> dict:
                 "text": log.text,
                 "recorded_at_utc": log.recorded_at_utc.isoformat(),
                 "audio_sha256": log.audio_sha256,
+                "raw_audio_sha256": log.raw_audio_sha256,
             }
             for log in session.logs
         ],
     }
+
+
+def verify_url(session: Session, base_url: str) -> str:
+    return f"{base_url.rstrip('/')}/verify/{session.id}"
 
 
 def audit_manifest_sha256(session: Session) -> str:
@@ -60,7 +86,8 @@ def attach_transcripts(pdf_bytes: bytes, session: Session) -> bytes:
     return output.getvalue()
 
 
-def render_pdf(session: Session) -> bytes:
+def render_pdf(session: Session, *, base_url: str = "") -> bytes:
+    """`base_url` is this app's public address; without one there is no QR code, since a bare path scans to nowhere."""
     if (
         session.status != "confirmed"
         or session.confirmed_at_utc is None
@@ -81,19 +108,19 @@ def render_pdf(session: Session) -> bytes:
     phone = session.channel == "phone"
     c.drawString(50, 805, "Kaam ka Parcha — Work Estimate & Job Card" + ("" if phone else " (Demo)"))
 
-    # Dynamic verification QR code in top right
-    qr_url = f"/verify/{session.id}"
-    qr_widget = QrCodeWidget(qr_url)
-    b = qr_widget.getBounds()
-    w = b[2] - b[0]
-    h = b[3] - b[1]
-    qr_size = 65
-    d = Drawing(qr_size, qr_size, transform=[qr_size / w, 0, 0, qr_size / h, 0, 0])
-    d.add(qr_widget)
-    renderPDF.draw(d, c, 475, 735)
+    # Verification QR code in the top right, only when it can point at a real address.
+    if base_url:
+        qr_widget = QrCodeWidget(verify_url(session, base_url))
+        b = qr_widget.getBounds()
+        w = b[2] - b[0]
+        h = b[3] - b[1]
+        qr_size = 65
+        d = Drawing(qr_size, qr_size, transform=[qr_size / w, 0, 0, qr_size / h, 0, 0])
+        d.add(qr_widget)
+        renderPDF.draw(d, c, 475, 735)
 
-    c.setFont("Helvetica", 6)
-    c.drawRightString(540, 725, "Scan to Verify Audio")
+        c.setFont("Helvetica", 6)
+        c.drawRightString(540, 725, "Scan to Verify Audio")
 
     # How the customer confirmed. No vehicle line: the app never captures one, so printing one would be invented.
     c.setFont("Helvetica", 10)
@@ -105,14 +132,15 @@ def render_pdf(session: Session) -> bytes:
     c.setFont("Helvetica", 7)
     c.drawString(50, 746, f"Audit manifest SHA-256: {audit_digest}")
 
+    # Print the hash of the audio as recorded (the file served for checking); fall back to the processed hash.
     intake_log = next((l for l in session.logs if l.role == "mechanic" and l.audio_sha256), None)
     customer_log = next((l for l in session.logs if l.role == "customer" and l.audio_sha256), None)
     if intake_log and intake_log.audio_sha256:
         c.setFont("Helvetica", 6.5)
-        c.drawString(50, 735, f"Intake Audio SHA-256: {intake_log.audio_sha256}")
+        c.drawString(50, 735, f"Intake Audio SHA-256: {intake_log.raw_audio_sha256 or intake_log.audio_sha256}")
     if customer_log and customer_log.audio_sha256:
         c.setFont("Helvetica", 6.5)
-        c.drawString(50, 725, f"Confirmation Audio SHA-256: {customer_log.audio_sha256}")
+        c.drawString(50, 725, f"Confirmation Audio SHA-256: {customer_log.raw_audio_sha256 or customer_log.audio_sha256}")
 
     if session.dpdp_consent_granted and session.dpdp_consent_sha256:
         c.setFont("Helvetica", 6.5)

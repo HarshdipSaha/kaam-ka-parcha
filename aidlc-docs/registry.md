@@ -26,6 +26,7 @@
 | **014** | `twilio-phone-leg` | Real customer phone call via Twilio alongside the simulated line; live-verified with a real call (confirmed, PDF sealed) | **complete** | 2026-10-07 | 2026-10-07 | [`aidlc-docs/efforts/014-twilio-phone-leg/`](efforts/014-twilio-phone-leg/effort-state.md) |
 | **015** | `realistic-ui` | Stop the receipts, verify page and UI claiming a real call is synthetic; one language at a time; decluttered stage; asset cache-busting | **complete** | 2026-10-21 | 2026-10-21 | [`aidlc-docs/efforts/015-realistic-ui/`](efforts/015-realistic-ui/effort-state.md) |
 | **016** | `call-button-and-submission` | Workshop "Call the customer's phone" button, correction phrase fix, phone numbers typed any way; submission pitch, demo script, slides, Lighthouse | **complete** | 2026-11-09 | 2026-11-10 | [`aidlc-docs/efforts/016-call-button-and-submission/`](efforts/016-call-button-and-submission/effort-state.md) |
+| **017** | `speech-safety-and-evidence` | Unknown Prisma confidence no longer read as certain (two-pass yes); card in the audit manifest; raw audio hashes; full-URL QR; no compliance overclaim | **complete** (first slice; 1b/1d/1e/2/3b/3c deferred) | 2026-11-10 | 2026-11-10 | [`aidlc-docs/efforts/017-speech-safety-and-evidence/`](efforts/017-speech-safety-and-evidence/effort-state.md) |
 
 ---
 

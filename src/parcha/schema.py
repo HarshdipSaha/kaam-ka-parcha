@@ -97,4 +97,7 @@ class TranscriptLog(StrictModel):
     mode: str
     text: str
     recorded_at_utc: datetime
+    # What was sent to Prisma (resampled, and on the simulated line mixed with noise).
     audio_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    # The bytes as uploaded or as Twilio recorded them: the file served back for checking.
+    raw_audio_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")

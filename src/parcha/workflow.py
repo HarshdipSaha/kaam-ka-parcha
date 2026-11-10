@@ -136,6 +136,7 @@ class Workflow:
         if recorded_at_utc.tzinfo is None:
             recorded_at_utc = recorded_at_utc.replace(tzinfo=timezone.utc)
 
+        raw_audio_sha256 = hashlib.sha256(blob).hexdigest()
         wav = self.normalize_audio(blob, mime)
         audio_sha256 = hashlib.sha256(wav).hexdigest()
         normalized, verbatim = self._two_passes(wav)
@@ -150,6 +151,7 @@ class Workflow:
                 text=normalized,
                 recorded_at_utc=recorded_at_utc,
                 audio_sha256=audio_sha256,
+                raw_audio_sha256=raw_audio_sha256,
             ),
             TranscriptLog(
                 role="mechanic",
@@ -157,6 +159,7 @@ class Workflow:
                 text=verbatim,
                 recorded_at_utc=recorded_at_utc,
                 audio_sha256=audio_sha256,
+                raw_audio_sha256=raw_audio_sha256,
             ),
         ) + abstain_logs(abstentions, recorded_at_utc)
         return self.store.set_card(
@@ -523,15 +526,14 @@ class Workflow:
 
         language = next((log.text for log in reversed(session.logs) if log.mode == "readback_language"), DEFAULT_LANGUAGE)
         stt_options = {} if language == DEFAULT_LANGUAGE else {"language_code": language}
-        confidence = 1.0
+        # None means Prisma reported no confidence (its documented default): never read that as certain.
+        confidence: float | None
         if hasattr(self.prisma, "transcribe_detailed"):
             transcript, confidence = self.prisma.transcribe_detailed(wav, mode="transcribe", **stt_options)
         else:
             transcript = self.prisma.transcribe(wav, mode="transcribe", **stt_options)
-            if hasattr(self.prisma, "confidence"):
-                confidence = float(self.prisma.confidence)
-            elif hasattr(self.prisma, "last_confidence"):
-                confidence = float(self.prisma.last_confidence)
+            reported = getattr(self.prisma, "confidence", None)
+            confidence = float(reported) if reported is not None else None
 
         audio_sha256 = hashlib.sha256(wav).hexdigest()
 
@@ -545,16 +547,17 @@ class Workflow:
             text=transcript,
             recorded_at_utc=recorded_at_utc,
             audio_sha256=audio_sha256,
+            raw_audio_sha256=hashlib.sha256(blob).hexdigest(),
         )
 
         # Count prior retry attempts during this readback cycle
         prior_retries = sum(
             1 for log in session.logs
-            if log.role == "customer" and log.mode in ("reply", "unclear", "unresolved_correction")
+            if log.role == "customer" and log.mode in ("reply", "unclear", "unresolved_correction", "unconfirmed_accept")
         )
 
         # 1. Confidence threshold evaluation (< 0.65 triggers digital fallback)
-        if confidence < 0.65:
+        if confidence is not None and confidence < 0.65:
             fallback_log = TranscriptLog(
                 role="customer",
                 mode="low_confidence_fallback",
@@ -583,6 +586,39 @@ class Workflow:
             )
 
         classification = classify_reply(transcript, None if language == DEFAULT_LANGUAGE else language)
+
+        # 2. A yes seals the parcha and cannot be undone. With no confidence to go on, a second, independent pass
+        #    over the same audio must also hear a yes; otherwise ask again (the same rule as two agreeing amounts).
+        if classification == "accept" and confidence is None:
+            second = self.prisma.transcribe(wav, mode="verbatim", **stt_options)
+            if classify_reply(second, None if language == DEFAULT_LANGUAGE else language) != "accept":
+                if prior_retries >= 2:
+                    updated_session = self.store.trigger_fallback(
+                        session_id, expected_revision=expected_revision, log=customer_log,
+                    )
+                    return ReplyResult(
+                        outcome="fallback", transcript=transcript, session=updated_session,
+                        message="The two listening passes disagreed again. Switched to digital confirmation fallback.",
+                        fallback_payload={
+                            "session_id": session_id,
+                            "retries": prior_retries + 1,
+                            "actions": [
+                                {"label": "Approve Estimate", "action": "approve"},
+                                {"label": "Request Changes", "action": "request_changes"},
+                            ],
+                        },
+                    )
+                updated_session = self.store.record_observation(
+                    session_id,
+                    expected_revision=expected_revision,
+                    readback_revision=readback_revision,
+                    log=customer_log.model_copy(update={"mode": "unconfirmed_accept", "text": f"{transcript} | verbatim: {second}"}),
+                )
+                return ReplyResult(
+                    outcome="retry", transcript=transcript, session=updated_session,
+                    message="Please confirm explicitly by saying: Haan, theek hai.",
+                )
+
         review_message = None
         if classification == "unclear" and self.reply_reviewer is not None:
             try:

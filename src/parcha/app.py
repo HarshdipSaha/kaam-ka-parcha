@@ -882,7 +882,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
         except KeyError:
             raise HTTPException(404, "unknown session")
         try:
-            pdf_bytes = render_pdf(session)
+            pdf_bytes = render_pdf(session, base_url=services.settings.public_base_url)
         except Conflict as exc:
             raise HTTPException(409, str(exc))
         return Response(
@@ -975,7 +975,9 @@ def create_app(services: AppServices | None = None) -> FastAPI:
             confirmation_log = next((l for l in session.logs if l.role == "customer"), None)
 
         audit_digest = audit_manifest_sha256(session)
-        legal_compliance = "Bharatiya Sakshya Adhiniyam, 2023 (Sections 61-63) Tamper-Evident Electronic Record"
+        # Say what the record is: a SHA-256 digest over the card, transcripts, audio hashes and consent. It is not
+        # signed, so it shows the record is unchanged against this digest; it is not a BSA section 63 certificate.
+        legal_compliance = "SHA-256 audit record of the card, transcripts, audio hashes and consent (unsigned)"
 
         is_json = format == "json" or request.headers.get("accept", "").startswith("application/json")
         if is_json:
@@ -997,12 +999,14 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                     "transcript": intake_log.text if intake_log else "",
                     "recorded_at_utc": intake_log.recorded_at_utc.isoformat() if intake_log else None,
                     "audio_sha256": intake_log.audio_sha256 if intake_log else None,
+                    "raw_audio_sha256": intake_log.raw_audio_sha256 if intake_log else None,
                     "audio_url": f"/sessions/{session.id}/intake.wav",
                 },
                 "confirmation": {
                     "transcript": confirmation_log.text if confirmation_log else "",
                     "recorded_at_utc": confirmation_log.recorded_at_utc.isoformat() if confirmation_log else None,
                     "audio_sha256": confirmation_log.audio_sha256 if confirmation_log else None,
+                    "raw_audio_sha256": confirmation_log.raw_audio_sha256 if confirmation_log else None,
                     "audio_url": f"/sessions/{session.id}/reply.wav",
                 },
                 "card": session.card.model_dump(mode="json") if session.card else None,
@@ -1027,13 +1031,14 @@ def create_app(services: AppServices | None = None) -> FastAPI:
                 "intake": {
                     "transcript": intake_log.text if intake_log else "No intake transcript available",
                     "recorded_at_utc": intake_log.recorded_at_utc.isoformat() if intake_log else None,
-                    "audio_sha256": intake_log.audio_sha256 if intake_log else None,
+                    # The page shows the hash of the file it links to (the recording as uploaded).
+                    "audio_sha256": (intake_log.raw_audio_sha256 or intake_log.audio_sha256) if intake_log else None,
                     "audio_url": f"/sessions/{session.id}/intake.wav",
                 },
                 "confirmation": {
                     "transcript": confirmation_log.text if confirmation_log else "Pending confirmation",
                     "recorded_at_utc": confirmation_log.recorded_at_utc.isoformat() if confirmation_log else None,
-                    "audio_sha256": confirmation_log.audio_sha256 if confirmation_log else None,
+                    "audio_sha256": (confirmation_log.raw_audio_sha256 or confirmation_log.audio_sha256) if confirmation_log else None,
                     "audio_url": f"/sessions/{session.id}/reply.wav",
                 },
                 "total_paise": session.card.maybe_total_paise if session.card else None,

@@ -23,7 +23,7 @@ Know this before recording, so nothing on the call surprises you on camera.
 | 5 | *"Agar aapko yeh manzoor hai, toh boliye: 'Haan, theek hai'. Kuch galat ho toh bataiye."* | Get ready. |
 | 6 | **Beep.** Recording starts: up to 20 s, and it stops after **4 s of silence**. | Say **only** your reply, clearly, then stay **silent** for about 4 s. Anything else you say here (narration included) becomes part of the reply. |
 | 7a | If you said yes: *"Dhanyavaad. Kul chhe sau pachaas rupaye. Aapka parcha confirm ho gaya. Likhit parcha aapko bhej diya jaayega."* Then the call hangs up. | Hang up when it does. |
-| 7b | If it didn't catch you: *"Samajh nahi aaya. Kripya phir se boliye."* + beep | Say the yes again, slower, closer to the phone. |
+| 7b | If it didn't catch you: *"Samajh nahi aaya. Kripya phir se boliye."* + beep | Say the yes again, slower, closer to the phone. Since effort 017 a yes is checked by two listening passes, so this can also happen when only one pass heard it. |
 | 8 | SMS from the Twilio number: Twilio's "Sent from a Twilio trial account" prefix, then *"Kaam ka Parcha #NNNNNN confirm ho gaya. Kul ₹650. Parcha: https://kaam-ka-parcha.onrender.com/verify/…"* | Show it on camera. |
 
 At the same moment, the workshop page (polling every 2 s) switches to **Approved** (stamp, chime) by itself.
