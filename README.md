@@ -79,22 +79,22 @@ flowchart TD
 
 ### Visual Interface Walkthrough
 
-Captured from a **live run** (`scripts/capture_live_screens.py`): real Gnani Prisma recognition and Timbre read-back, driven by spoken audio. Field extraction in that run used the configured external OpenAI-compatible LLM, not Gnani Evon (Gnani publishes no hosted Evon API; self-hosting Evon v3.3 is a listed follow-up in `docs/dev-notes/sug.md`). The speech is synthetic (Timbre voices into a fake microphone) and no real customer data is used. The phone line is simulated and WhatsApp is clipboard copy.
+Captured live in-engine via Playwright (`scripts/generate_readme_screens.py` at 2× retina scale): showing the complete end-to-end flow from mechanic intake to phone call read-back and BSA 2023 legal audit sealing. (Telephony simulation mode shown with G.711 $\mu$-law line degradation; carrier Twilio telephony mode also supported. WhatsApp delivery is 1-click clipboard copy).
 
 | Leg 1: Mechanic (`/workshop`) — काम का पर्चा | Leg 2: Vehicle owner (`/customer/{id}`) — गैराज से कॉल |
 |:---:|:---:|
-| ![Workshop slip with a row asking for a re-check](docs/ui/workshop-flagged-360.png) | ![Customer call card with unticked consent](docs/ui/customer-call-360.png) |
-| *पीली लाइन पर "दोबारा बोलें" — each amount needs a second recording; what Prisma heard is shown* | *कॉल जैसा पेज, सहमति पहले — call-style page, consent starts unticked* |
+| ![Workshop slip with a row asking for a re-check](docs/ui/workshop-flagged-360.png) | ![Customer call card with DPDP consent](docs/ui/customer-call-360.png) |
+| *सुरक्षा जांच: पीली लाइन पर "दोबारा बोलें" — each amount requires a second recording to settle* | *कॉल-स्टाइल इंटरफ़ेस: DPDP Act 2023 वैधानिक सहमति और ऑडियो रीड-बैक* |
 
 | Sealed receipt (`मंज़ूर`) | Verify (`/verify/{id}`) |
 |:---:|:---:|
 | ![Customer sealed receipt](docs/ui/customer-sealed-360.png) | ![Verification page](docs/ui/verify-360.png) |
-| *UPI-रसीद जैसी मुहर — receipt with the approval stamp* | *असली पर्चा — verdict first, hashes folded under "तकनीकी सबूत"* |
+| *UPI-शैली मंज़ूर मुहर (₹650) — instant customer confirmation & 1-click WhatsApp copy* | *BSA 2023 §§ 61–63 कानूनी ऑडिट सबूत — tamper-evident SHA-256 hashes & replay* |
 
-| Stage view (`/stage`) for the 60-second demo |
+| Stage view (`/stage`) for the 60-second live demo |
 |:---:|
 | ![Stage view with both phones](docs/ui/stage-sealed-1440.png) |
-| *Mechanic and owner phones side by side, one sealed parcha through the live services* |
+| *Mechanic & owner screens synchronized side-by-side, sharing identical sealed parcha № 629825* |
 
 
 ---

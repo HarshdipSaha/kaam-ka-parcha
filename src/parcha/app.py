@@ -324,8 +324,14 @@ def create_app(services: AppServices | None = None) -> FastAPI:
         )
 
     @app.get("/stage", response_class=HTMLResponse)
-    def stage(request: Request):
-        session = services.store.create()
+    def stage(request: Request, session_id: str | None = None):
+        if session_id and re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+            try:
+                session = services.store.get(session_id)
+            except KeyError:
+                session = services.store.create()
+        else:
+            session = services.store.create()
         return templates.TemplateResponse(
             request, "stage.html", {"session": session, "parcha_no": parcha_no(session.id), "demo_mode": settings.mock}
         )
