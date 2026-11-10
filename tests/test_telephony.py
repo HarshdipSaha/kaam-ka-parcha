@@ -143,7 +143,7 @@ def test_place_call_endpoint_validates_number_and_card_readiness(fake_services):
     client = TestClient(create_app(fake_services))
     sid = client.post("/sessions").json()["id"]
 
-    bad_number = client.post(f"/sessions/{sid}/telephony/call", data={"expected_revision": 0, "to_number": "9876543210"})
+    bad_number = client.post(f"/sessions/{sid}/telephony/call", data={"expected_revision": 0, "to_number": "12345"})
     assert bad_number.status_code == 422
 
     not_ready = client.post(f"/sessions/{sid}/telephony/call", data={"expected_revision": 0, "to_number": "+919876543210"})
@@ -159,6 +159,29 @@ def test_place_call_endpoint_dials_out_once_the_card_is_ready(fake_services):
     res = client.post(f"/sessions/{sid}/telephony/call", data={"expected_revision": rev, "to_number": "+919876543210"})
     assert res.status_code == 200 and res.json() == {"call_sid": "CA_fake_sid"}
     assert calls[0]["to"] == "+919876543210" and f"session_id={sid}" in calls[0]["voice_url"]
+
+
+@pytest.mark.parametrize("typed", [
+    "+919876543210", "+91 98765 43210", "9876543210", "98765-43210", "09876543210", "919876543210",
+    " +91 (98765) 43210 ",
+])
+def test_an_indian_mobile_typed_any_common_way_becomes_e164(typed):
+    assert telephony.normalize_phone(typed) == "+919876543210"
+
+
+@pytest.mark.parametrize("typed", ["", "12345", "+91 12345 67890x", "abc", "5876543210"])
+def test_a_number_that_is_not_a_phone_number_stays_unusable(typed):
+    assert telephony.normalize_phone(typed) == ""
+
+
+def test_place_call_endpoint_accepts_a_number_typed_with_spaces(fake_services):
+    calls = []
+    fake_services.place_call = lambda **kw: calls.append(kw) or "CA_fake_sid"
+    client = TestClient(create_app(fake_services))
+    sid, rev = _ready_session(client)
+
+    res = client.post(f"/sessions/{sid}/telephony/call", data={"expected_revision": rev, "to_number": "98765 43210"})
+    assert res.status_code == 200 and calls[0]["to"] == "+919876543210"
 
 
 def test_place_call_endpoint_falls_back_to_the_configured_customer_number(fake_services):

@@ -19,6 +19,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import re
 from xml.sax.saxutils import escape
 
 import httpx
@@ -52,6 +53,24 @@ def record(action_url: str, *, max_length: int = 20, timeout: int = 4) -> str:
 
 def hangup() -> str:
     return "<Hangup/>"
+
+
+def normalize_phone(raw: str) -> str:
+    """A number as typed ("98765 43210", "098765-43210", "+91 98765 43210") in E.164, or "" if it isn't one.
+
+    Without a leading "+" the number must be an Indian mobile; with one, any E.164 number is kept as is.
+    """
+    text = raw.strip()
+    if not re.fullmatch(r"\+?[\d\s().-]+", text):
+        return ""
+    digits = re.sub(r"\D", "", text)
+    if text.startswith("+"):
+        return f"+{digits}" if re.fullmatch(r"[1-9]\d{6,14}", digits) else ""
+    if len(digits) == 11 and digits.startswith("0"):
+        digits = digits[1:]
+    elif len(digits) == 12 and digits.startswith("91"):
+        digits = digits[2:]
+    return f"+91{digits}" if re.fullmatch(r"[6-9]\d{9}", digits) else ""
 
 
 def signature_valid(auth_token: str, url: str, params: dict[str, str], signature: str | None) -> bool:

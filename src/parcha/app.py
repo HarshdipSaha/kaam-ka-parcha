@@ -647,9 +647,9 @@ def create_app(services: AppServices | None = None) -> FastAPI:
     ):
         if not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
             raise HTTPException(404, "unknown session")
-        to_number = to_number.strip() or services.settings.twilio_default_to
-        if not re.fullmatch(r"\+[1-9]\d{6,14}", to_number):
-            raise HTTPException(422, "to_number must be E.164, e.g. +919876543210")
+        to_number = telephony.normalize_phone(to_number.strip() or services.settings.twilio_default_to)
+        if not to_number:
+            raise HTTPException(422, "Enter the customer's mobile number, e.g. 98765 43210 or +919876543210")
         if language not in supported_codes():
             raise HTTPException(422, "unsupported read-back language")
         try:

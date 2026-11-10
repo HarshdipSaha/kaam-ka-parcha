@@ -316,8 +316,13 @@ async function handleCallCustomer() {
   const button = $("call-customer");
   const message = $("message");
   const number = $("call-number");
-  if (number && !number.checkValidity()) {
-    UI.say(message, "नंबर +91 से शुरू करके लिखिए", "Enter the number starting with +91", "warn");
+  // The dock sits at the bottom and the message at the top: say every problem next to the button as well.
+  const callProblem = (hi, en, detail) => {
+    UI.say(message, hi, en, "warn", detail);
+    UI.toast(detail ? `${en}: ${detail}` : `${hi} · ${en}`);
+  };
+  if (number && !number.value.trim()) {
+    callProblem("ग्राहक का मोबाइल नंबर लिखिए", "Enter the customer's mobile number");
     number.focus();
     return;
   }
@@ -333,8 +338,10 @@ async function handleCallCustomer() {
     followCall();
     renderSession(currentSession);
     UI.say(message, "फ़ोन बज रहा है — ग्राहक सुनकर “हाँ” बोलेगा।", "The customer's phone is ringing — they listen and say “haan”.", "ok");
+    UI.toast("फ़ोन लग गया · Calling now");
   } catch (err) {
-    showError(message, err);
+    if (err instanceof UI.HttpError && err.status !== 409) callProblem("फ़ोन नहीं लगा", "Call not placed", err.message);
+    else showError(message, err);
   } finally {
     button.disabled = false;
   }
