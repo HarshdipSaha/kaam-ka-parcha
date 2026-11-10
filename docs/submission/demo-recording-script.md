@@ -141,7 +141,8 @@ arriving on the phone with the parcha number, ₹650 and a `/verify/` link.
 **CAPTION:** `Sealed PDF · audit hashes · public verify page`
 
 ### 2:15–2:30 · Close
-**SCREEN:** end card: live URL, GitHub link, "Gnani Prisma + Timbre · Twilio".
+**SCREEN:** the five-promise diagram `docs/submission/usp-diagram.png` (live URL and GitHub link are on it). Hold it
+for about 8 s; point at each circle as you name it: rupees, real call, sealed record, DPDP consent, mobile.
 **SAY:**
 > "Gnani Prisma for Hinglish speech-to-text, Gnani Timbre for the read-back, and a real Twilio call. Money is kept
 > in paise, and nothing is final until the customer says yes in their own voice.
