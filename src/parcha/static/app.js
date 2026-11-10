@@ -78,6 +78,7 @@ function showError(target, err) {
 /* ---------- workshop (mechanic) ---------- */
 let currentSession = null;
 let stopWaiting = null;
+let stopFollowingCall = null;   // set while a real phone call is in progress; it follows the session to confirmation
 async function getOrCreateSession() {
   if (currentSession && currentSession.id) return currentSession;
   const existingId = new URLSearchParams(window.location.search).get("session_id");
@@ -189,9 +190,12 @@ function renderSession(data) {
     $("card").replaceChildren(UI.emptyWorkshop());
   }
   $("dock").hidden = !["bolo", "parcha", "sunao"].includes(stage);
-  $("start-readback").hidden = stage !== "sunao";
-  if ($("language-field")) $("language-field").hidden = stage !== "sunao";
+  const onCall = Boolean(stopFollowingCall);
+  $("start-readback").hidden = stage !== "sunao" || onCall;
+  if ($("language-field")) $("language-field").hidden = stage !== "sunao" || onCall;
   $("start-readback").disabled = stage !== "sunao";
+  // Never inside /stage: that page promises a simulated line where nothing is sent.
+  if ($("phone-call")) $("phone-call").hidden = stage !== "sunao" || onCall || window.self !== window.top;
   const shareOpen = stage === "haan" || stage === "manzoor";
   const customerUrl = `${window.location.origin}/customer/${data.id}`;
   $("share").hidden = !shareOpen;
@@ -207,7 +211,7 @@ function renderSession(data) {
   $("sealed-verify").href = `/verify/${data.id}`;
   $("sealed-pdf").href = `/sessions/${data.id}/pdf`;
   if ((stage === "haan" || sealed) && previousStatus !== data.status) window.scrollTo({ top: 0, behavior: "smooth" });
-  if (stage === "haan") startWaiting();
+  if (stage === "haan" && !stopFollowingCall) startWaiting();
   if (stage === "manzoor" && previousStatus && previousStatus !== "confirmed") celebrate();
   if (previousStatus === "awaiting_reply" && data.status === "review") {
     UI.say($("message"), UI.COPY.changesAsked.hi, UI.COPY.changesAsked.en, "warn");
@@ -307,9 +311,52 @@ async function handleStartReadback() {
     button.disabled = UI.stageFor(currentSession) !== "sunao";
   }
 }
+async function handleCallCustomer() {
+  if (!currentSession) return;
+  const button = $("call-customer");
+  const message = $("message");
+  const number = $("call-number");
+  if (number && !number.checkValidity()) {
+    UI.say(message, "नंबर +91 से शुरू करके लिखिए", "Enter the number starting with +91", "warn");
+    number.focus();
+    return;
+  }
+  try {
+    button.disabled = true;
+    UI.say(message, "ग्राहक को फ़ोन लग रहा है…", "Calling the customer…");
+    const form = new FormData();
+    form.append("expected_revision", currentSession.revision);
+    if (number) form.append("to_number", number.value.trim());
+    const language = $("readback-language");
+    if (language && language.value) form.append("language", language.value);
+    await UI.api.post(`/sessions/${currentSession.id}/telephony/call`, form);
+    followCall();
+    renderSession(currentSession);
+    UI.say(message, "फ़ोन बज रहा है — ग्राहक सुनकर “हाँ” बोलेगा।", "The customer's phone is ringing — they listen and say “haan”.", "ok");
+  } catch (err) {
+    showError(message, err);
+  } finally {
+    button.disabled = false;
+  }
+}
+// The call reads back, may take a spoken correction and read back again, then confirms: follow every revision.
+function followCall() {
+  if (stopWaiting) { stopWaiting(); stopWaiting = null; }
+  if (stopFollowingCall) stopFollowingCall();
+  stopFollowingCall = UI.poll(() => UI.api.get(`/sessions/${currentSession.id}`), {
+    every: 2000,
+    maxMs: 300000,
+    onData: (s) => { if (s.status !== currentSession.status || s.revision !== currentSession.revision) renderSession(s); },
+    until: (s) => s.status === "confirmed",
+    onDone: () => { stopFollowingCall = null; },
+    onError: () => UI.say($("message"), "कनेक्शन जुड़ रहा है…", "Reconnecting…", "warn"),
+    onTimeout: () => { stopFollowingCall = null; renderSession(currentSession); },
+  });
+}
 function initWorkshopPage() {
   $("record").addEventListener("click", handleRecordEstimate);
   $("start-readback").addEventListener("click", handleStartReadback);
+  if ($("call-customer")) $("call-customer").addEventListener("click", handleCallCustomer);
   $("copy-link").addEventListener("click", async (event) => {
     if (await UI.copyText(event.currentTarget.dataset.url)) UI.toast(`${UI.COPY.copied.hi} · ${UI.COPY.copied.en}`);
   });

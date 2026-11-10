@@ -60,6 +60,7 @@ class Settings:
     twilio_account_sid: str = ""
     twilio_auth_token: str = field(default="", repr=False)
     twilio_from_number: str = ""
+    twilio_default_to: str = field(default="", repr=False)   # customer number the workshop's call button dials when none is typed
     public_base_url: str = ""        # this app's own public HTTPS URL, needed so Twilio can fetch audio back from it
     mock: bool = False               # PARCHA_MOCK=1: scripted offline speech services (src/parcha/mock.py)
     trust_proxy: bool = False
@@ -96,6 +97,7 @@ class Settings:
             twilio_account_sid=(values.get("TWILIO_ACCOUNT_SID") or "").strip(),
             twilio_auth_token=(values.get("TWILIO_AUTH_TOKEN") or "").strip(),
             twilio_from_number=(values.get("TWILIO_FROM_NUMBER") or "").strip(),
+            twilio_default_to=(values.get("TWILIO_DEFAULT_TO") or "").strip(),
             public_base_url=(values.get("PUBLIC_BASE_URL") or "").strip().rstrip("/"),
             mock=(values.get("PARCHA_MOCK") or "").strip().casefold() in {"1", "true", "yes", "on"},
             caption_partials=(values.get("CAPTION_PARTIALS") or "1").strip().casefold() not in {"0", "false", "no", "off"},
@@ -116,8 +118,11 @@ class Settings:
         if not any(k.strip() and k.strip() != "replace_me" for k in self.api_key.split(",")):
             raise ValueError("API_KEY is required for live Gnani calls")
 
+    def twilio_ready(self) -> bool:
+        return bool(self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number and self.public_base_url)
+
     def require_twilio(self) -> None:
-        if not (self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number and self.public_base_url):
+        if not self.twilio_ready():
             raise ValueError("TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER and PUBLIC_BASE_URL are all required for a phone call")
 
     def require_extractor(self) -> None:

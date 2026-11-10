@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import base64
+from dataclasses import replace
 
 import httpx
 import pytest
@@ -158,6 +159,45 @@ def test_place_call_endpoint_dials_out_once_the_card_is_ready(fake_services):
     res = client.post(f"/sessions/{sid}/telephony/call", data={"expected_revision": rev, "to_number": "+919876543210"})
     assert res.status_code == 200 and res.json() == {"call_sid": "CA_fake_sid"}
     assert calls[0]["to"] == "+919876543210" and f"session_id={sid}" in calls[0]["voice_url"]
+
+
+def test_place_call_endpoint_falls_back_to_the_configured_customer_number(fake_services):
+    calls = []
+    fake_services.place_call = lambda **kw: calls.append(kw) or "CA_fake_sid"
+    fake_services.settings = replace(fake_services.settings, twilio_default_to="+919876543210")
+    client = TestClient(create_app(fake_services))
+    sid, rev = _ready_session(client)
+
+    res = client.post(f"/sessions/{sid}/telephony/call", data={"expected_revision": rev})
+    assert res.status_code == 200
+    assert calls[0]["to"] == "+919876543210" and "to=%2B919876543210" in calls[0]["voice_url"]
+
+
+def test_place_call_endpoint_needs_a_number_when_none_is_configured(fake_services):
+    fake_services.place_call = lambda **kw: pytest.fail("must not dial without a number")
+    client = TestClient(create_app(fake_services))
+    sid, rev = _ready_session(client)
+
+    res = client.post(f"/sessions/{sid}/telephony/call", data={"expected_revision": rev})
+    assert res.status_code == 422
+
+
+def test_workshop_offers_a_call_button_without_exposing_the_configured_number(fake_services):
+    fake_services.settings = replace(fake_services.settings, twilio_default_to="+919876543210")
+    html = TestClient(create_app(fake_services)).get("/workshop").text
+    assert 'id="call-customer"' in html and "3210" in html
+    assert "9876543210" not in html and 'id="call-number"' not in html
+
+
+def test_workshop_asks_for_the_number_when_none_is_configured(fake_services):
+    html = TestClient(create_app(fake_services)).get("/workshop").text
+    assert 'id="call-customer"' in html and 'id="call-number"' in html
+
+
+def test_workshop_hides_the_call_button_without_twilio(fake_services):
+    fake_services.settings = replace(fake_services.settings, twilio_account_sid="")
+    html = TestClient(create_app(fake_services)).get("/workshop").text
+    assert 'id="call-customer"' not in html
 
 
 def _twilio_post(client: TestClient, path: str, query: str, form: dict):

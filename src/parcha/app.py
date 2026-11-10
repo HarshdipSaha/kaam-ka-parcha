@@ -313,7 +313,13 @@ def create_app(services: AppServices | None = None) -> FastAPI:
 
     @app.get("/workshop", response_class=HTMLResponse)
     def workshop(request: Request):
-        return templates.TemplateResponse(request, "workshop.html", {"demo_mode": settings.mock})
+        # The call button dials a preset number when one is configured; the page only ever sees its last digits.
+        phone_call = (
+            {"preset_tail": settings.twilio_default_to[-4:]} if settings.twilio_ready() else None
+        )
+        return templates.TemplateResponse(
+            request, "workshop.html", {"demo_mode": settings.mock, "phone_call": phone_call}
+        )
 
     @app.get("/stage", response_class=HTMLResponse)
     def stage(request: Request):
@@ -634,11 +640,12 @@ def create_app(services: AppServices | None = None) -> FastAPI:
     def place_telephony_call(
         session_id: str,
         expected_revision: int = Form(...),
-        to_number: str = Form(...),
+        to_number: str = Form(""),
         language: str = Form("hi-IN"),
     ):
         if not re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
             raise HTTPException(404, "unknown session")
+        to_number = to_number.strip() or services.settings.twilio_default_to
         if not re.fullmatch(r"\+[1-9]\d{6,14}", to_number):
             raise HTTPException(422, "to_number must be E.164, e.g. +919876543210")
         if language not in supported_codes():

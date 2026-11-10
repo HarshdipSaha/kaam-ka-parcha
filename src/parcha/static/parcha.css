@@ -217,6 +217,9 @@ button, a, summary, label { cursor: pointer; }
 [data-lang="en"] .verdict__title { font-size: 24px; }
 .topbar .langtoggle { margin-left: auto; }
 .langfield { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; font-size: 15px; }
+.phonecall { display: grid; gap: 8px; }
+.phonecall[hidden] { display: none; }
+.langfield input { min-height: var(--tap); min-width: 0; flex: 1 1 auto; max-width: 14em; padding: 0 10px; font: inherit; border-radius: var(--r-btn); border: 1px solid var(--rule); background: var(--paper); color: var(--ink); }
 .langfield select { min-height: var(--tap); padding: 0 10px; font: inherit; border-radius: var(--r-btn); border: 1px solid var(--rule); background: var(--paper); color: var(--ink); }
 .reask--all { margin: .5rem 0; width: 100%; justify-content: center; }
 .row__heard-count { flex: 1 1 100%; font-size: .8em; opacity: .75; }

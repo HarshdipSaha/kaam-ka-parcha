@@ -56,8 +56,12 @@ customer, placed through Twilio's REST API, with plain TwiML webhooks (no Twilio
    under Phone Numbers -> Verified Caller IDs). Buy a trial phone number.
 2. Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` (the Twilio number, E.164) and
    `PUBLIC_BASE_URL` (this service's own `https://...onrender.com` URL) in the platform environment.
-3. From the workshop, once the card is ready for read-back:
-   `POST /sessions/{id}/telephony/call` with `expected_revision`, `to_number` (E.164) and optional `language`.
+3. From the workshop, once the card is ready for read-back, tap **Call the customer's phone** (shown on `/workshop`
+   only, never inside `/stage`, whose page promises a simulated line). Optionally set `TWILIO_DEFAULT_TO` (E.164)
+   so the button dials that number without typing it; the page shows only its last four digits. Without it the
+   button asks for the number. The button calls
+   `POST /sessions/{id}/telephony/call` with `expected_revision`, optional `to_number` (E.164, falling back to
+   `TWILIO_DEFAULT_TO`) and optional `language`, then follows the session until it is confirmed.
    Twilio calls `to_number`, plays the read-back, records the reply, and the call follows the same
    confirm/correct/retry/fallback logic as the browser leg — `<Redirect>` back to a fresh read-back after a
    correction, another `<Record>` on an ambiguous or unclear reply, `<Hangup/>` once confirmed or on fallback.
@@ -70,7 +74,7 @@ customer, placed through Twilio's REST API, with plain TwiML webhooks (no Twilio
    Say so plainly if you demo with this; it is real telephone audio, not simulated. On a trial account, that
    announcement needs an actual on-screen keypad tap to continue into the app — a phone's side button does
    nothing, and nothing registering just ends the call before ever reaching our webhook (confirmed 2026-10-07).
-7. No UI button yet — call the endpoint directly (curl, Postman, or the browser devtools) until one is added.
+7. The endpoint can still be called directly (curl, Postman) for scripted tests.
 8. On `confirmed`, the app sends the customer a one-line SMS with the verify link (`telephony.send_sms`, no
    Twilio SDK): `Kaam ka Parcha #<no> confirm ho gaya. Kul ₹<amount>. Parcha: <PUBLIC_BASE_URL>/verify/<id>`.
    Costs roughly $0.08/message to India, billed from the same account/credit as the call; trial accounts can
